@@ -18,7 +18,7 @@ import { gridToRegion, positionBoxPx } from './surfaceView'
 const REGION = { x: 0, y: 0, width: 400, height: 400 }
 const ZOOM = 1
 
-/** A 4 × 3 Frame at row 2, column 2, its first row painted and the others left empty. */
+/** A 4 × 3 Frame laid over the Canvas at row 2, column 2, its first row painted and the others left empty; it is drawn on its own surface, from its first position's corner at the Canvas's origin. */
 function framedProject(): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } })
   const cells = [0, 1, 2].map((column) => ({ row: 0, column, color: '#1a1a1a' }))
@@ -66,7 +66,7 @@ describe('the grid under a reference image (ticket 1008)', () => {
       const hidden = rendered(project, theme)
       // On the open Canvas far from the picture, and on the Frame's empty row.
       expect(shown.across(9, 9)).toEqual(hidden.across(9, 9))
-      expect(shown.across(5, 3)).toEqual(hidden.across(5, 3))
+      expect(shown.across(3, 1)).toEqual(hidden.across(3, 1))
     })
   }
 
@@ -75,9 +75,9 @@ describe('the grid under a reference image (ticket 1008)', () => {
     const { across } = rendered(project, PROJECT_THEMES.light, pictureAt(0, 0, 1000))
     // An empty position at 100% is the picture: nothing is drawn over it, on the Canvas or in the Frame.
     expect(new Set(across(9, 9))).toEqual(new Set([RED]))
-    expect(new Set(across(5, 3))).toEqual(new Set([RED]))
+    expect(new Set(across(3, 1))).toEqual(new Set([RED]))
     // A painted bead still covers it.
-    expect(across(2, 3).filter((pixel) => pixel !== RED).length).toBeGreaterThan(across(2, 3).length / 2)
+    expect(across(0, 1).filter((pixel) => pixel !== RED).length).toBeGreaterThan(across(0, 1).length / 2)
   })
 
   it('keeps high contrast\'s outlines over the picture', () => {

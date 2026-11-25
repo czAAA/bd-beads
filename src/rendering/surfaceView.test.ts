@@ -285,7 +285,7 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
   it('leaves the Canvas positions it does not reach to the Canvas, and covers only those it draws over', () => {
     expect(view.pointToHit({ x: 110, y: 50 })).toEqual({ row: 2, column: 5, layer: 'canvas' })
     expect(view.beadBox({ row: 0, column: 0, rows: 4, columns: 4 }, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
-    const line = view.frameBox(frame)
+    const line = view.frameBox({ row: 0, column: 0, ...frame })
     expect([line.x + line.width / 2, line.y + line.height / 2]).toEqual([80, 60])
   })
 
@@ -363,7 +363,7 @@ describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
   })
 
   it('draws its line round what it covers, and gives the Select tool the cells under a point', () => {
-    const line = view.frameBox(frame)
+    const line = view.frameBox({ row: 0, column: 0, ...frame })
     expect(line.width).toBeLessThan(line.height)
     expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: FRAME_ID })
   })
@@ -426,7 +426,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     })
 
     it('boxes the Frame round its turned corners and steps it along its own rows', () => {
-      const box = view.frameBox(frame)
+      const box = view.frameBox({ row: 0, column: 0, ...frame })
       for (const corner of [{ row: 0, column: 0 }, { row: 3, column: 3 }]) {
         const at = view.beadToPoint(corner, FRAME_ID)
         expect(at.x).toBeGreaterThan(box.x)

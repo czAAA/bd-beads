@@ -23,15 +23,15 @@ function framed(): Project {
   const frame = frameOf(project)!
   const own: BeadMap = {}
   for (let row = 0; row < 6; row += 1) own[row] = Object.fromEntries(Array.from({ length: 6 }, (_, column) => [column, RED]))
-  const canvas: BeadMap = { [frame.row - 8]: { [frame.column]: RED } }
+  const canvas: BeadMap = { [-8]: { 0: RED } }
   return withLayers(project, { beads: canvas, frame: { ...frame, beads: own } })
 }
 
 const project = framed()
 const space = spaceOf(project, true, frameIdIn(project))
 const frame = frameOf(project)!
-const view = surfaceView({ space, technique: 'loom', frame, rotation: 0, zoom: 1, scroll: { x: frame.column * 20 - 200, y: frame.row * 20 - 200 }, viewport: { width: 600, height: 600 } })
-const region = { x: frame.column * 20 - 200, y: frame.row * 20 - 200, width: 600, height: 600 }
+const view = surfaceView({ space, technique: 'loom', frame, rotation: 0, zoom: 1, scroll: { x: -200, y: -200 }, viewport: { width: 600, height: 600 } })
+const region = { x: -200, y: -200, width: 600, height: 600 }
 
 /** The margin sheet's paper filled. */
 const sheetFill = (call: { name: string; fillStyle?: unknown }) => call.name === 'fill' && call.fillStyle === DEFAULT_THEME.margin.fill

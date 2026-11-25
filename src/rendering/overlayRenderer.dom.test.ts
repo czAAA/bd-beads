@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Layer, Rotation } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
+import { coversOf } from '../domain/sheets'
 import { createProject } from '../domain/createProject'
 import { findBead } from '../domain/beads'
 import { replaceBead } from '../domain/projectBead'
@@ -24,7 +25,7 @@ import { CELL_SIZE_PX } from './cellSize'
 import { BEAD_GAP_PX, brighten, CURRENT_ROW_BRIGHTNESS } from './beadLook'
 import { displayedExtentPx, surfaceView } from './surfaceView'
 import { rulerLayout } from './rulers'
-import { canvasOf, frameOf, quarterTurnOf } from '../domain/layerRecord'
+import { canvasOf, frameOf, quarterTurnOf, withCanvas } from '../domain/layerRecord'
 import { withFrameSheet } from '../domain/frameSheet'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
@@ -62,7 +63,9 @@ function projectOf(technique: Technique, columns: number, rows: number, { marks,
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
-  const made = withLayers(project, { frame: { ...frameOf(project)!, beads }, orientation: rotation, ownProgress: own })
+  // The Canvas turned alone: a Frame stays as it lies (spec 1234).
+  const { quarterTurns: _turned, ...upright } = frameOf(project)!
+  const made = withLayers(withCanvas(project, { orientation: rotation }), { frame: { ...upright, beads }, ownProgress: own })
   return marks === false ? withLayers(made, { rowProgress: { ...rowProgressOf(made, frameIdIn(made)), marks } as TestRowProgress }) : made
 }
 
@@ -754,14 +757,14 @@ describe('renderOverlay', () => {
       expect(stroke.strokeStyle).toBe(DEFAULT_THEME.mirror)
     })
 
-    it('moves with the Frame on the open Canvas, across the box round a peyote Frame\'s beads, each Axis where it maps from the unshifted columns\' corner', () => {
+    it('lies across the box round a peyote Frame\'s beads on the open Canvas, each Axis where it maps from the unshifted columns\' corner', () => {
       const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 6, rows: 4, columns: 5, beads: {} } })
       const { context, calls, named } = recordingContext()
 
       renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }) })
 
-      // Column 6 of a peyote Canvas is 120px in, and unshifted; row 5 sits at 5 × 20px (ticket 0734).
-      expect(named('translate').map((call) => call.args)).toContainEqual([120, 100])
+      // Its own surface is drawn from its first position's corner (ticket 0734).
+      expect(named('translate').map((call) => call.args)).toContainEqual([0, 0])
       // The box round 5 peyote columns is 5 × 20px wide, 4 × 20 + 10px tall (the shifted columns). Top–bottom reflects
       // about 2 beads down from the unshifted top, not halfway down that box (ticket 0775).
       expect(lines(calls)).toEqual([[[50, 0], [50, 90]], [[0, 40], [100, 40]]])
@@ -1064,7 +1067,8 @@ describe('renderOverlay', () => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
       const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
-      return { x, width, height, outer: withMargin(frame) }
+      // The margin's Canvas positions: those the Frame covers, a margin of 4 round them (spec 1234).
+      return { x, width, height, outer: withMargin(coversOf(project)[0]!.frame) }
     }
     const frame = { row: 5, column: 5, rows: 4, columns: 4 }
 
@@ -1079,7 +1083,7 @@ describe('renderOverlay', () => {
     })
 
     it('starts at the margin\'s own column even when its first row is a shifted one', () => {
-      const shiftedFirstRow = { ...frame, row: 7, column: 8 }
+      const shiftedFirstRow = { ...frame, row: 8, column: 8 }
       const { x, outer } = outline('peyote', shiftedFirstRow)
 
       expect(outer.row % 2).toBe(1)
@@ -1104,13 +1108,13 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
     return withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
   }
 
-  it('rings the current pass in the Frame\'s Weave, drawn from the corner of the Canvas position the Frame lies on', () => {
+  it('rings the current pass in the Frame\'s Weave, drawn from its own first position\'s corner', () => {
     const project = mixed()
     const { context, calls } = recordingContext()
 
     renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
 
-    expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
+    expect(calls.find((call) => call.name === 'translate')?.args).toEqual([0, 0])
     // Pass 1 is row 1's even beads, columns 0 and 2: x 0 and 40, y 20 (columns 0 and 2 are unshifted).
     const rings = ringRects(calls).map((call) => call.args as number[])
     expect(rings.map(([x, y]) => [x!, y!])).toEqual([[0, 20], [40, 20]])
@@ -1124,9 +1128,9 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
       return calls
     }
 
-    // The Frame's cell by its own row and column: row 1, column 0 of a Frame lying at (2, 3).
+    // The Frame's cell by its own row and column: row 1, column 0 of a Frame.
     const inFrame = draw(frameIdIn(project), 1, 0)
-    expect(inFrame.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
+    expect(inFrame.find((call) => call.name === 'translate')?.args).toEqual([0, 0])
     expect(inFrame.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
     const onCanvas = draw('canvas', 9, 3)
     expect(onCanvas.findIndex((call) => call.name === 'fillRect')).toBeLessThan(onCanvas.findIndex((call) => call.name === 'translate'))
@@ -1166,7 +1170,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
 
     renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 0, 0, undefined, frameIdIn(project)), color: null } })
 
-    expect(calls(named('translate'))).toEqual([[60, 40]])
+    expect(calls(named('translate'))).toEqual([[0, 0]])
     expect(named('fillRect').length).toBeGreaterThan(0)
     expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
   })
@@ -1306,13 +1310,13 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
 
     renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 1, left: 0, rows: 1, columns: 1, layer: FRAME_ID, cells: [{ row: 1, column: 0 }] } })
 
-    expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
+    expect(calls.find((call) => call.name === 'translate')?.args).toEqual([0, 0])
     expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
   })
 })
 
 describe('the overlay of a Frame in a Bead of its own (ticket 0665)', () => {
-  it('draws the Frame\'s layer from its corner at its Bead\'s size over the Canvas\'s, and unscaled on its own', () => {
+  it('draws the Frame\'s layer from its own corner at its Bead\'s size, and unscaled on its own', () => {
     const base = projectOf('loom', 3, 3, { currentRow: 1 })
     const project = replaceBead(withLayers(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } }), findBead('toho/round/15-0')!)
     const draw = (open: boolean) => {
@@ -1323,7 +1327,7 @@ describe('the overlay of a Frame in a Bead of its own (ticket 0665)', () => {
       return named
     }
     const scale = 1 / findBead('toho/cube/1.5mm')!.widthMm
-    expect(draw(true)('translate').map(({ args }) => args)).toEqual([[60, 40]])
+    expect(draw(true)('translate').map(({ args }) => args)).toEqual([[0, 0]])
     expect(draw(true)('scale').map(({ args }) => args)).toEqual([[scale, scale]])
     expect(draw(false)('scale')).toEqual([])
   })

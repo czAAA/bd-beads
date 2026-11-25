@@ -12,11 +12,11 @@ import { renderProject, type RenderInput } from './projectRenderer'
 import { referenceBoxPx, referenceWidthLimits, type DrawnReference } from './referenceImage'
 import { spaceOf } from './space'
 
-/** A 3 × 2 Frame, its first row painted and its second left empty, and a bead on the Canvas. */
+/** A 3 × 2 Frame laid over the Canvas at row 2, column 2, its first row painted and its second left empty, and a bead on the Canvas. */
 function framedProject(): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
   const cells = [0, 1, 2].map((column) => ({ row: 0, column, color: '#e63746' }))
-  const frame = { ...weaveOf(canvasOf(project)), rows: 2, columns: 3, beads: withColors({}, cells) }
+  const frame = { ...weaveOf(canvasOf(project)), row: 2, column: 2, rows: 2, columns: 3, beads: withColors({}, cells) }
   return withLayers(project, { beads: withColors({}, [{ row: 0, column: 0, color: '#1a1a1a' }]), frame })
 }
 
