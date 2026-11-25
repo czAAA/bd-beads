@@ -78,8 +78,8 @@ describe('usePaintStroke', () => {
 
     stroke.beginOrCommitPress('paint', '#ff0000', row, column)
     expect(stroke.strokeMode.value).toBe('paint')
-    stroke.paintStrokeCell(row, column + 1, '#ff0000')
-    stroke.paintStrokeCell(row, column + 2, '#ff0000')
+    stroke.paintStrokeCell(row, column + 1, '#ff0000', FRAME_ID)
+    stroke.paintStrokeCell(row, column + 2, '#ff0000', FRAME_ID)
     expect(harness.replaceProject).toHaveBeenCalledTimes(3)
     expect(harness.replaceProject).toHaveBeenCalledWith(expect.anything(), { deferSave: true })
     expect(harness.history.canUndo.value).toBe(false)
@@ -99,7 +99,7 @@ describe('usePaintStroke', () => {
 
     stroke.beginOrCommitPress('paint', '#ff0000', row + 1, column)
     // The move crosses a woven row on its way: that bead alone is refused, as if it came by itself.
-    stroke.paintStrokeCells([{ row: row + 1, column: column + 1 }, { row, column: column + 1 }, { row: row + 1, column: column + 2 }, { row: row + 2, column: column + 2 }], '#ff0000')
+    stroke.paintStrokeCells([{ row: row + 1, column: column + 1 }, { row, column: column + 1 }, { row: row + 1, column: column + 2 }, { row: row + 2, column: column + 2 }].map((cell) => ({ ...cell, layer: FRAME_ID })), '#ff0000')
     expect(harness.replaceProject).toHaveBeenCalledTimes(2)
     expect([at(1, 1), at(0, 1), at(1, 2), at(2, 2)]).toEqual(['#ff0000', null, '#ff0000', '#ff0000'])
 
@@ -112,7 +112,7 @@ describe('usePaintStroke', () => {
   it('leaves finished rows alone', () => {
     const { stroke, at, frame } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1, frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }))))
     stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)
-    stroke.paintStrokeCell(frame.row + 1, frame.column, '#ff0000')
+    stroke.paintStrokeCell(frame.row + 1, frame.column, '#ff0000', FRAME_ID)
     stroke.endStroke()
 
     expect(at(0, 0)).toBeNull()
@@ -127,7 +127,7 @@ describe('usePaintStroke', () => {
     it('lands a stroke on the Frame at its counterparts, and Undo takes the whole stroke back in one step', () => {
       const { stroke, harness, at, frame } = setup('paint', fourWide(), leftRight)
       stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)
-      stroke.paintStrokeCell(frame.row + 1, frame.column + 1, '#ff0000')
+      stroke.paintStrokeCell(frame.row + 1, frame.column + 1, '#ff0000', FRAME_ID)
       stroke.endStroke()
 
       expect(at(0, 0)).toBe('#ff0000')
@@ -184,7 +184,7 @@ describe('usePaintStroke', () => {
       const painted = paintAt(placed.project, [{ row: row + 4, column }], '#0000ff')
       const { stroke, harness } = setup('fill', painted, turns)
 
-      stroke.beginOrCommitPress('paint', '#00ff00', row + 4, column, FRAME_ID)
+      stroke.beginOrCommitPress('paint', '#00ff00', 4, 0, FRAME_ID)
       stroke.endStroke()
 
       expect(frameOf(harness.project)!.beads).toEqual({ 4: { 0: '#00ff00' } })
@@ -370,9 +370,9 @@ describe('usePaintStroke', () => {
     it('paints the Frame for a press inside it, and a stroke that began there leaves nothing where it goes outside', () => {
       const { stroke, harness } = setup('paint', over())
 
-      stroke.beginOrCommitPress('paint', '#ff0000', 20, 20)
-      stroke.paintStrokeCell(20, 21, '#ff0000')
-      stroke.paintStrokeCell(20, 30, '#ff0000')
+      stroke.beginOrCommitPress('paint', '#ff0000', 0, 0, FRAME_ID)
+      stroke.paintStrokeCell(0, 1, '#ff0000', FRAME_ID)
+      stroke.paintStrokeCell(0, 10, '#ff0000', FRAME_ID)
       stroke.paintStrokeCell(5, 5, '#ff0000')
       stroke.endStroke()
 
@@ -397,11 +397,11 @@ describe('usePaintStroke', () => {
       const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 30 } } }, frameIdIn(open))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const { stroke, harness } = setup('paint', placed.project)
-      const { row, column, columns } = frameOf(harness.project)!
+      const { columns } = frameOf(harness.project)!
       // The outer round of a Triangle of 9 rounds has 27 places, more than its rectangle has columns.
       expect(columns).toBeLessThan(27)
 
-      stroke.beginOrCommitPress('paint', '#ff0000', row + 8, column + 26, FRAME_ID)
+      stroke.beginOrCommitPress('paint', '#ff0000', 8, 26, FRAME_ID)
       stroke.endStroke()
 
       expect(frameOf(harness.project)!.beads).toEqual({ 8: { 26: '#ff0000' } })
@@ -409,7 +409,7 @@ describe('usePaintStroke', () => {
 
     it('fills and erases the layer the press is on, as one undo step each', () => {
       const { stroke, harness } = setup('fill', over())
-      stroke.beginOrCommitPress('paint', '#00ff00', 21, 21)
+      stroke.beginOrCommitPress('paint', '#00ff00', 1, 1, FRAME_ID)
       stroke.endStroke()
       expect(Object.values(frameOf(harness.project)!.beads).flatMap((row) => Object.keys(row))).toHaveLength(9)
       expect(beadsOfLayer(harness.project, 'canvas')).toEqual({})

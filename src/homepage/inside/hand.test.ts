@@ -12,6 +12,7 @@ function playingHand({ dragHoldMs = 0 } = {}) {
   const canvas = {
     onCellPrimaryDown: at('down'),
     onCellPrimaryMove: at('move'),
+    activeProject: ref(undefined),
     surfaceProbe: ref({ beadOnScreen: ({ row, column }: GridPosition) => ({ x: column * 10, y: row * 10 }) }),
   } as unknown as CanvasContext
   const shell = { endStroke: () => void (calls.push('end'), ended.push(performance.now())) } as unknown as ShellFrameContext

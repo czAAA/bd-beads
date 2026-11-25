@@ -59,7 +59,7 @@ export function beadsShown(beads: BeadMap, footprints: Footprints): BeadMap {
  * in any Frame's margin (tickets 261, 1218). The one statement of the rule, which an Edit enforces and a press asks to
  * show it is refused. */
 export function mayPlace(project: Layered, position: GridPosition, margin: number = MARGIN): boolean {
-  return !framesOf(project).some((frame) => isInFinishedRow(project, position, frameIdOf(frame))) && !inMargin(footprintsOf(project), position, margin)
+  return !(isFrameLayer(position.layer) && framesOf(project).some((frame) => isInFinishedRow(project, position, frameIdOf(frame)))) && !inMargin(footprintsOf(project), position, margin)
 }
 
 /** Whether a position lies in a Frame's margin: within MARGIN of a Frame's footprint (ADR 0066), but not in it. A

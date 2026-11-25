@@ -221,7 +221,7 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeUndefined()
       expect(gesture.hasClipboard()).toBe(true)
       expect(gesture.pasteProjectionActive.value).toBe(true)
-      expect(stampCells(gesture.pastePreviewStamp(project, { row: 2, column: 2 })!)).toEqual([{ row: 2, column: 2, color: RED }])
+      expect(stampCells(gesture.pastePreviewStamp(project, { row: 2, column: 2 })!)).toEqual([{ row: 2, column: 2, color: RED, layer: FRAME_ID }])
       expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([])
     })
 
@@ -689,7 +689,7 @@ describe('useSelectionGesture', () => {
       const framed = withFrame(makeProject(), { row: 5, column: 6, rows: 7, columns: 8 }, frameIdIn(makeProject()))
       const { gesture } = setup(framed)
       expect(gesture.selectAll()).toBe(true)
-      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6, rows: 7, columns: 8, layer: FRAME_ID })
+      expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 7, columns: 8, layer: FRAME_ID })
     })
 
     it('Select all on the Canvas with no Frame is on the Canvas layer (ticket 491)', () => {
@@ -712,7 +712,7 @@ describe('useSelectionGesture', () => {
       gesture.extendPress(0, 3)
       gesture.endPress()
       gesture.copy()
-      expect(gesture.pasteAt({ row: 11, column: 11 })).toBe(true)
+      expect(gesture.pasteAt({ row: 1, column: 1, layer: FRAME_ID })).toBe(true)
       expect(frameOf(harness.currentProject())!.beads[1]).toEqual({ 1: RED, 2: RED })
       expect(beadsOfLayer(harness.currentProject()!, 'canvas')[11]).toBeUndefined()
       expect(clipped).toEqual([2])
@@ -752,9 +752,9 @@ describe('useSelectionGesture', () => {
 
     it('a drag that begins in the Frame reaches past its edge and stays the Frame\'s', () => {
       const { gesture } = framed()
-      gesture.beginPress(11, 11)
-      expect(gesture.extendPress(8, 30)).toBe(true)
-      expect(gesture.selection.value).toMatchObject({ top: 8, left: 11, rows: 4, columns: 20, layer: FRAME_ID })
+      gesture.beginPress(1, 1, FRAME_ID)
+      expect(gesture.extendPress(-2, 20)).toBe(true)
+      expect(gesture.selection.value).toMatchObject({ top: -2, left: 1, rows: 4, columns: 20, layer: FRAME_ID })
     })
 
     it('a drag that begins on the Canvas crosses the margin and the Frame and stays the Canvas\'s', () => {
@@ -792,42 +792,42 @@ describe('useSelectionGesture', () => {
 
     it('Fill on a Frame Selection reaching past its edge paints only the Frame', () => {
       const { gesture, harness } = framed()
-      gesture.beginPress(11, 11)
-      gesture.extendPress(8, 8)
+      gesture.beginPress(1, 1, FRAME_ID)
+      gesture.extendPress(-2, -2)
       gesture.endPress()
       gesture.fill(RED)
       expect(frameOf(harness.currentProject())!.beads).toEqual({ 0: { 0: RED, 1: RED }, 1: { 0: RED, 1: RED } })
       expect(beadsOfLayer(harness.currentProject()!, 'canvas')).toEqual({})
     })
 
-    /** A 2 x 2 Selection in the Frame, at (11, 11). */
+    /** A 2 x 2 Selection in the Frame, at its own row 1, column 1. */
     const frameSelected = () => {
       const made = framed()
-      made.gesture.beginPress(11, 11)
-      made.gesture.extendPress(12, 12)
+      made.gesture.beginPress(1, 1, FRAME_ID)
+      made.gesture.extendPress(2, 2)
       made.gesture.endPress()
       return made.gesture
     }
 
     it('a resize handle is not stopped by the Frame\'s edge or its margin', () => {
       const gesture = frameSelected()
-      gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 12, column: 12 }, 'select')
-      gesture.dragAdjust({ row: 40, column: 40 })
+      gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 2 }, 'select')
+      gesture.dragAdjust({ row: 30, column: 30 })
       gesture.endAdjust()
-      expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 30, columns: 30, layer: FRAME_ID })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 30, columns: 30, layer: FRAME_ID })
     })
 
     it('a press inside dropped for the Radial toolbox leaves the Selection where it was, with no tap and no move (ticket 1084)', () => {
       const gesture = frameSelected()
       const before = gesture.selection.value
-      gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
+      gesture.beginAdjust({ kind: 'inside' }, { row: 1, column: 1 }, 'select')
       gesture.dropAdjust()
       gesture.endAdjust()
       expect(gesture.selection.value).toEqual(before)
 
       // A wobble of a bead before the hold was up is taken back too.
-      gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
-      gesture.dragAdjust({ row: 12, column: 11 })
+      gesture.beginAdjust({ kind: 'inside' }, { row: 1, column: 1 }, 'select')
+      gesture.dragAdjust({ row: 2, column: 1 })
       gesture.dropAdjust()
       gesture.endAdjust()
       expect(gesture.selection.value).toEqual(before)
@@ -835,18 +835,18 @@ describe('useSelectionGesture', () => {
 
     it('a move is not stopped by the Frame\'s edge or its margin', () => {
       const gesture = frameSelected()
-      gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
-      gesture.dragAdjust({ row: 1, column: 2 })
+      gesture.beginAdjust({ kind: 'inside' }, { row: 1, column: 1 }, 'select')
+      gesture.dragAdjust({ row: -9, column: -8 })
       gesture.endAdjust()
-      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 2, columns: 2, layer: FRAME_ID })
+      expect(gesture.selection.value).toMatchObject({ top: -9, left: -8, rows: 2, columns: 2, layer: FRAME_ID })
     })
 
     it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue (ticket 433)', () => {
       const inFrame = [{ row: 11, column: 11 }, { row: 11, column: 12 }]
       const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
       const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame, frameIdIn(makeProject())), inFrame, RED), onCanvas, RED))
-      gesture.tapPiece(11, 11)
-      expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 1, columns: 2 })
+      gesture.tapPiece(1, 1, FRAME_ID)
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 1, columns: 2, layer: FRAME_ID })
       gesture.tapPiece(2, 2)
       expect(gesture.selection.value).toMatchObject({ top: 2, left: 2, rows: 1, columns: 2 })
       const before = gesture.refusals.value

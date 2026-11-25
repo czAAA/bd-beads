@@ -421,11 +421,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     return props.tools.blocksMargin && !mayPlace(props.project, bead)
   }
 
-  /** A bead's row and column for an event, and its layer only where the position alone would name the other one (ADR
-   * 0066): where the Frame draws shorter than the rows it names. */
+  /** A bead's row and column for an event, and its layer where it is a Frame's (its own row and column, which only the
+   * layer names, ADR 0066), or where the position alone would name the other one. */
   function cellArguments(bead: GridPosition): [row: number, column: number, layer?: Layer] {
     const named = bead.layer
-    return named && named !== layerAt(props.project, { row: bead.row, column: bead.column }) ? [bead.row, bead.column, named] : [bead.row, bead.column]
+    return named && (isFrameLayer(named) || named !== layerAt(props.project, { row: bead.row, column: bead.column })) ? [bead.row, bead.column, named] : [bead.row, bead.column]
   }
 
   /** Whether this pointer is the one that moves the canvas in the input mode (ticket 325): Pen mode's finger and
@@ -553,9 +553,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
    * Selection on it, the Canvas's for the Move handle and anything else. */
   let gestureLayer: ViewLayer = 'canvas'
 
-  /** The bead position nearest a pointer, wherever it is: dragging a Frame needs one even between beads. */
-  function cellUnder(event: PointerEvent, layer: ViewLayer = gestureLayer): GridPosition {
-    return surface.value.pointToCell(pointInDrawing(event), layer)
+  /** The bead position nearest a pointer, wherever it is: dragging needs one even between beads. In the layer's own count,
+   * or with `byPlace` as the Frame's place counts (dragging the Frame itself). */
+  function cellNear(event: PointerEvent, layer: ViewLayer = gestureLayer, byPlace = false): GridPosition {
+    return surface.value.pointToCell(pointInDrawing(event), layer, byPlace)
   }
 
   /** Whether the Mirror's Canvas Area's handles take a press (no Selection holds them): under any tool that draws, so
@@ -586,13 +587,13 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   function onHeldPiece(event: Pick<PointerEvent, 'clientX' | 'clientY'>, held: Selection): boolean {
     if (!held.cells || props.tools.tool !== 'piece') return false
     const bead = beadUnder(event)
-    if (!bead || (bead.layer ?? layerAt(props.project, bead)) !== selectionLayer(props.project, held)) return false
+    if (!bead || (bead.layer ?? layerAt(props.project, bead)) !== selectionLayer(held)) return false
     return selectionMask(held)?.(bead.row, bead.column) === true
   }
 
   /** The layer a Selection acts on, for measuring a press on its handles. */
   function selectionViewLayer(): ViewLayer {
-    return grabbed.value ? selectionLayer(props.project, grabbed.value) : 'canvas'
+    return grabbed.value ? selectionLayer(grabbed.value) : 'canvas'
   }
 
   /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
@@ -650,8 +651,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   let carryGrip: { from: GridPosition; pressed: { x: number; y: number }; byCycles: boolean } | undefined
 
   /** Begins a move at the press, by whole stagger cycles for a Piece's shape; returns the position pressed. */
-  function beginCarry(event: PointerEvent, byCycles = false): GridPosition {
-    const from = cellUnder(event)
+  function beginCarry(event: PointerEvent, byCycles = false, byPlace = false): GridPosition {
+    const from = cellNear(event, gestureLayer, byPlace)
     carryGrip = { from, pressed: surface.value.pointToGrid(pointInDrawing(event)), byCycles }
     return from
   }
@@ -659,7 +660,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   /** Reports the cell at `point` to whichever drag is held: a Frame's, a Selection's adjust or a Select drag. */
   function followHeldDrag(point: { x: number; y: number }): void {
     const carried = carryGrip && surface.value.carriedCell(carryGrip.from, carryGrip.pressed, point, gestureLayer, carryGrip.byCycles)
-    if (framing.value) emit('frame-drag', carried ?? surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer))
+    if (framing.value) emit('frame-drag', carried ?? surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer, true))
     else if (adjusting.value) emit('selection-drag', carried ?? surface.value.pointToCell(point, gestureLayer))
     else if (selectDrag) {
       const near = surface.value.pointToCell(point, selectLayer)
@@ -773,7 +774,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     rootEl.value?.setPointerCapture?.(event.pointerId)
     gestureLayer = moveLayer(frame)
     frameGrip = { x: 0, y: 0 }
-    emit('frame-press', { kind: 'move' }, beginCarry(event), frame)
+    emit('frame-press', { kind: 'move' }, beginCarry(event, false, true), frame)
     event.preventDefault()
   }
 
@@ -781,7 +782,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
    * the tool, with no tap at its end. A Piece's shape has the grip too, and its beads go with it (ticket 1013). */
   function pressAreaGrip(event: PointerEvent, area: SheetArea): void {
     const place = props.mirror?.place
-    const layer = area === 'selection' ? props.selection && selectionLayer(props.project, props.selection) : place?.layer === 'canvas' && 'canvas'
+    const layer = area === 'selection' ? props.selection && selectionLayer(props.selection) : place?.layer === 'canvas' && 'canvas'
     if (!layer || event.button !== 0) return
     touchInput.value = event.pointerType === 'touch'
     onPress(event)
@@ -846,9 +847,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = target.kind === 'handle' ? frame : moveLayer(frame)
         carryGrip = undefined
-        const pressed = cellUnder(event)
+        const pressed = cellNear(event, gestureLayer, true)
         const point = pointInDrawing(event)
-        const middle = surface.value.beadToPoint(pressed, gestureLayer)
+        const middle = surface.value.beadToPoint(pressed, gestureLayer, true)
         frameGrip = { x: middle.x - point.x, y: middle.y - point.y }
         emit('frame-press', target, pressed, frame)
         event.preventDefault()
@@ -876,7 +877,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
         carryGrip = undefined
-        const pressed = resizing ? cellUnder(event) : beginCarry(event, !!held.cells)
+        const pressed = resizing ? cellNear(event) : beginCarry(event, !!held.cells)
         emit('selection-press', target, pressed, ...(areaHandlesOnly.value ? ['mirror' as const] : []))
         // A handle's press is the handle's and is never timed; the inside's is, while its move starts (ticket 1084).
         if (target.kind === 'inside' && timesHold) timeHold(event)
@@ -910,7 +911,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       // A press on empty background still opens the stroke (ticket 504); Fill lands on the nearest bead instead.
       if (event.button === 0) {
         if (props.tools.nearestOnPress || props.tools.selectsAnywhere) {
-          const near = cellUnder(event, 'canvas')
+          const near = cellNear(event, 'canvas')
           if (props.tools.selectsAnywhere) {
             selectDrag = true
             selectLayer = 'canvas'

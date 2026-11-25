@@ -1,4 +1,4 @@
-import { colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
+import { colorAt, forEachChangedPosition, withColors, type BeadChange, type FrameSheet } from './canvas'
 import { frameShapeOf, rowOrderOf, type ShapedSheet } from './frameShape'
 import { isFrameLayer, type FrameRef, type GridPosition, type Rotation } from './grid'
 import { sameBeads } from './layerBeads'
@@ -235,17 +235,18 @@ export function frameRowOrder(project: Layered, ref: FrameRef): RowOrder {
 function framePassAt(project: Layered, position: GridPosition, order: (() => RowOrder) | undefined, frameRef: FrameRef): number | undefined {
   const ref = isFrameLayer(position.layer) ? position.layer : frameRef
   const frame = frameById(project, ref)
-  // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
+  // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on. A position names its
+  // layer (the Frame's cells by their own row and column); one that names none is `frameRef`'s.
   if (!frame || position.layer === 'canvas') {
     return undefined
   }
-  const own = { row: position.row - frame.row, column: position.column - frame.column }
+  const inside = position.row >= 0 && position.row < frame.rows && position.column >= 0 && position.column < frame.columns
   // Its rectangle and its positions: a Custom frame's are named by round and place and reach past it
   // (ticket 0594); its Row order puts none of the rectangle's others in a pass.
-  if (!frameContains(frame, position) && !frameGeometryOf(project, ref).hasPosition(own)) {
+  if (!inside && !frameGeometryOf(project, ref).hasPosition(position)) {
     return undefined
   }
-  return (order ?? (() => frameRowOrder(project, ref)))().passAt(own)
+  return (order ?? (() => frameRowOrder(project, ref)))().passAt(position)
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
@@ -273,10 +274,11 @@ export function finishedRowsOf(project: Layered, ref: FrameRef): (position: Grid
  * whichever Frame holds it, for what a press or a preview asks of a position before it knows the Frame. */
 export function finishedRowsOfFrames(project: Layered): (position: GridPosition) => boolean {
   const each = framesOf(project).map((frame) => finishedRowsOf(project, frameIdOf(frame)))
-  return (position) => each.some((finished) => finished(position))
+  // Only a position that names a Frame can be in its rows: the same numbers, unnamed, are the Canvas's.
+  return (position) => isFrameLayer(position.layer) && each.some((finished) => finished(position))
 }
 
-/** Whether each Frame bead of a draw, at its Canvas row and column, sits in a finished pass or the current one (ticket
+/** Whether each Frame bead of a draw, at its own row and column, sits in a finished pass or the current one (ticket
  * 0676): `isInFinishedRow` and `isInCurrentRow` with the Frame's Row order worked out once, not for each of the
  * thousands of beads drawn, and what framePassAt reads of the Project read once (ticket 0677). */
 export function rowPassesOf(project: Layered, ref: FrameRef): (row: number, column: number) => 'finished' | 'current' | undefined {
@@ -286,10 +288,9 @@ export function rowPassesOf(project: Layered, ref: FrameRef): (row: number, colu
   let order: RowOrder | undefined
   let geometry: LayerGeometry | undefined
   return (row, column) => {
-    const own = { row: row - frame.row, column: column - frame.column }
-    const inside = own.row >= 0 && own.row < frame.rows && own.column >= 0 && own.column < frame.columns
-    if (!inside && !(geometry ??= frameGeometryOf(project, ref)).hasPosition(own)) return undefined
-    const pass = (order ??= frameRowOrder(project, ref)).passAt(own)
+    const inside = row >= 0 && row < frame.rows && column >= 0 && column < frame.columns
+    if (!inside && !(geometry ??= frameGeometryOf(project, ref)).hasPosition({ row, column })) return undefined
+    const pass = (order ??= frameRowOrder(project, ref)).passAt({ row, column })
     return pass < current ? 'finished' : pass === current ? 'current' : undefined
   }
 }
@@ -337,7 +338,7 @@ function keptFinishedRows(before: Project, after: Project, ref: FrameRef): Proje
   const finished = finishedRowsOf(before, ref)
   const reverts: BeadChange[] = []
   forEachChangedPosition(was, now, (row, column) => {
-    if (finished({ row: row + frame.row, column: column + frame.column, layer: ref })) reverts.push({ row, column, color: colorAt(was, row, column) })
+    if (finished({ row, column, layer: ref })) reverts.push({ row, column, color: colorAt(was, row, column) })
   })
   return reverts.length === 0 ? after : withLayer(after, ref, { beads: withColors(now, reverts) })
 }

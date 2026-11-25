@@ -21,7 +21,7 @@ export interface AreaLine {
   index: number
 }
 
-/** An AreaLine and the rectangle it is a line of: the Frame, or with no Frame the Piece area. */
+/** An AreaLine and the rectangle it is a line of: the Frame (in its own rows and columns), or with no Frame the Piece area. */
 interface ProjectLine extends AreaLine {
   area: Rect
 }
@@ -49,7 +49,11 @@ function selectedProjectLine(project: Project, selection: Selection | undefined,
     return undefined
   }
   const frame = frameById(project, ref)
-  const areas = frame ? [frame] : pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'))
+  // A Frame's line is read in its own rows and columns, the Selection being the Frame's (a Canvas one is none of its).
+  if (frame && selection.layer === 'canvas') {
+    return undefined
+  }
+  const areas = frame ? [{ row: 0, column: 0, rows: frame.rows, columns: frame.columns }] : pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'))
   for (const area of areas) {
     const line = selectedAreaLine(area, selection)
     if (line) {

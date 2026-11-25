@@ -23,8 +23,8 @@ function framed(): Project {
 describe('selectionPart', () => {
   it('keeps the whole chart\'s row and column numbers for a part of the Frame (ticket 1210)', () => {
     const project = framed()
-    // Frame rows 11-19 (own), canvas rows 13-21.
-    const part = selectionPart(project, { top: 13, left: 3, rows: 9, columns: 3, layer: FRAME_ID }, 'part')!
+    // Frame rows 11-19 (own).
+    const part = selectionPart(project, { top: 11, left: 2, rows: 9, columns: 3, layer: FRAME_ID }, 'part')!
     const trim = trimmedArea(part, frameIdIn(part))
 
     expect(downNumber(trim, trim.firstDown)).toBe(12)
@@ -34,7 +34,7 @@ describe('selectionPart', () => {
   })
 
   it('writes the Word chart\'s lines with the same numbers', () => {
-    const part = selectionPart(framed(), { top: 13, left: 3, rows: 9, columns: 3, layer: FRAME_ID }, 'part')!
+    const part = selectionPart(framed(), { top: 11, left: 2, rows: 9, columns: 3, layer: FRAME_ID }, 'part')!
     const numbers = wordChartOf(part, frameIdIn(part))!.rows.map((row) => row.number)
 
     expect(numbers[0]).toBe(12)

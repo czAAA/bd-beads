@@ -19,20 +19,22 @@ function numbered(columns: number, rows: number, technique: Technique = 'loom'):
   return withLayers(base, { frame: { technique: 'loom' as const, row: 10, column: 20, columns, rows, beads: beadsFromColors(colors) } })
 }
 
-const rowOf = (project: Project, index: number): Selection => ({ top: frameOf(project)!.row + index, left: frameOf(project)!.column, rows: 1, columns: frameOf(project)!.columns })
-const columnOf = (project: Project, index: number): Selection => ({ top: frameOf(project)!.row, left: frameOf(project)!.column + index, rows: frameOf(project)!.rows, columns: 1 })
+// A Frame's line is named by the Frame and its own rows and columns, wherever the Frame lies.
+const rowOf = (project: Project, index: number): Selection => ({ top: index, left: 0, rows: 1, columns: frameOf(project)!.columns, layer: frameIdIn(project) })
+const columnOf = (project: Project, index: number): Selection => ({ top: 0, left: index, rows: frameOf(project)!.rows, columns: 1, layer: frameIdIn(project) })
+const ownRect = (project: Project) => ({ row: 0, column: 0, rows: frameOf(project)!.rows, columns: frameOf(project)!.columns })
 
 describe('selectedAreaLine', () => {
   it('reads a whole row or column of the Frame, and nothing else', () => {
     const project = numbered(3, 4)
-    expect(selectedAreaLine(frameOf(project), rowOf(project, 2))).toEqual({ axis: 'row', index: 2 })
-    expect(selectedAreaLine(frameOf(project), columnOf(project, 1))).toEqual({ axis: 'column', index: 1 })
-    expect(selectedAreaLine(frameOf(project), { top: 10, left: 20, rows: 2, columns: 2 })).toBeUndefined()
+    expect(selectedAreaLine(ownRect(project), rowOf(project, 2))).toEqual({ axis: 'row', index: 2 })
+    expect(selectedAreaLine(ownRect(project), columnOf(project, 1))).toEqual({ axis: 'column', index: 1 })
+    expect(selectedAreaLine(ownRect(project), { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
     // A row of another width, or one that is off the Frame, is not the Frame's.
-    expect(selectedAreaLine(frameOf(project), { top: 10, left: 20, rows: 1, columns: 2 })).toBeUndefined()
-    expect(selectedAreaLine(frameOf(project), { top: 99, left: 20, rows: 1, columns: 3 })).toBeUndefined()
+    expect(selectedAreaLine(ownRect(project), { top: 0, left: 0, rows: 1, columns: 2 })).toBeUndefined()
+    expect(selectedAreaLine(ownRect(project), { top: 99, left: 0, rows: 1, columns: 3 })).toBeUndefined()
     expect(selectedAreaLine(undefined, rowOf(project, 0))).toBeUndefined()
-    expect(selectedAreaLine(frameOf(project), undefined)).toBeUndefined()
+    expect(selectedAreaLine(ownRect(project), undefined)).toBeUndefined()
   })
 })
 

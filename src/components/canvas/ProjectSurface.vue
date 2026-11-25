@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, useTemplateRef, watch } from 'vue'
 import { isFrameLayer, type FrameId, type FrameRef, type GridPosition, type PreviewCell } from '../../domain/grid'
+import { cellUnder } from '../../domain/footprint'
 import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameById, framesOf, layerOf, orientationOf, quarterTurnOf, withCanvas, firstFrameId, frameIdOf } from '../../domain/layerRecord'
@@ -491,7 +492,7 @@ watch(
       return
     }
     // The Selection bar stands upright over the box the Selection covers on screen, leaning or not.
-    const box = leaning.value.screenBox(surface.value.beadBox(selectionFrame(selected), selectionLayer(props.project, selected)))
+    const box = leaning.value.screenBox(surface.value.beadBox(selectionFrame(selected), selectionLayer(selected)))
     emit('selection-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
   },
   { immediate: true, flush: 'post' },
@@ -665,7 +666,7 @@ const patternDoneAt = computed(() => {
   if (!frame || !sheet || rowMotion.patternDone.value === undefined) return undefined
   const box = view.frameBox(frame)
   const stars = PATTERN_DONE_STARS.map(({ across, down }) => {
-    const at = view.beadToPoint({ row: frame.row + Math.round(down * (frame.rows - 1)), column: frame.column + Math.round(across * (frame.columns - 1)) }, frameIdOf(frame))
+    const at = view.beadToPoint({ row: Math.round(down * (frame.rows - 1)), column: Math.round(across * (frame.columns - 1)) }, frameIdOf(frame))
     return { x: at.x - sheet.x, y: at.y - sheet.y }
   })
   return { id: rowMotion.patternDone.value, sheet, frame: { ...box, x: box.x - sheet.x, y: box.y - sheet.y }, stars }
@@ -683,7 +684,9 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   // A Frame's bead is read in that Frame's own drawing (ticket 1220).
   const look = isFrameLayer(layer) ? frameLooks.value.find((each) => each.ref === layer) : undefined
   const [view, lean] = look ? [look.view, look.leaning] : [surface.value, leaning.value]
-  const bead = view.beadBox({ row: position.row, column: position.column, rows: 1, columns: 1 }, layer)
+  // A Canvas position under a Frame is that Frame's cell there, which the Frame's drawing names by its own row and column.
+  const own = isFrameLayer(layer) && !position.layer ? cellUnder(props.project, layer, position) : position
+  const bead = view.beadBox({ row: own.row, column: own.column, rows: 1, columns: 1 }, layer)
   const shown = lean.toScreen({ x: bead.x + bead.width / 2, y: bead.y + bead.height / 2 })
   const zoom = cssZoomOf(rootEl.value)
   return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }

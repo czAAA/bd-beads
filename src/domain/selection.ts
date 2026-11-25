@@ -3,7 +3,7 @@ import { canvasMirrors, counterparts, MIRROR_OFF, type MirrorSetting } from './m
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
-import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
+import { layerAt, layerSheet, onLayer, shownBeads, type Layer, type LayerSheet } from './layers'
 import { footprintsOf } from './footprint'
 import { beadsOfLayer, framesOf, heldWeave, type Layered } from './layerRecord'
 import { footprintList, inMargin, trimToAllowed, withMargin, type Footprints } from './margin'
@@ -127,7 +127,7 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
  * round every placed bead, or none on an empty canvas. */
 export function selectAllSelection(beads: BeadMap, frame: Rect | undefined, layer: Layer): Selection | undefined {
-  if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer }
+  if (frame) return { top: 0, left: 0, rows: frame.rows, columns: frame.columns, layer }
   const all = allBeadsSelection(beads)
   return all && { ...all, layer: 'canvas' }
 }
@@ -237,38 +237,30 @@ function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition, mir
   return { beads: withColors(sheet.beads, counterparts(sheet, mirror, cells).positions.map(({ row, column, color }) => ({ row, column, color }))), sources: cells }
 }
 
-/** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
- * Frame's; any other is the Canvas's. */
-export function selectionLayer(project: Layered, selection: Selection): Layer {
-  return selection.layer ?? layerAt(project, { row: selection.top, column: selection.left })
-}
-
-/** The Selection counted in a layer's own rows and columns. */
-export function selectionInLayer(project: Layered, layer: Layer, selection: Selection): Selection {
-  const { row, column } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
-  const cells = selection.cells?.map((cell) => positionInLayer(project, layer, cell))
-  return { top: row, left: column, rows: selection.rows, columns: selection.columns, ...(cells ? { cells } : {}) }
+/** The layer a Selection acts on (ADR 0066): the one it names, its top and left that layer's own row and column; a
+ * Selection naming none is the Canvas's. */
+export function selectionLayer(selection: Selection): Layer {
+  return selection.layer ?? 'canvas'
 }
 
 /** Snapshots the drawn beads of a Selection on its layer (Copy). */
 export function copyLayerSelection(project: Project, selection: Selection): CopiedBlock | undefined {
-  const layer = selectionLayer(project, selection)
+  const layer = selectionLayer(selection)
   const sheet = layerSheet(project, layer)
-  const local = selectionInLayer(project, layer, selection)
-  return sheet.geometry.grid ? copySelection(sheet, local, selectableOn(project, sheet)) : copyCustomSelection(sheet, local)
+  return sheet.geometry.grid ? copySelection(sheet, selection, selectableOn(project, sheet)) : copyCustomSelection(sheet, selection)
 }
 
 /** Whether Copy would take any bead from a Selection (ticket 0675): `copyLayerSelection`'s answer, found by stopping at
  * the first bead, so the Copy and Cut controls never copy a big Selection just to ask. */
 export function selectionHasBeads(project: Project, selection: Selection): boolean {
-  const layer = selectionLayer(project, selection)
+  const layer = selectionLayer(selection)
   const sheet = layerSheet(project, layer)
-  if (!sheet.geometry.grid) return copyCustomSelection(sheet, selectionInLayer(project, layer, selection)) !== undefined
+  if (!sheet.geometry.grid) return copyCustomSelection(sheet, selection) !== undefined
   const selectable = selectableOn(project, sheet)
   const holds = ({ row, column }: GridPosition) => selectable(row, column) && !!colorAt(sheet.beads, row, column)
-  if (selection.cells) return selection.cells.some((cell) => holds(positionInLayer(project, layer, cell)))
+  if (selection.cells) return selection.cells.some((cell) => holds(cell))
   // Only the stored beads are read, so an empty stretch costs nothing however big the rectangle is.
-  const { row: top, column: left } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
+  const { top, left } = selection
   return Object.keys(sheet.beads).some((key) => {
     const row = Number(key)
     if (row < top || row >= top + selection.rows) return false
@@ -321,19 +313,18 @@ export function selectionCells(sheet: LayerSheet, selection: Selection, selectab
  * turn would leave those locked beads in place and draw their turned copies too. Never on the Canvas, which Row
  * progress does not cover. */
 export function selectionInFinishedRows(project: Project, selection: Selection): boolean {
-  const layer = selectionLayer(project, selection)
+  const layer = selectionLayer(selection)
   if (!isFrameLayer(layer)) return false
   const sheet = layerSheet(project, layer)
-  const cells = selectionCells(sheet, selectionInLayer(project, layer, selection), selectableOn(project, sheet))
-  return cells.some((cell) => isInFinishedRow(project, { ...positionOnCanvas(project, layer, cell), layer }, layer))
+  const cells = selectionCells(sheet, selection, selectableOn(project, sheet))
+  return cells.some((cell) => isInFinishedRow(project, { ...cell, layer }, layer))
 }
 
 /** Every position of a Selection takes `color` (empty ones too; null clears them), on the
  * Selection's layer: Fill (Selection) and Clear selection. */
 export function paintLayerSelection(project: Project, selection: Selection, color: string | null): Project {
-  const layer = selectionLayer(project, selection)
-  const local = selectionInLayer(project, layer, selection)
-  return onLayer(project, layer, (sheet) => paintCells(sheet, selectionCells(sheet, local, selectableOn(project, sheet)), color))
+  const layer = selectionLayer(selection)
+  return onLayer(project, layer, (sheet) => paintCells(sheet, selectionCells(sheet, selection, selectableOn(project, sheet)), color))
 }
 
 /** Paste on the layer the pointer is at: the block at `at`, cut to the Frame when it lands in it, and under Mirror at
@@ -344,9 +335,9 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
   /** The block's own cells, which the Frame keeps clear of as ever; only their counterparts land under it, hidden
    * (spec 0702's Edges). */
   let sources: readonly GridPosition[] = []
-  const stamped = (sheet: LayerSheet, local: (position: GridPosition) => GridPosition): BeadMap => {
-    if (!sheet.geometry.grid) return withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed)
-    const stamp = stampBlock(sheet, block, local(at), mirror)
+  const stamped = (sheet: LayerSheet): BeadMap => {
+    if (!sheet.geometry.grid) return withColors(sheet.beads, landedOnCustom(sheet, block, at).landed)
+    const stamp = stampBlock(sheet, block, at, mirror)
     sources = stamp.sources
     return stamp.beads
   }
@@ -363,23 +354,23 @@ export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selec
     return picked && { ...picked, layer }
   }
   const sheet = layerSheet(project, layer)
-  const picked = pieceSelectionAt(sheet.beads, sheet.weave, positionInLayer(project, layer, at), sheet.edge)
-  const origin = positionOnCanvas(project, layer, { row: picked?.top ?? 0, column: picked?.left ?? 0 })
-  const cells = picked?.cells?.map((cell) => positionOnCanvas(project, layer, cell))
-  return picked && { ...picked, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) }
+  const picked = pieceSelectionAt(sheet.beads, sheet.weave, { row: at.row, column: at.column }, sheet.edge)
+  return picked && { ...picked, layer }
 }
 
 /** A Paste's preview on a layer laid on a grid (ticket 0675): the copied block aimed at a Canvas position. Its cells are
  * read only where they are drawn, so a hover costs what is on screen, not the whole block. */
 export interface PasteStamp {
+  /** The layer it lands on: its positions are that layer's own (a Frame's by its own row and column). */
+  layer: Layer
   /** The block's colors, row-major from its top-left: the copied block's own array, never copied again. */
   colors: CopiedBlock['colors']
-  /** The Canvas position the block's top-left lands on. */
+  /** The position the block's top-left lands on, in the layer's own. */
   top: number
   left: number
   rows: number
   columns: number
-  /** Whether a cell of the block lands at this Canvas position: one past the Frame's edge is clipped (ADR 0066). */
+  /** Whether a cell of the block lands at this position: one past the Frame's edge is clipped (ADR 0066). */
   lands: (row: number, column: number) => boolean
 }
 
@@ -389,11 +380,10 @@ export function pasteStampOnLayer(project: Project, block: CopiedBlock, at: Grid
   const layer = layerAt(project, at)
   const sheet = layerSheet(project, layer)
   if (!sheet.geometry.grid) return undefined
-  const aimed = positionInLayer(project, layer, at)
-  const corner = positionOnCanvas(project, layer, { row: aimed.row - block.anchor.row, column: aimed.column - block.anchor.column })
-  const edge = sheet.edge && { ...sheet.edge, ...positionOnCanvas(project, layer, sheet.edge) }
+  const corner = { row: at.row - block.anchor.row, column: at.column - block.anchor.column }
+  const { edge } = sheet
   const lands = edge ? (row: number, column: number) => frameContains(edge, { row, column }) : () => true
-  return { colors: block.colors, top: corner.row, left: corner.column, rows: block.rows, columns: block.columns, lands }
+  return { layer, colors: block.colors, top: corner.row, left: corner.column, rows: block.rows, columns: block.columns, lands }
 }
 
 /** Every cell a stamp lands, in reading order: for a press that asks about all of them, never for each hover. */
@@ -404,7 +394,7 @@ export function stampCells(stamp: PasteStamp): PastedCell[] {
       const color = stamp.colors[rowOffset]?.[columnOffset]
       const row = stamp.top + rowOffset
       const column = stamp.left + columnOffset
-      if (color && stamp.lands(row, column)) cells.push({ row, column, color })
+      if (color && stamp.lands(row, column)) cells.push({ row, column, color, ...(isFrameLayer(stamp.layer) ? { layer: stamp.layer } : {}) })
     }
   }
   return cells
@@ -416,7 +406,7 @@ export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: Gri
   if (stamp) return stampCells(stamp)
   // A Custom frame's positions are named by round and place, which only the Frame's layer reads (ticket 0594).
   const layer = layerAt(project, at)
-  return landedOnCustom(layerSheet(project, layer), block, positionInLayer(project, layer, at)).landed.map(({ row, column, color }) => ({ ...positionOnCanvas(project, layer, { row, column }), color: color!, layer }))
+  return landedOnCustom(layerSheet(project, layer), block, at).landed.map(({ row, column, color }) => ({ row, column, color: color!, layer }))
 }
 
 /** Where a Paste loses beads: past the Frame's edge (ticket 491), or on a Custom frame's Seams and Off-shape (ticket
@@ -429,9 +419,8 @@ export function pasteLostCount(project: Project, block: CopiedBlock, at: GridPos
   const layer = layerAt(project, at)
   if (!isFrameLayer(layer)) return { count: 0, loss: 'edge' }
   const sheet = layerSheet(project, layer)
-  const local = positionInLayer(project, layer, at)
-  if (!sheet.geometry.grid) return { count: landedOnCustom(sheet, block, local).dropped, loss: 'shape' }
-  const cells = stampedCells(block, local)
+  if (!sheet.geometry.grid) return { count: landedOnCustom(sheet, block, at).dropped, loss: 'shape' }
+  const cells = stampedCells(block, at)
   return { count: cells.filter((cell) => !frameContains(sheet.edge!, cell)).length, loss: 'edge' }
 }
 
@@ -442,5 +431,5 @@ export function pasteAimAtBead(project: Project, position: GridPosition): GridPo
   if (!isFrameLayer(layer)) return position
   const sheet = layerSheet(project, layer)
   if (sheet.geometry.grid) return position
-  return { ...positionOnCanvas(project, layer, cellOfBead(sheet, positionInLayer(project, layer, position))), layer }
+  return { ...cellOfBead(sheet, position), layer }
 }

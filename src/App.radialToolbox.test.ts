@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { CANVAS_HOLD_MS } from './domain/hold'
 import { mountWithProject } from './testUtils/seedProject'
+import { FRAME_ID } from './testUtils/frameId'
 import { beadColor, beadPoint, holdBead, hoverBead, outlinedBead, pressBead, rightClickBead } from './testUtils/beads'
 import { pickTool, pressBar, toolState } from './testUtils/pill'
 import { loadProjects } from './services/libraryStore'
@@ -98,7 +99,7 @@ describe('the Radial toolbox', () => {
     expect(outlinedBead(wrapper)).toBeUndefined()
 
     await rightClickBead(wrapper, 40)
-    expect(outlinedBead(wrapper)).toEqual({ row: 4, column: 0 })
+    expect(outlinedBead(wrapper)).toEqual({ row: 4, column: 0, layer: FRAME_ID })
     await ring(wrapper).get('[data-testid="radial-tool-erase"]').trigger('click')
     await flushPromises()
     expect(outlinedBead(wrapper)).toBeUndefined()

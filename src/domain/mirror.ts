@@ -2,7 +2,7 @@ import { frameContains, type Rect } from './canvas'
 import { beadUnder, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutSymmetry } from './frameLayout'
 import { frameLayoutOf } from './frameShape'
 import { type FrameId, type FrameRef, type GridPosition } from './grid'
-import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet } from './layers'
+import { layerAt, layerSheet, type LayerSheet } from './layers'
 import { type Layered, firstFrameId, frameById } from './layerRecord'
 import { mayPlace } from './margin'
 import { touch, type Project } from './project'
@@ -811,8 +811,8 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
   return { positions: result, dropped }
 }
 
-/** `counterparts` for Canvas positions (the hover preview, ticket 0703): those on the Frame are mapped through the
- * Frame's own positions and come back as Canvas positions naming their layer; the Canvas's own inside a Canvas Area, a
+/** `counterparts` for Canvas positions (the hover preview, ticket 0703): those on the Frame (named by their layer, in its
+ * own positions) come back so too; the Canvas's own inside a Canvas Area, a
  * counterpart the keep-out margin or a finished row refuses left out, as the Edit drops it. */
 export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[], ref: FrameRef): T[] {
   if (!isMirrorOn(setting)) return [...cells]
@@ -824,7 +824,6 @@ export function mirroredOnCanvas<T extends GridPosition>(project: Project, setti
   const mirroredCanvas = onCanvas.size > 0 ? counterparts(layerSheet(project, 'canvas'), setting, [...onCanvas]).positions.filter(placeable) : []
   if (onFrame.length === 0) return mirroredCanvas
   const sheet = layerSheet(project, ref)
-  const local = onFrame.map((cell) => ({ ...cell, ...positionInLayer(project, ref, cell) }))
-  const mirrored = counterparts(sheet, setting, local).positions.map((cell) => ({ ...cell, ...positionOnCanvas(project, ref, cell), layer: ref }))
+  const mirrored = counterparts(sheet, setting, onFrame).positions.map((cell) => ({ ...cell, layer: ref }))
   return [...mirroredCanvas, ...mirrored]
 }

@@ -1,11 +1,11 @@
 import { colorAt, withColors, type BeadChange, type BeadMap } from './canvas'
 import { isFrameLayer, type GridPosition } from './grid'
-import { layerSheet, onLayer, positionOnCanvas } from './layers'
+import { layerSheet, onLayer } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasOf } from './layerRecord'
 import type { Project } from './project'
 import { isInFinishedRow } from './rowProgress'
-import { cellKey, movedSelection, selectableOn, selectionCells, selectionInLayer, selectionLayer, type Selection } from './selection'
+import { cellKey, movedSelection, selectableOn, selectionCells, selectionLayer, type Selection } from './selection'
 import { columnCycle, rowCycle, wholeCycles } from './weave'
 
 // Moving a Piece (ticket 1013): its move grip carries a Piece-shaped Selection's beads on their layer. No move puts a
@@ -20,7 +20,7 @@ export interface MovedSelection {
 
 /** After how many rows and columns the stagger of the Selection's layer repeats. */
 function cyclesOf(project: Project, selection: Selection): { rows: number; columns: number } {
-  const { weave } = layerSheet(project, selectionLayer(project, selection))
+  const { weave } = layerSheet(project, selectionLayer(selection))
   return { rows: rowCycle(weave), columns: columnCycle(weave) }
 }
 
@@ -46,13 +46,13 @@ export function selectionAfterMove(selection: Selection, rows: number, columns: 
 
 /** A Selection's beads and where they may lie: what a move, whole or in a carry's every step, is worked out from. */
 function liftedFrom(project: Project, selection: Selection) {
-  const layer = selectionLayer(project, selection)
+  const layer = selectionLayer(selection)
   const sheet = layerSheet(project, layer)
   if (!sheet.geometry.grid) return undefined
   const selectable = selectableOn(project, sheet)
-  const finished = (cell: GridPosition) => isFrameLayer(layer) && isInFinishedRow(project, { ...positionOnCanvas(project, layer, cell), layer }, layer)
+  const finished = (cell: GridPosition) => isFrameLayer(layer) && isInFinishedRow(project, { ...cell, layer }, layer)
   const lifted: BeadChange[] = []
-  for (const { row, column } of selectionCells(sheet, selectionInLayer(project, layer, selection), selectable)) {
+  for (const { row, column } of selectionCells(sheet, selection, selectable)) {
     const color = colorAt(sheet.beads, row, column)
     if (color) lifted.push({ row, column, color })
   }

@@ -235,9 +235,9 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
     expect(view().beadToPoint({ row: 7, column: 8 })).toEqual({ x: 170, y: 150 })
   })
 
-  it('says which bead of the Frame a point is on, as the Frame\'s position from its first', () => {
-    expect(view().pointToBead({ x: 70, y: 50 })).toEqual({ row: 2, column: 3 })
-    expect(view().pointToBead({ x: 80, y: 70 })).toEqual({ row: 3, column: 3 })
+  it('says which bead of the Frame a point is on, by its own row and column', () => {
+    expect(view().pointToBead({ x: 70, y: 50 })).toEqual({ row: 0, column: 0 })
+    expect(view().pointToBead({ x: 80, y: 70 })).toEqual({ row: 1, column: 0 })
   })
 
   it('says which bead of the Canvas a point is on beside the Frame', () => {
@@ -246,17 +246,18 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
   })
 
   it('says which layer a point is on', () => {
-    expect(view().pointToHit({ x: 70, y: 40 + 55 })).toEqual({ row: 4, column: 3, layer: FRAME_ID })
+    expect(view().pointToHit({ x: 70, y: 40 + 55 })).toEqual({ row: 2, column: 0, layer: FRAME_ID })
     expect(view().pointToHit({ x: 10, y: 10 })).toEqual({ row: 0, column: 0, layer: 'canvas' })
   })
 
   it('measures a block of the Frame in the Frame\'s Weave and a block of the Canvas in the Canvas\'s', () => {
-    expect(view().beadBox(frame, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 90, height: 80 })
+    expect(view().beadBox({ row: 0, column: 0, rows: 4, columns: 4 }, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 90, height: 80 })
     expect(view().beadBox({ row: 0, column: 0, rows: 2, columns: 2 })).toMatchObject({ x: 0, y: 0, width: 40, height: 40 })
   })
 
   it('finds the cell nearest a point in the geometry asked for', () => {
-    expect(view().pointToCell({ x: 80, y: 70 }, FRAME_ID)).toEqual({ row: 3, column: 3 })
+    expect(view().pointToCell({ x: 80, y: 70 }, FRAME_ID)).toEqual({ row: 1, column: 0 })
+    expect(view().pointToCell({ x: 80, y: 70 }, FRAME_ID, true)).toEqual({ row: 3, column: 3 })
     expect(view().pointToCell({ x: 80, y: 65 }, 'canvas')).toEqual({ row: 3, column: 4 })
   })
 
@@ -273,13 +274,13 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
 
   it('draws the Frame\'s beads at half the size from its corner, and finds each under its centre', () => {
     expect(view.beadToPoint({ row: 2, column: 3 })).toEqual({ x: 65, y: 45 })
-    expect(view.beadToPoint({ row: 5, column: 6 }, FRAME_ID)).toEqual({ x: 95, y: 75 })
-    expect(view.pointToHit({ x: 95, y: 75 })).toEqual({ row: 5, column: 6, layer: FRAME_ID })
+    expect(view.beadToPoint({ row: 3, column: 3 }, FRAME_ID)).toEqual({ x: 95, y: 75 })
+    expect(view.pointToHit({ x: 95, y: 75 })).toEqual({ row: 3, column: 3, layer: FRAME_ID })
   })
 
   it('leaves the Canvas positions it does not reach to the Canvas, and covers only those it draws over', () => {
     expect(view.pointToHit({ x: 110, y: 50 })).toEqual({ row: 2, column: 5, layer: 'canvas' })
-    expect(view.beadBox(frame, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
+    expect(view.beadBox({ row: 0, column: 0, rows: 4, columns: 4 }, FRAME_ID)).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
     const line = view.frameBox(frame)
     expect([line.x + line.width / 2, line.y + line.height / 2]).toEqual([80, 60])
   })
@@ -287,7 +288,7 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
   it('steps the Frame by its own beads, and finds the cell nearest a point in them', () => {
     expect(view.beadStep(FRAME_ID).column.x).toBe(10)
     expect(view.beadStep('canvas').column.x).toBe(20)
-    expect(view.pointToCell({ x: 96, y: 76 }, FRAME_ID)).toEqual({ row: 5, column: 6 })
+    expect(view.pointToCell({ x: 96, y: 76 }, FRAME_ID)).toEqual({ row: 3, column: 3 })
   })
 })
 
@@ -379,7 +380,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
         const [a, b] = [carried.beadToPoint(bead), own.beadToPoint(bead)]
         expect(b.x).toBeCloseTo(a.x, 9)
         expect(b.y).toBeCloseTo(a.y, 9)
-        expect(own.pointToHit(a)).toEqual({ ...bead, layer: FRAME_ID })
+        expect(own.pointToHit(a)).toEqual({ row: bead.row - 2, column: bead.column - 3, layer: FRAME_ID })
       }
       expect(own.frameBox(frame)).toEqual(carried.frameBox(frame))
     }
@@ -397,7 +398,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     const frameOnly = surfaceView({ ...base, rotation: 0, scroll: { x: 10, y: -30 } })
 
     it('finds each Frame bead where its own drawing puts it, and back', () => {
-      for (const bead of [{ row: 2, column: 3 }, { row: 5, column: 6 }, { row: 3, column: 5 }]) {
+      for (const bead of [{ row: 0, column: 0 }, { row: 3, column: 3 }, { row: 1, column: 2 }]) {
         const at = fromFrameDrawing(frameOnly.beadToPoint(bead, FRAME_ID))
         const point = view.beadToPoint(bead, FRAME_ID)
         expect(point.x).toBeCloseTo(at.x, 9)
@@ -414,13 +415,13 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     })
 
     it('is opaque: a point on the Frame is never the Canvas bead under it', () => {
-      const middle = view.beadToPoint({ row: 3, column: 4 }, FRAME_ID)
+      const middle = view.beadToPoint({ row: 1, column: 1 }, FRAME_ID)
       expect(view.pointToHit(middle)?.layer).toBe(FRAME_ID)
     })
 
     it('boxes the Frame round its turned corners and steps it along its own rows', () => {
       const box = view.frameBox(frame)
-      for (const corner of [{ row: 2, column: 3 }, { row: 5, column: 6 }]) {
+      for (const corner of [{ row: 0, column: 0 }, { row: 3, column: 3 }]) {
         const at = view.beadToPoint(corner, FRAME_ID)
         expect(at.x).toBeGreaterThan(box.x)
         expect(at.x).toBeLessThan(box.x + box.width)
@@ -433,11 +434,11 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     })
 
     it('carries a Frame drag by how far the pointer went along its own rows', () => {
-      const from = { row: 2, column: 3 }
+      const from = { row: 0, column: 0 }
       const pressed = view.beadToPoint(from, FRAME_ID)
       const step = view.beadStep(FRAME_ID)
       const point = { x: pressed.x + 2 * step.column.x + step.row.x, y: pressed.y + 2 * step.column.y + step.row.y }
-      expect(view.carriedCell(from, view.pointToGrid(pressed), point, FRAME_ID)).toEqual({ row: 3, column: 5 })
+      expect(view.carriedCell(from, view.pointToGrid(pressed), point, FRAME_ID)).toEqual({ row: 1, column: 2 })
     })
 
     describe('off the Canvas\'s grid (ticket 1188)', () => {
@@ -456,13 +457,13 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       })
 
       it('takes no press on its margin sheet, at any angle, and the Frame\'s beads inside it', () => {
-        const corner = off.beadToPoint({ row: 2, column: 3 }, FRAME_ID)
+        const corner = off.beadToPoint({ row: 0, column: 0 }, FRAME_ID)
         const step = off.beadStep(FRAME_ID)
         const beside = { x: corner.x - step.column.x - 0.2 * step.row.x, y: corner.y - step.column.y - 0.2 * step.row.y }
         expect(off.onMarginSheet(beside)).toBe(true)
         expect(off.pointToHit(beside)).toBeUndefined()
         expect(off.onMarginSheet(corner)).toBe(false)
-        expect(off.pointToHit(corner)).toEqual({ row: 2, column: 3, layer: FRAME_ID })
+        expect(off.pointToHit(corner)).toEqual({ row: 0, column: 0, layer: FRAME_ID })
       })
     })
   })
@@ -481,8 +482,8 @@ describe('several Frames in one view (ticket 1219)', () => {
   const alone = surfaceView({ ...base, frame: second, frameLayer: SECOND, frameDrawing: drawing })
 
   it('hits each Frame\'s beads as that Frame, the second where its own drawing lays it', () => {
-    expect(view.pointToHit(view.beadToPoint({ row: 3, column: 4 }))).toEqual({ row: 3, column: 4, layer: FRAME_ID })
-    for (const bead of [{ row: 20, column: 20 }, { row: 22, column: 21 }]) {
+    expect(view.pointToHit(view.beadToPoint({ row: 3, column: 4 }))).toEqual({ row: 1, column: 1, layer: FRAME_ID })
+    for (const bead of [{ row: 0, column: 0 }, { row: 2, column: 1 }]) {
       const point = view.beadToPoint(bead, SECOND)
       expect(point).toEqual(alone.beadToPoint(bead, SECOND))
       expect(view.pointToHit(point)).toEqual({ ...bead, layer: SECOND })

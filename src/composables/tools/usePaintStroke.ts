@@ -91,7 +91,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
    * refused by the rules as if it came alone, and the lot lands in the library, and on screen, once. */
   function paintStrokeCells(cells: GridPosition[], color: string | null) {
     // The pointer is over the other layer, where this one's positions are not (ADR 0066): nothing lands.
-    const landing = cells.filter((cell) => !cell.layer || cell.layer === strokeLayer)
+    const landing = cells.filter((cell) => (cell.layer ?? 'canvas') === strokeLayer)
     if (landing.length === 0) {
       return
     }
@@ -99,7 +99,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       ...landing.map((cell) => (project: Project) => {
         const sources = [{ row: cell.row, column: cell.column }]
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        return onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), sources.map(local)).positions, color), counterpartsThrough(() => sources))
+        return onLayer(project, strokeLayer, (sheet) => paintCells(sheet, counterparts(sheet, deps.mirror(), sources).positions, color), counterpartsThrough(() => sources))
       }),
     )
   }
@@ -127,7 +127,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     }
 
     beginStroke(mode, layer)
-    paintStrokeCell(row, column, color)
+    paintStrokeCell(row, column, color, layer)
   }
 
   /** Makes the Fill a press waited on, at the lift (ticket 1075), as one Undo step. Not mirrored (ticket 1025): the

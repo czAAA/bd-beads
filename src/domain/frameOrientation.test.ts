@@ -84,7 +84,7 @@ describe('what a turned Frame offers', () => {
 describe('a Selection and a Paste over a turned Frame', () => {
   it('fill the beads lying under the rectangle on screen', () => {
     // The laid rectangle's top row: on a quarter turn the Frame's first column, its rows from the last up.
-    const painted = paintLayerSelection(turned, { top: 19, left: 21, rows: 1, columns: 4, layer: FRAME_ID }, BLUE)
+    const painted = paintLayerSelection(turned, { top: 0, left: 0, rows: 1, columns: 4, layer: FRAME_ID }, BLUE)
     expect([3, 2, 1, 0].map((row) => colorAt(frameOf(painted)!.beads, row, 0))).toEqual([BLUE, BLUE, BLUE, BLUE])
     expect(colorAt(frameOf(painted)!.beads, 0, 1)).toBeNull()
   })
@@ -92,7 +92,7 @@ describe('a Selection and a Paste over a turned Frame', () => {
   it('lay a copy from the Canvas as it is seen', () => {
     const canvas = withLayers(turned, { beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 0, column: 1, color: GREEN }, { row: 0, column: 2, color: BLUE }]) })
     const block = copyLayerSelection(canvas, { top: 0, left: 0, rows: 1, columns: 3, layer: 'canvas' })!
-    const pasted = pasteOnLayer(canvas, block, { row: 19, column: 21, layer: FRAME_ID })
+    const pasted = pasteOnLayer(canvas, block, { row: 0, column: 0, layer: FRAME_ID })
     // Left to right across the top of the turned Frame: its first column, from its last row up.
     expect([3, 2, 1].map((row) => colorAt(frameOf(pasted)!.beads, row, 0))).toEqual([RED, GREEN, BLUE])
   })

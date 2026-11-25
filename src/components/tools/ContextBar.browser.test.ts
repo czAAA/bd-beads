@@ -7,6 +7,7 @@ import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 import { mountAt } from '../../testUtils/browserFit'
 import { MIRROR_CONTROLS, roomyMirrorBar } from '../../testUtils/contextBarHosts'
 import { byTestid, hitAreaProblems } from '../../testUtils/hitAreas'
+import { frameIdIn } from '../../testUtils/frameId'
 import { paintAt } from '../../testUtils/layers'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import { tokenPx } from '../../testUtils/tokenPx'
@@ -23,7 +24,7 @@ const READABLE_CONTRAST = 4.5
 const anchor = { box: { left: 40, top: 160, width: 100, height: 60 }, viewport: { width: 640, height: 640 } }
 const setting: MirrorSetting = { ...MIRROR_OFF, axes: { leftRight: true, topBottom: false, radial: false }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 10, columns: 12 } } }
 const mirrorProps = { project, pasteArmed: false, canRemoveLine: false, mirror: { setting, summary: '12×10', rect: { row: 0, column: 0, rows: 10, columns: 12 } }, mirrorAnchor: anchor }
-const selectionProps = { project, pasteArmed: false, canRemoveLine: false, selectionSummary: '2×2', selection: { top: 0, left: 0, rows: 2, columns: 2 }, anchor }
+const selectionProps = { project, pasteArmed: false, canRemoveLine: false, selectionSummary: '2×2', selection: { top: 0, left: 0, rows: 2, columns: 2, layer: frameIdIn(project) }, anchor }
 
 /** A computed color, `rgb()`, `rgba()` or `color(srgb …)`, as 0–255 channels and an alpha. */
 function parse(css: string): { rgb: Rgb; alpha: number } {

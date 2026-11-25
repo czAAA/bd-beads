@@ -4,6 +4,7 @@ import ContextBar from '../components/tools/ContextBar.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
+import { frameIdIn } from './frameId'
 import { paintAt } from './layers'
 
 // The Selection bar and the Mirror bar with room to stand whole, for the hit-area tests (ticket 0962), with a mouse and
@@ -26,7 +27,7 @@ export const roomyMirrorBar = defineComponent({
 })
 
 export const roomySelectionBar = defineComponent({
-  setup: () => () => h('div', { style: room }, [h(ContextBar, { project, pasteArmed: false, canRemoveLine: false, selectionSummary: '2×2', selection: { top: 0, left: 0, rows: 2, columns: 2 }, anchor })]),
+  setup: () => () => h('div', { style: room }, [h(ContextBar, { project, pasteArmed: false, canRemoveLine: false, selectionSummary: '2×2', selection: { top: 0, left: 0, rows: 2, columns: 2, layer: frameIdIn(project) }, anchor })]),
 })
 
 /** Waits out the Selection bar's arming delay (ticket 499), while its buttons show disabled. */

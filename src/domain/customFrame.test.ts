@@ -128,7 +128,7 @@ describe('changing a Custom frame\'s Rounds', () => {
     const project = withLayers(triangle(4), { ownProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
     const turned = rotateFrame(project, undefined, frameIdIn(project))!
     const finished = (woven: Project) =>
-      frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + frameOf(woven)!.row, column: column + frameOf(woven)!.column, layer: FRAME_ID }, frameIdIn(woven))).map(({ row, column }) => `${row},${column}`)
+      frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row, column, layer: FRAME_ID }, frameIdIn(woven))).map(({ row, column }) => `${row},${column}`)
     expect(rowProgressOf(turned, frameIdIn(turned))).toEqual(rowProgressOf(project, frameIdIn(project)))
     expect(finished(turned)).toEqual(finished(project))
     expect(finished(project)).toHaveLength(3 + 6)

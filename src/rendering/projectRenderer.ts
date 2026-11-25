@@ -439,8 +439,8 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const colorOf = ({ row, column }: GridPosition) => colorAtOwn(row, column)
   const placed = () => inView().map((position) => ({ position, place: geometry.place(position)! }))
   if (geometry.grid && draw.draft) drawDraftFrame(context, draw, space, origin, geometry, inView, colorAtOwn, ref)
-  else if (geometry.grid) drawUprightBeads(context, draw, space, origin, placed(), colorOf, ref)
-  else drawTurnedBeads(context, draw, space, origin, placed(), colorOf, geometry, ref)
+  else if (geometry.grid) drawUprightBeads(context, draw, origin, placed(), colorOf, ref)
+  else drawTurnedBeads(context, draw, origin, placed(), colorOf, geometry, ref)
 }
 
 /** The Frame's beads in the draft look (ticket 0676): a pixel a bead in its Row progress color, empty ones as an empty
@@ -457,7 +457,7 @@ function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, 
     each((row, column) => {
       const painted = colorAtOwn(row, column)
       if ((only === 'painted' && painted === null) || (only === 'empty' && painted !== null)) return
-      const pass = rowMarks ? passes(space.toAbsolute.row + row, space.toAbsolute.column + column) : undefined
+      const pass = rowMarks ? passes(row, column) : undefined
       const shown = painted !== null && pass === 'current' ? lit(painted) : painted
       const dimmed = !showFinished && pass === 'finished'
       const known = dimmed ? fills.dimmed : fills.plain
@@ -546,7 +546,7 @@ interface PlacedBead {
 
 /** Beads standing upright in rows and columns, each in its box: the current row's lit (ticket 352), an empty cell left
  * as it is (ticket 411). */
-function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, ref: FrameRef): void {
+function drawUprightBeads(context: DrawingContext, draw: LayerDraw, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, ref: FrameRef): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project, ref)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
@@ -556,7 +556,7 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
   for (const { position: own, place } of beads) {
     const box = inGridPx(place.box)
     const painted = colorOf(own)
-    const { shown, dimmed } = progressLook(draw, space, own, painted)
+    const { shown, dimmed } = progressLook(draw, own, painted)
     const sized = box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}
     const bead = { x: origin.x + box.x, y: origin.y + box.y, size: CELL_SIZE_PX, ...sized, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
     if (painted === null && mark.tiles) drawTile(context, { x: bead.x, y: bead.y, width: box.width, height: box.height, cornerRadius }, mark.color, edge, bead.deviceScale)
@@ -572,7 +572,7 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
 /** Beads that lie at their panels' angles (ADR 0077, ticket 0592): each at its centre, turned, and the Layer's Seams as
  * thin lines; round the shape the Canvas's colour, no position marks. Finished rounds fade and the current one is lit as
  * a Frame's rows are (ticket 0594). */
-function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, geometry: LayerGeometry, ref: FrameRef): void {
+function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, geometry: LayerGeometry, ref: FrameRef): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project, ref)
   const mark = markLookOf(look, draw.tiles)
@@ -586,7 +586,7 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
     const centred = { x: -box.width / 2, y: -box.height / 2, width: box.width, height: box.height }
     const cornerRadius = beadRoundness(weave.technique, weave.cell) * box.width
     const painted = colorOf(position)
-    const { shown, dimmed } = progressLook(draw, space, position, painted)
+    const { shown, dimmed } = progressLook(draw, position, painted)
     context.save()
     context.translate(box.x + box.width / 2, box.y + box.height / 2)
     context.rotate(place.angle)
@@ -647,9 +647,9 @@ function drawStaggerEnds(
 
 /** How Row progress shows a Frame bead (tickets 352, 434): its color lit in the current row, faded in a finished one
  * unless finished rows are shown. */
-function progressLook({ rowMarks, showFinished, passes, lit }: LayerDraw, space: Space, own: GridPosition, painted: string | null): { shown: string | null; dimmed: boolean } {
+function progressLook({ rowMarks, showFinished, passes, lit }: LayerDraw, own: GridPosition, painted: string | null): { shown: string | null; dimmed: boolean } {
   if (!rowMarks) return { shown: painted, dimmed: false }
-  const pass = passes(space.toAbsolute.row + own.row, space.toAbsolute.column + own.column)
+  const pass = passes(own.row, own.column)
   return { shown: painted !== null && pass === 'current' ? lit(painted) : painted, dimmed: !showFinished && pass === 'finished' }
 }
 

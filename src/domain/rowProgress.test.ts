@@ -278,31 +278,31 @@ describe('Row progress on the Frame (ticket 233)', () => {
   const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { way: 'down', down: 2 } })
 
   it('names the current row of the Frame, and nothing outside it (ticket 352)', () => {
-    expect(isInCurrentRow(framed, { row: 12, column: 10 }, frameIdIn(framed))).toBe(true)
-    expect(isInCurrentRow(framed, { row: 12, column: 13 }, frameIdIn(framed))).toBe(true)
-    expect(isInCurrentRow(framed, { row: 11, column: 10 }, frameIdIn(framed))).toBe(false)
-    expect(isInCurrentRow(framed, { row: 13, column: 10 }, frameIdIn(framed))).toBe(false)
-    expect(isInCurrentRow(framed, { row: 12, column: 20 }, frameIdIn(framed))).toBe(false)
+    expect(isInCurrentRow(framed, { row: 2, column: 0 }, frameIdIn(framed))).toBe(true)
+    expect(isInCurrentRow(framed, { row: 2, column: 3 }, frameIdIn(framed))).toBe(true)
+    expect(isInCurrentRow(framed, { row: 1, column: 0 }, frameIdIn(framed))).toBe(false)
+    expect(isInCurrentRow(framed, { row: 3, column: 0 }, frameIdIn(framed))).toBe(false)
+    expect(isInCurrentRow(framed, { row: 2, column: 10 }, frameIdIn(framed))).toBe(false)
     const unframed = withFrameSheet(framed, undefined, { frame: frameIdIn(framed) })
-    expect(isInCurrentRow(unframed, { row: 12, column: 10 }, frameIdIn(unframed))).toBe(false)
+    expect(isInCurrentRow(unframed, { row: 2, column: 0 }, frameIdIn(unframed))).toBe(false)
     const columnWise: Project = withLayers(framed, { rowProgress: { ...rowProgressOf(framed, frameIdIn(framed)), way: 'right', right: 1 } })
-    expect(isInCurrentRow(columnWise, { row: 15, column: 11 }, frameIdIn(columnWise))).toBe(true)
-    expect(isInCurrentRow(columnWise, { row: 15, column: 12 }, frameIdIn(columnWise))).toBe(false)
+    expect(isInCurrentRow(columnWise, { row: 5, column: 1 }, frameIdIn(columnWise))).toBe(true)
+    expect(isInCurrentRow(columnWise, { row: 5, column: 2 }, frameIdIn(columnWise))).toBe(false)
   })
 
   it('does not lock a position that names the Canvas, whatever row of the Frame its number is (ADR 0066)', () => {
-    expect(isInFinishedRow(framed, { row: 10, column: 10, layer: 'canvas' }, frameIdIn(framed))).toBe(false)
-    expect(isInCurrentRow(framed, { row: 10, column: 10, layer: 'canvas' }, frameIdIn(framed))).toBe(false)
+    expect(isInFinishedRow(framed, { row: 0, column: 0, layer: 'canvas' }, frameIdIn(framed))).toBe(false)
+    expect(isInCurrentRow(framed, { row: 0, column: 0, layer: 'canvas' }, frameIdIn(framed))).toBe(false)
   })
 
   it('locks the finished rows of the Frame, and nothing outside it', () => {
-    expect(isInFinishedRow(framed, { row: 10, column: 10 }, frameIdIn(framed))).toBe(true)
-    expect(isInFinishedRow(framed, { row: 11, column: 13 }, frameIdIn(framed))).toBe(true)
-    expect(isInFinishedRow(framed, { row: 12, column: 10 }, frameIdIn(framed))).toBe(false)
+    expect(isInFinishedRow(framed, { row: 0, column: 0 }, frameIdIn(framed))).toBe(true)
+    expect(isInFinishedRow(framed, { row: 1, column: 3 }, frameIdIn(framed))).toBe(true)
+    expect(isInFinishedRow(framed, { row: 2, column: 0 }, frameIdIn(framed))).toBe(false)
     // Above, left of, and below the Frame: not the weaver's rows.
-    expect(isInFinishedRow(framed, { row: 3, column: 10 }, frameIdIn(framed))).toBe(false)
-    expect(isInFinishedRow(framed, { row: 10, column: 4 }, frameIdIn(framed))).toBe(false)
-    expect(isInFinishedRow(framed, { row: 11, column: 20 }, frameIdIn(framed))).toBe(false)
+    expect(isInFinishedRow(framed, { row: -7, column: 0 }, frameIdIn(framed))).toBe(false)
+    expect(isInFinishedRow(framed, { row: 0, column: -6 }, frameIdIn(framed))).toBe(false)
+    expect(isInFinishedRow(framed, { row: 1, column: 10 }, frameIdIn(framed))).toBe(false)
   })
 
   it('is on exactly when there is a Frame (ticket 434)', () => {

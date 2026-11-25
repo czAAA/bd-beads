@@ -51,14 +51,14 @@ function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin
   const [row, column] = [ownRow + (frame?.row ?? 0), ownColumn + (frame?.column ?? 0)]
   const color = beadColorAt(project, row, column)
   if (color === null && satin) return rgb(tileColorOf(LIGHT_THEME.canvas))
-  const flat = flatCentre(project, row, column, rgb(color ?? LIGHT_THEME.emptyBead))
+  const flat = flatCentre(project, ownRow, ownColumn, rgb(color ?? LIGHT_THEME.emptyBead))
   if (color === null || !satin) return flat
   const { r, g, b } = satinCentre({ r: Math.round(flat[0]), g: Math.round(flat[1]), b: Math.round(flat[2]) })
   return [r, g, b]
 }
 
 function flatCentre(project: Project, row: number, column: number, own: [number, number, number]): [number, number, number] {
-  if (!isInFinishedRow(project, { row, column }, frameIdIn(project))) {
+  if (!isInFinishedRow(project, { row, column, layer: frameIdIn(project) }, frameIdIn(project))) {
     return own
   }
   const board = rgb(LIGHT_THEME.canvas)
@@ -133,7 +133,9 @@ export function shownRegion(corner: { x: number; y: number }, project: Project, 
   const shift = frameShift(project, zoom)
   const laid = shift ? withLaidTurn(project, undefined, frameIdIn(project)) : project
   const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift?.rotation ?? quarterTurnOf(project), zoom, ...(shift ? { frame: placedFrame(laid, frameIdIn(laid)) } : {}) })
-  const shown = view.beadBox(projectFrame(laid, frameIdIn(laid)), shift ? frameIdIn(laid) : undefined)
+  const whole = projectFrame(laid, frameIdIn(laid))
+  // On its own surface the Frame's cells are named by its own row and column, from 0, 0.
+  const shown = shift ? view.beadBox({ ...whole, row: 0, column: 0 }, frameIdIn(laid)) : view.beadBox(whole)
   const [x, y] = [corner.x + shown.x + (shift?.x ?? 0), corner.y + shown.y + (shift?.y ?? 0)]
   return { x: Math.floor(x), y: Math.floor(y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
 }

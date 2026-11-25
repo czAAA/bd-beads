@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { FRAME_ID } from '../../testUtils/frameId'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
@@ -48,7 +49,7 @@ describe('ProjectSurface drawn larger by CSS zoom (ticket 1071)', () => {
   it('lands a press on the bead under the pointer', async () => {
     const { wrapper, surface } = await mountSurface()
     await surface.trigger('pointerdown', { ...onScreen(7, 12), pointerType: 'mouse', button: 0, buttons: 1 })
-    expect(wrapper.emitted('cell-primary-down')?.[0]).toEqual([7, 12])
+    expect(wrapper.emitted('cell-primary-down')?.[0]).toEqual([7, 12, FRAME_ID])
     wrapper.unmount()
   })
 

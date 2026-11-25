@@ -127,7 +127,7 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, at: number |
   const line = pass < order.count ? order.lineOf(pass) : undefined
   if (!frame || !box || line === undefined) return undefined
   const columns = ownRowWayOf(project, undefined, ref).direction === 'columns'
-  const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, ref)
+  const first = surface.beadToPoint(columns ? { row: 0, column: line } : { row: line, column: 0 }, ref)
   const along = surface.beadStep(ref)[columns ? 'row' : 'column']
   // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
   const across = Math.abs(along.x) >= Math.abs(along.y) !== ((frame.quarterTurns ?? 0) % 2 === 1)
@@ -141,7 +141,7 @@ function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProjec
   const frame = frameById(project, ref)
   if (label.kind !== 'frame' || !frame || !lieAlike(project, ref)) return false
   const columns = ownRowWayOf(project, undefined, ref).direction === 'columns'
-  return label.axis === (columns ? 'column' : 'row') && label.position - (columns ? frame.column : frame.row) === pass.line
+  return label.axis === (columns ? 'column' : 'row') && label.position === pass.line
 }
 
 // Where the current pass has no number drawn (the compact and folded forms, Rulers off, a turned Frame, a Ruler step

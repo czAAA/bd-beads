@@ -1,6 +1,7 @@
 import { nextTick, reactive } from 'vue'
 import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
-import type { GridPosition } from '../../domain/grid'
+import { cellUnder, layerUnder } from '../../domain/footprint'
+import { isFrameLayer, type GridPosition } from '../../domain/grid'
 import type { CanvasContext, ShellFrameContext } from '../../composables/shell/useAppShell'
 import { easeStandard } from '../../rendering/rowMotion'
 
@@ -360,17 +361,29 @@ export function createHand(deps: HandDeps) {
     if (!instant) await moveTo(await beadAt(position), ms)
   }
 
+  /** How a pointer that presses on `first` names the cells of its stroke or drag: a Frame lying over a Canvas position
+   * answers with its own row and column, whichever Canvas position the tour aims at; a Canvas press names Canvas positions. */
+  function namedAs(first: GridPosition): (cell: GridPosition) => GridPosition {
+    const project = deps.canvas.activeProject.value
+    const layer = project && !first.layer ? layerUnder(project, first) : undefined
+    if (!project || !isFrameLayer(layer)) return (cell) => cell
+    return (cell) => ({ ...cellUnder(project, layer, cell), layer })
+  }
+
   /** One stroke of the active tool through `cells`, in order: Paint, Fill or Erase as a beader's drag does, `ms` from a
    * bead to the next. */
   async function stroke(cells: readonly GridPosition[], ms = STROKE_MS): Promise<void> {
     const [first, ...rest] = cells
     if (!first) return
+    const named = namedAs(first)
     await moveToBead(first)
     ripple()
-    deps.canvas.onCellPrimaryDown(first.row, first.column, first.layer)
+    const pressed = named(first)
+    deps.canvas.onCellPrimaryDown(pressed.row, pressed.column, pressed.layer)
     for (const cell of rest) {
       await moveToBead(cell, ms)
-      deps.canvas.onCellPrimaryMove(cell.row, cell.column, cell.layer)
+      const moved = named(cell)
+      deps.canvas.onCellPrimaryMove(moved.row, moved.column, moved.layer)
     }
     deps.shell.endStroke()
     await settle()
@@ -382,8 +395,13 @@ export function createHand(deps: HandDeps) {
     alive()
     const [first, ...rest] = cells
     if (!first) return
-    deps.canvas.onCellPrimaryDown(first.row, first.column, first.layer)
-    for (const cell of rest) deps.canvas.onCellPrimaryMove(cell.row, cell.column, cell.layer)
+    const named = namedAs(first)
+    const pressed = named(first)
+    deps.canvas.onCellPrimaryDown(pressed.row, pressed.column, pressed.layer)
+    for (const cell of rest) {
+      const moved = named(cell)
+      deps.canvas.onCellPrimaryMove(moved.row, moved.column, moved.layer)
+    }
     deps.shell.endStroke()
   }
 
@@ -391,18 +409,22 @@ export function createHand(deps: HandDeps) {
    * first bead, then the Selection grows bead by bead behind it, and rests whole a moment, so the beader sees what is
    * selected. */
   async function drag(from: GridPosition, to: GridPosition): Promise<void> {
+    const named = namedAs(from)
     await moveToBead(from)
     await wait(deps.pauseMs)
     ripple()
-    deps.canvas.onCellPrimaryDown(from.row, from.column, from.layer)
+    const pressed = named(from)
+    deps.canvas.onCellPrimaryDown(pressed.row, pressed.column, pressed.layer)
     if (instant) {
-      deps.canvas.onCellPrimaryMove(to.row, to.column, to.layer)
+      const moved = named(to)
+      deps.canvas.onCellPrimaryMove(moved.row, moved.column, moved.layer)
     } else {
       const steps = Math.max(1, Math.abs(to.row - from.row), Math.abs(to.column - from.column))
       for (let step = 1; step <= steps; step++) {
         const at = { ...to, row: Math.round(from.row + ((to.row - from.row) * step) / steps), column: Math.round(from.column + ((to.column - from.column) * step) / steps) }
         await moveToBead(at, Math.round(deps.dragMs / steps))
-        deps.canvas.onCellPrimaryMove(at.row, at.column, at.layer)
+        const moved = named(at)
+        deps.canvas.onCellPrimaryMove(moved.row, moved.column, moved.layer)
       }
     }
     deps.shell.endStroke()
@@ -441,7 +463,7 @@ export function createHand(deps: HandDeps) {
       await wait(deps.holdMs)
       ring.hold()
     }
-    ring.openAt(at, position)
+    ring.openAt(at, namedAs(position)(position))
     await settle()
   }
 

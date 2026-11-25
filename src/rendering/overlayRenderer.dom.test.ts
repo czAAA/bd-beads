@@ -1118,16 +1118,17 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
     const project = withLayers(mixed(), { rowProgress: { way: 'down', marks: false } as TestRowProgress })
-    const draw = (layer: Layer, top: number) => {
+    const draw = (layer: Layer, top: number, left: number) => {
       const { context, calls } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })
+      renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left, rows: 1, columns: 1, layer } })
       return calls
     }
 
-    const inFrame = draw(frameIdIn(project), 3)
+    // The Frame's cell by its own row and column: row 1, column 0 of a Frame lying at (2, 3).
+    const inFrame = draw(frameIdIn(project), 1, 0)
     expect(inFrame.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     expect(inFrame.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
-    const onCanvas = draw('canvas', 9)
+    const onCanvas = draw('canvas', 9, 3)
     expect(onCanvas.findIndex((call) => call.name === 'fillRect')).toBeLessThan(onCanvas.findIndex((call) => call.name === 'translate'))
     expect(onCanvas.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([60, 180, 20, 2])
   })
@@ -1143,10 +1144,10 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
   const window = { x: 2010, y: 2010, width: 100, height: 60 }
   const ON_SCREEN = 24
   const block = (rows: number, columns: number, color: string | null = RED) => Array.from({ length: rows }, () => Array<string | null>(columns).fill(color))
-  const stampOf = (colors: (string | null)[][], top = 0, left = 0, lands: (row: number, column: number) => boolean = () => true) => ({ colors, top, left, rows: colors.length, columns: colors[0]!.length, lands })
+  const stampOf = (colors: (string | null)[][], top = 0, left = 0, lands: (row: number, column: number) => boolean = () => true, layer: Layer = 'canvas') => ({ layer, colors, top, left, rows: colors.length, columns: colors[0]!.length, lands })
   const calls = (made: { args: unknown[] }[]) => made.map((call) => call.args)
   const cellsOf = (stamp: ReturnType<typeof stampOf>) =>
-    stamp.colors.flatMap((row, r) => row.flatMap((color, c) => (color && stamp.lands(stamp.top + r, stamp.left + c) ? [{ row: stamp.top + r, column: stamp.left + c, color }] : [])))
+    stamp.colors.flatMap((row, r) => row.flatMap((color, c) => (color && stamp.lands(stamp.top + r, stamp.left + c) ? [{ row: stamp.top + r, column: stamp.left + c, color, ...(stamp.layer === 'canvas' ? {} : { layer: stamp.layer }) }] : [])))
 
   it('draws no more of a 300 × 300 paste preview than the beads on screen', () => {
     const project = canvas()
@@ -1163,7 +1164,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const project: Project = withLayers(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } })
     const { context, named } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 2, 3), color: null } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 0, 0, undefined, frameIdIn(project)), color: null } })
 
     expect(calls(named('translate'))).toEqual([[60, 40]])
     expect(named('fillRect').length).toBeGreaterThan(0)
@@ -1223,9 +1224,11 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const base = projectOf('loom', 3, 3, { marks: false })
     const framed: Project = withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
     const colors = [[RED, null, '#2f6fed', RED], [RED, RED, null, RED], ['#2f6fed', RED, RED, RED]]
-    // The stamp runs off the Frame's right edge and down onto the Canvas below it; the Frame clips what it lands.
-    const stamp = stampOf(colors, 3, 4, (row, column) => !(row === 3 && column === 6))
-    for (const project of [canvas(), framed]) {
+    // On the Canvas the stamp lands where it is. On the Frame it is in the Frame's own rows and columns, runs off its right
+    // and bottom edges, and the Frame clips what it lands.
+    const canvasStamp = stampOf(colors, 3, 4, (row, column) => !(row === 3 && column === 6))
+    const frameStamp = stampOf(colors, 1, 1, (row, column) => row < 3 && column < 3 && !(row === 1 && column === 2), frameIdIn(framed))
+    for (const [project, stamp] of [[canvas(), canvasStamp], [framed, frameStamp]] as const) {
       const region = { x: 0, y: 0, width: 300, height: 300 }
       const stamped = recordingContext()
       const listed = recordingContext()
@@ -1301,7 +1304,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     const project: Project = withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
     const { context, calls } = recordingContext()
 
-    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 3, left: 3, rows: 1, columns: 1, layer: FRAME_ID, cells: [{ row: 3, column: 3 }] } })
+    renderOverlay(context, { project, space: spaceOf(project, true, frameIdIn(project)), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 1, left: 0, rows: 1, columns: 1, layer: FRAME_ID, cells: [{ row: 1, column: 0 }] } })
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])

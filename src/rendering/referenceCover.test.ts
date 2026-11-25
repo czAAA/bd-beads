@@ -72,13 +72,13 @@ describe('where a pressed bead lies on the picture (Pick color, ticket 1119)', (
 
   it("reads a Canvas bead's centre, and a Frame's alike with the Canvas at the same place", () => {
     expect(at(pressOnPicture(withLayers(framed(), { frame: undefined }), { row: 2, column: 3 }, undefined, picture, 200))).toEqual([0.35, 0.25])
-    expect(at(pressOnPicture(framed(), { row: 2, column: 3 }, FRAME_ID, picture, 200))).toEqual([0.35, 0.25])
+    expect(at(pressOnPicture(framed(), { row: 0, column: 0 }, FRAME_ID, picture, 200))).toEqual([0.35, 0.25])
   })
 
   it("reads a Frame bead of a smaller Bead where the Frame draws it, through its Bead's size", () => {
     const smaller = framed(round15)
-    expect(at(pressOnPicture(smaller, { row: 2, column: 3 }, undefined, picture, 200))).toEqual([0.325, 0.225])
-    expect(at(pressOnPicture(smaller, { row: 3, column: 4 }, FRAME_ID, picture, 200))).toEqual([0.375, 0.275])
+    expect(at(pressOnPicture(smaller, { row: 0, column: 0 }, FRAME_ID, picture, 200))).toEqual([0.325, 0.225])
+    expect(at(pressOnPicture(smaller, { row: 1, column: 1 }, FRAME_ID, picture, 200))).toEqual([0.375, 0.275])
   })
 
   it('reads the Canvas under the Frame when the press names the Canvas', () => {

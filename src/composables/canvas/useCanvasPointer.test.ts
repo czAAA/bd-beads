@@ -32,7 +32,8 @@ function setup(options: Options = {}) {
     selectedColorHex: () => (options.color === undefined ? '#ff0000' : options.color),
     pastePreviewCells: vi.fn(() => [{ row: 9, column: 9 }]),
     // A 4 × 4 red block whose top-left lands on the hovered cell.
-    pastePreviewStamp: vi.fn((_project: Project, at: { row: number; column: number }) => ({
+    pastePreviewStamp: vi.fn((project: Project, at: { row: number; column: number }) => ({
+      layer: frameIdIn(project),
       colors: Array.from({ length: 4 }, () => Array<string | null>(4).fill('#e63746')),
       top: at.row,
       left: at.column,
@@ -149,14 +150,14 @@ describe('useCanvasPointer', () => {
     it('leaves out beads in rows already woven', () => {
       const woven = moveToRow(base, 3, frameIdIn(base))
       const { previewCells, onCellHover } = setup({ project: woven })
-      onCellHover(0, 0)
+      onCellHover(0, 0, frameIdIn(base))
       expect(previewCells.value).toEqual([])
     })
 
     it('shows a block pasted on a grid as its stamp, leaving out the beads in rows already woven (ticket 0675)', () => {
       const { previewStamp, onCellHover, onHoverEnd } = setup({ tool: 'select', project: moveToRow(base, 3, frameIdIn(base)) })
       expect(previewStamp.value).toBeUndefined()
-      onCellHover(0, 0)
+      onCellHover(0, 0, frameIdIn(base))
       expect(stampCells(previewStamp.value!).map(({ row }) => row)).toEqual([3, 3, 3, 3])
       onHoverEnd()
       expect(previewStamp.value).toBeUndefined()

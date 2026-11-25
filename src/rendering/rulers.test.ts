@@ -1,4 +1,5 @@
-import { frameIdIn } from '../testUtils/frameId'
+import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
+import { placedFrame } from '../domain/layerWeave'
 import { describe, expect, it } from 'vitest'
 import { withColors, type Rect } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
@@ -37,7 +38,8 @@ const project = (positions: [number, number][], frame?: Rect, technique: Techniq
   })
 /** The Ruler layout of a Project in a view of the Canvas. */
 const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet, sheetScale, expanded }: Look = {}) => {
-  const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: at, viewport: size })
+  const frame = placedFrame(subject, frameIdIn(subject))
+  const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, ...(frame ? { frame } : {}), rotation, zoom, scroll: at, viewport: size })
   // A turn carries the box off the top-left corner: centre it in a viewport that holds it, whichever way it is turned.
   const looking = centred ? view(undefined, { width: 2000, height: 2000 }) : undefined
   const surface = looking ? view(looking.scrollToCentre(centred), { width: 2000, height: 2000 }) : view(scroll)
@@ -71,13 +73,13 @@ describe('which boxes carry rulers', () => {
 
   it('is the Frame, then each Piece area around it once it is set (ticket 1012)', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(30, 30)], { row: 12, column: 13, rows: 4, columns: 5 }))
-    expect(boxes.map((box) => [box.kind, box.row, box.column])).toEqual([['frame', 12, 13], ['piece', 0, 0], ['piece', 30, 30]])
+    expect(boxes.map((box) => [box.kind, box.row, box.column])).toEqual([['frame', 0, 0], ['piece', 0, 0], ['piece', 30, 30]])
   })
 
   it('leaves out the beads the Frame and its margin cover, which carry no rectangle (ticket 1012)', () => {
     // The Frame covers rows 10-13, columns 10-14, and its margin 4 more all round.
     const covered = layoutOf(project([...block(7, 7, 8, 8), ...block(0, 0)], { row: 10, column: 10, rows: 4, columns: 5 }))
-    expect(covered.boxes.map((box) => [box.kind, box.row, box.column, box.rows, box.columns])).toEqual([['frame', 10, 10, 4, 5], ['piece', 0, 0, 3, 3]])
+    expect(covered.boxes.map((box) => [box.kind, box.row, box.column, box.rows, box.columns])).toEqual([['frame', 0, 0, 4, 5], ['piece', 0, 0, 3, 3]])
   })
 
   it('is each Piece area with the Rulers on only, the Frame always, and no Frame box for a Custom frame (ticket 1012)', () => {
@@ -181,13 +183,13 @@ describe('the numbers of a ruled box', () => {
     expect(labels.filter((l) => l.axis === 'row').every((l) => !l.turned)).toBe(true)
   })
 
-  it('give a press the whole row or column of the box, by absolute position', () => {
+  it('give a press the whole row or column of the box, by its layer\'s own position', () => {
     const { labels } = framed({ ...frame, row: 10, column: 20 }, { scroll: { x: 300, y: 150 } })
 
     const row2 = labels.find((l) => l.axis === 'row' && l.text === '2')!
     const column3 = labels.find((l) => l.axis === 'column' && l.text === '3')!
-    expect(row2.selection).toEqual({ top: 11, left: 20, rows: 1, columns: 4 })
-    expect(column3.selection).toEqual({ top: 10, left: 22, rows: 3, columns: 1 })
+    expect(row2.selection).toEqual({ top: 1, left: 0, rows: 1, columns: 4, layer: FRAME_ID })
+    expect(column3.selection).toEqual({ top: 0, left: 2, rows: 3, columns: 1, layer: FRAME_ID })
   })
 
   it('shift the column numbers by the half bead an offset technique’s odd rows sit', () => {
@@ -375,7 +377,7 @@ describe('the numbers below 50% zoom (ticket 303)', () => {
 
   it('give a press on the last number its whole row or column', () => {
     const [last] = framed(wide, { zoom: 0.1 }).labels.filter((l) => l.axis === 'column')
-    expect(last!.selection).toEqual({ top: 0, left: 99, rows: 13, columns: 1 })
+    expect(last!.selection).toEqual({ top: 0, left: 99, rows: 13, columns: 1, layer: FRAME_ID })
   })
 
   it('are the one number of a piece’s rulers too', () => {
@@ -460,9 +462,9 @@ describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => 
     expect(columns.map((l) => l.x)).toEqual([70, 90, 110, 130])
   })
 
-  it('mark the row or column of the Frame a number selects by its Canvas positions', () => {
+  it('mark the row or column of the Frame a number selects by its own positions', () => {
     const second = labels.find((l) => l.axis === 'row' && l.text === '2')!
-    expect(second.selection).toMatchObject({ top: 3, left: 3, rows: 1, columns: 4 })
+    expect(second.selection).toMatchObject({ top: 1, left: 0, rows: 1, columns: 4 })
   })
 })
 

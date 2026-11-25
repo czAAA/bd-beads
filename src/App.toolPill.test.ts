@@ -204,9 +204,9 @@ describe('the Tool pill', () => {
     await pickColor(wrapper, defaultColorOf('red').id)
     await pickTool(wrapper, 'paint')
 
-    // The Star's first bead (round 0, place 0), named from the Frame's corner as a Frame press is aimed.
+    // The Star's first bead (round 0, place 0), named by its Frame and its own row and column, as a Frame press is aimed.
     const own = frameOf(drawnProject(wrapper))!
-    await pressBead(wrapper, { row: own.row, column: own.column, layer: frameIdOf(own) })
+    await pressBead(wrapper, { row: 0, column: 0, layer: frameIdOf(own) })
     await wrapper.find('.app-shell').trigger('mouseup')
     // The stroke reaches the other squares (which beads, and how many, is the domain's test).
     const beads = beadsOfLayer(drawnProject(wrapper), frameIdIn(drawnProject(wrapper)))!

@@ -104,7 +104,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return undefined
     }
     const finished = finishedRowsOfFrames(project)
-    return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column }) }
+    return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column, layer: stamp.layer }) }
   })
 
   function onCellHover(row: number, column: number, layer?: Layer) {

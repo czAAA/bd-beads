@@ -13,7 +13,7 @@ import { framePlacement, withFrameAt } from './framePlacement'
 import { withFrameSheet } from './frameSheet'
 import type { FrameId } from './grid'
 import { backgroundOf, beadsOfLayer, frameById, frameIdOf, frameOf, framesOf, layerOf, lettersOn, withBackground, withLayer, withLetters, wovenLayerOf } from './layerRecord'
-import { layerAt, onLayer, positionOnCanvas } from './layers'
+import { layerAt, onLayer } from './layers'
 import { withColors } from './canvas'
 import { mirrorSettingOf, withMirrorPlace } from './mirror'
 import { createPalette } from './palette'
@@ -83,7 +83,6 @@ describe('a Frame named by its id (ticket 1216)', () => {
     const project = twoFrames()
     expect(layerAt(project, { row: 21, column: 21 })).toBe(SECOND)
     expect(layerAt(project, { row: 1, column: 1 })).toBe(frameIdIn(project))
-    expect(positionOnCanvas(project, SECOND, { row: 1, column: 2 })).toEqual({ row: 21, column: 22 })
     expect(footprintOf(project, SECOND)).toEqual({ row: 20, column: 20, rows: 6, columns: 4 })
 
     const painted = onLayer(project, SECOND, (sheet) => withColors(sheet.beads, [{ row: 0, column: 0, color: RED }]))
@@ -119,9 +118,9 @@ describe('a Frame named by its id (ticket 1216)', () => {
     const woven = moveToRow(project, 2, SECOND)
     firstUntouched(project, woven)
     expect(rowProgressOf(woven, SECOND).down).toBe(2)
-    expect(isInFinishedRow(woven, { row: 20, column: 20, layer: SECOND }, SECOND)).toBe(true)
+    expect(isInFinishedRow(woven, { row: 0, column: 0, layer: SECOND }, SECOND)).toBe(true)
     expect(isInFinishedRow(woven, { row: 0, column: 0 }, frameIdIn(woven))).toBe(false)
-    expect(selectionInFinishedRows(woven, { top: 20, left: 20, rows: 1, columns: 1, layer: SECOND })).toBe(true)
+    expect(selectionInFinishedRows(woven, { top: 0, left: 0, rows: 1, columns: 1, layer: SECOND })).toBe(true)
 
     const palette = createPalette([RED])
     expect(computeColorQuantities(project, palette, SECOND).map(({ count }) => count)).toEqual([1])

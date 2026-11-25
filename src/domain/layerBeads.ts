@@ -2,19 +2,25 @@ import { anyChangedPosition, beadsFromColors, colorAt, frameContains, hasBeads, 
 import type { FrameRef, Layer } from './grid'
 import { sameWeave, weaveOf } from './layerWeave'
 import { beadsOfLayer, frameById, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
+import { cellUnder } from './footprint'
 import { DEFAULT_BEAD } from './beads'
 import type { Grid, LayerFields } from './project'
 import { DEFAULT_TECHNIQUE, type Weave } from './weave'
 
 // What the beads on the two layers (ADR 0066) are: the one seen at a position, whether any are painted, their colors.
 
-/** The color of the bead you see at a Canvas position: the Frame's own where the Frame lies over it, else the Canvas's
- * (ADR 0066). A hex, or null where nothing is painted. */
+/** The color of the bead you see at a position: a Frame's own cell when `layer` names the Frame (its own row and
+ * column), else the Canvas's, or the Frame's where it lies over a Canvas position (ADR 0066). A hex, or null where nothing is
+ * painted. */
 export function beadColorAt(project: Layered, row: number, column: number, layer?: Layer): string | null {
-  const frame = layer ? frameById(project, layer) : framesOf(project).find((each) => frameContains(frameById(project, frameIdOf(each))!, { row, column }))
-  return frame
-    ? colorAt(frame.beads, row - frame.row, column - frame.column)
-    : colorAt(beadsOfLayer(project, 'canvas'), row, column)
+  if (layer) {
+    const named = frameById(project, layer)
+    return colorAt(named ? named.beads : beadsOfLayer(project, 'canvas'), row, column)
+  }
+  const under = framesOf(project).find((each) => frameContains(each, { row, column }))
+  if (!under) return colorAt(beadsOfLayer(project, 'canvas'), row, column)
+  const own = cellUnder(project, frameIdOf(under), { row, column })
+  return colorAt(under.beads, own.row, own.column)
 }
 
 /** Whether the Canvas holds a bead (a Frame's own do not count). */

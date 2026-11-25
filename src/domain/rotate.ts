@@ -4,7 +4,7 @@ import type { QuarterTurns } from './frameShape'
 import { laidSize } from './frameOrientation'
 import { nearestQuarterTurn, turnedOrientation } from './canvasOrientation'
 import { snapColumn, snapRow } from './frame'
-import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
+import { layerSheet, onLayer, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, canvasWeave, frameWeave, layerWeave } from './layerWeave'
 import { beadsOfLayer, canvasOf, heldWeave, orientationOf, withFrameFields, withLayer, frameById } from './layerRecord'
@@ -18,7 +18,7 @@ import { frameMet, twistStop } from './frameSpacing'
 import { frameQuarterTurnOf, type TablePoint } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
-import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
+import { cellKey, selectableOn, selectionFrame, selectionLayer, selectionMask, type Selection } from './selection'
 import { describeWeave, type Weave } from './weave'
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
@@ -122,23 +122,21 @@ function turnedNames(project: Project, turn: ReturnType<typeof turnedBeads>): Pr
 /** A Selection turned on its layer (ADR 0066): the Canvas's as `rotateSelection` does it; the Frame's within the Frame,
  * where what falls outside it is dropped. `covered` is how many beads of the layer outside the Selection it replaced. */
 export function rotateLayerSelection(project: Project, selection: Selection): RotatedSelection & { covered: number; dropped: number } {
-  const layer = selectionLayer(project, selection)
-  const local = selectionInLayer(project, layer, selection)
+  const layer = selectionLayer(selection)
   const before = layerSheet(project, layer)
   if (!before.geometry.grid) {
-    return rotateCustomSelection(project, local, before, layer)
+    return rotateCustomSelection(project, selection, before, layer)
   }
   const { edge } = before
-  const result = turnedBeads(before, local, 0, selectableOn(project, before))
+  const result = turnedBeads(before, selection, 0, selectableOn(project, before))
   const turned = result.selection
   // A Frame holds only its own cells.
   const rotated = onLayer(project, layer, () => (edge ? shiftedBeads(result.beads, 0, 0, edge) : result.beads))
-  const origin = positionOnCanvas(project, layer, { row: turned.top, column: turned.left })
-  const cells = turned.cells?.filter((cell) => !edge || frameContains(edge, cell)).map((cell) => positionOnCanvas(project, layer, cell))
+  const cells = turned.cells?.filter((cell) => !edge || frameContains(edge, cell))
   return {
     project: rotated === project || layer !== 'canvas' ? rotated : withCanvasNames(project, rotated, result),
-    selection: { ...turned, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) },
-    covered: rotated === project ? 0 : coveredByRotation(before, { beads: beadsOfLayer(rotated, layer)! }, local, turned),
+    selection: { ...turned, layer, ...(cells ? { cells } : {}) },
+    covered: rotated === project ? 0 : coveredByRotation(before, { beads: beadsOfLayer(rotated, layer)! }, selection, turned),
     dropped: 0,
   }
 }
@@ -154,13 +152,12 @@ function withCanvasNames(project: Project, rotated: Project, turn: ReturnType<ty
 /** A Selection over a Custom frame turned (ticket 0594): its beads a quarter turn about its middle on screen, each on the
  * nearest free position of the panel under it, those on a Seam or Off-shape dropped; the rectangle turns as on a Frame
  * of its Weave. */
-function rotateCustomSelection(project: Project, local: Selection, sheet: LayerSheet, ref: Layer): RotatedSelection & { covered: number; dropped: number } {
-  const { lifted, landed, dropped } = turnedOnLayout(sheet, local)
+function rotateCustomSelection(project: Project, selection: Selection, sheet: LayerSheet, ref: Layer): RotatedSelection & { covered: number; dropped: number } {
+  const { lifted, landed, dropped } = turnedOnLayout(sheet, selection)
   const covered = coveredOnLayout(sheet, landed, lifted)
   const rotated = onLayer(project, ref, ({ beads }) => withColors(withColors(beads, lifted.map(({ row, column }) => ({ row, column, color: null }))), landed))
-  const turned = rotatedSelection(layerWeave(project, ref), local)
-  const origin = positionOnCanvas(project, ref, { row: turned.top, column: turned.left })
-  return { project: rotated, selection: { ...turned, top: origin.row, left: origin.column, layer: ref }, covered: rotated === project ? 0 : covered, dropped }
+  const turned = rotatedSelection(layerWeave(project, ref), selection)
+  return { project: rotated, selection: { ...turned, layer: ref }, covered: rotated === project ? 0 : covered, dropped }
 }
 
 /** How many beads outside the Selection the turn replaced: under the turned footprint, outside the old rectangle,

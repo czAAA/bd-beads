@@ -141,10 +141,10 @@ describe('rotateLayerSelection (ADR 0066)', () => {
     expect(positionsOf(beadsOfLayer(result.project, 'canvas'))).toEqual(positionsOf(beadsOfLayer(rotateSelection(project, SELECTION).project, 'canvas')))
   })
 
-  it('turns the Frame\'s own beads for a Selection that begins in the Frame, and answers in Canvas positions', () => {
+  it('turns the Frame\'s own beads for a Selection that begins in the Frame, and answers in the Frame\'s own positions', () => {
     const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', null], [null, null, null]]), { beads: withColors({}, [{ row: 11, column: 11, color: '#999999' }]) })
-    const result = rotateLayerSelection(project, { top: 10, left: 10, rows: 2, columns: 2 })
-    expect(result.selection).toMatchObject({ top: 10, left: 10, rows: 2, columns: 2 })
+    const result = rotateLayerSelection(project, { top: 0, left: 0, rows: 2, columns: 2, layer: frameIdIn(project) })
+    expect(result.selection).toMatchObject({ top: 0, left: 0, rows: 2, columns: 2 })
     expect(positionsOf(frameOf(result.project)!.beads)).toEqual(['0,1:#aa0000', '1,1:#bb0000'])
     expect(beadsOfLayer(result.project, 'canvas')).toEqual(beadsOfLayer(project, 'canvas'))
   })
@@ -152,14 +152,14 @@ describe('rotateLayerSelection (ADR 0066)', () => {
   it('drops what the turn would put outside the Frame', () => {
     const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', '#cc0000']]))
     // A 1 x 3 row turned upright would stand 3 rows tall from row -1 to 1 about the Selection\'s middle, partly above the Frame.
-    const result = rotateLayerSelection(project, { top: 10, left: 10, rows: 1, columns: 3 })
+    const result = rotateLayerSelection(project, { top: 0, left: 0, rows: 1, columns: 3, layer: frameIdIn(project) })
     expect(positionsOf(frameOf(result.project)!.beads).every((entry) => Number(entry.split(',')[0]) >= 0)).toBe(true)
     expect(positionsOf(frameOf(result.project)!.beads)).toHaveLength(2)
   })
 
   it('counts the layer\'s beads outside the Selection that the turn replaced', () => {
     const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', null], ['#dd0000', '#ee0000', null], [null, '#123456', null]]))
-    expect(rotateLayerSelection(project, { top: 10, left: 10, rows: 1, columns: 2 }).covered).toBe(1)
+    expect(rotateLayerSelection(project, { top: 0, left: 0, rows: 1, columns: 2, layer: frameIdIn(project) }).covered).toBe(1)
   })
 
   it('turns only the Canvas beads clear of the Frame and its margin for a Canvas Selection across them (ticket 0659)', () => {

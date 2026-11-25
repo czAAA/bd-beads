@@ -229,16 +229,15 @@ export interface SurfaceView {
   zoom: number
   /** The viewport's size; 0 by 0 until the surface is measured. */
   viewport: Size
-  /** Where a bead's centre is in the viewport. A position under the Frame is the Frame's: its own row and column from
-   * the Frame's first. With a `layer` the position is read on it, for the rows of a Frame that draws shorter than it
-   * names (ADR 0066). */
-  beadToPoint(position: GridPosition, layer?: ViewLayer): Scroll
+  /** Where a bead's centre is in the viewport. With a `layer` the position is that layer's own (a Frame's cell by its
+   * own row and column, ADR 0066); without, a Canvas position, which a Frame lying over it answers for. `byPlace` reads
+   * a Frame's position counted from the Canvas's origin instead, as its place is (the Frame's own gestures). */
+  beadToPoint(position: GridPosition, layer?: ViewLayer, byPlace?: boolean): Scroll
   // The rectangle a block of beads covers in the viewport, with the half bead an offset technique's shifted rows add on
   // the right.
   beadBox(box: Rect, layer?: ViewLayer): Region
-  /** The bead under a point of the viewport, or undefined between beads (ADR 0018). A point on the Frame is its bead,
-   * as a position of the Frame's rectangle (its first row and column added); a point on the Canvas beside it, whose
-   * position the rectangle's own count would claim, is none. */
+  /** The bead under a point of the viewport, or undefined between beads (ADR 0018). A point on the Frame is its bead, by
+   * its own row and column; a point on the Canvas beside it, whose position the Frame's own count would claim, is none. */
   pointToBead(point: Scroll): GridPosition | undefined
   /** The bead under a point and the layer it is on (ADR 0066): where the Frame draws shorter than the rows it names, a
    * Frame bead and a Canvas bead share a position, and only the layer tells them apart. */
@@ -253,9 +252,10 @@ export interface SurfaceView {
   /** The Frame's cell under a point on a Custom frame, on a bead or not (ticket 0594): what the Select tool marks out
    * there, a rectangle on screen; none off the Frame or on one without a shape. */
   frameCellAt(point: Scroll): (GridPosition & { layer: FrameRef }) | undefined
-  /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry: what dragging a Frame
-   * needs. */
-  pointToCell(point: Scroll, layer?: ViewLayer): GridPosition
+  /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry and its own count: what
+   * dragging a Selection needs. `byPlace` counts a Frame's from the Canvas's origin, as its place is: what dragging the
+   * Frame itself needs. */
+  pointToCell(point: Scroll, layer?: ViewLayer, byPlace?: boolean): GridPosition
   /** The bead position a drag pressed at `pressed` (grid space, `pointToGrid`) has carried `from` to, the pointer now
    * at `point`: as far as the pointer went, in whole beads, or in whole stagger cycles of the layer's Weave, which is
    * how a Piece moves (ticket 1150). Not the position under the pointer: on a staggered Weave that one zigzags. */
@@ -364,8 +364,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     return own ? applied(own(at), x, y) : displayed(layer.origin.x + x * layer.scale, layer.origin.y + y * layer.scale, at)
   }
   const displayedBox = (box: Rect, at: number, layer: Layer): Region => {
-    const local = { ...box, row: box.row - layer.offset.row, column: box.column - layer.offset.column }
-    const grid = gridBox(layer.weave, local)
+    const grid = gridBox(layer.weave, box)
     // Four corners, as a layer with its own transform may lie at an angle to the view.
     const corners = [placed(layer, grid.x, grid.y, at), placed(layer, grid.x + grid.width, grid.y + grid.height, at), placed(layer, grid.x + grid.width, grid.y, at), placed(layer, grid.x, grid.y + grid.height, at)]
     const xs = corners.map((corner) => corner.x)
@@ -386,7 +385,6 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     return { x: at.x - scroll.x, y: at.y - scroll.y }
   }
   const centre = (box: Region): Scroll => ({ x: box.x + box.width / 2 - viewport.width / 2, y: box.y + box.height / 2 - viewport.height / 2 })
-  const addressOf = (layer: Layer, local: GridPosition): GridPosition => ({ row: local.row + layer.offset.row, column: local.column + layer.offset.column })
 
   /** The bead of a layer under a point of its own px (from its first position), or undefined. */
   const beadIn = (layer: Layer, gridX: number, gridY: number): GridPosition | undefined => layer.geometry.positionAt({ x: gridX / CELL_SIZE_PX, y: gridY / CELL_SIZE_PX })
@@ -433,7 +431,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     // The Frame is opaque: a point on it is the Frame's bead or none, never the Canvas under it.
     if (hit) {
       const found = beadIn(hit.on.layer, hit.at.x, hit.at.y)
-      return found && { ...addressOf(hit.on.layer, found), layer: hit.on.ref }
+      return found && { ...found, layer: hit.on.ref }
     }
     if (onMarginSheet(point)) return undefined
     const found = beadIn(canvas, gridX, gridY)
@@ -443,9 +441,11 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
   return {
     zoom,
     viewport,
-    beadToPoint: (position, named) => {
+    beadToPoint: (position, named, byPlace) => {
+      // A position that names its layer is that layer's own; one that does not is a Canvas position, which a Frame
+      // lying over it answers for (its own cell there).
       const layer = named ? layerNamed(named) : layerAtAddress(position)
-      const local = { row: position.row - layer.offset.row, column: position.column - layer.offset.column }
+      const local = named && !byPlace ? position : { row: position.row - layer.offset.row, column: position.column - layer.offset.column }
       // A position the Layer has lies where its geometry places it; one past its edge, as its Weave would put it.
       const place = layer !== canvas ? layer.geometry.place(local) : undefined
       const box = place ? inGridPx(place.box) : positionBoxPx(layer.weave, local.row, local.column)
@@ -478,16 +478,17 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const { layer: laidOut, laid: rect, ref } = hit.on
       const cell = cellIn(laidOut, hit.at.x, hit.at.y)
       const within = { row: Math.min(Math.max(cell.row, 0), rect.rows - 1), column: Math.min(Math.max(cell.column, 0), rect.columns - 1) }
-      return { ...addressOf(laidOut, within), layer: ref }
+      return { ...within, layer: ref }
     },
     pointToBead: (point) => {
       const hit = pointToHit(point)
       return hit && { row: hit.row, column: hit.column }
     },
-    pointToCell: (point, layer) => {
+    pointToCell: (point, layer, byPlace) => {
       const on = layerNamed(layer)
       const own = ownPoint(on, point)
-      return addressOf(on, cellIn(on, own.x, own.y))
+      const cell = cellIn(on, own.x, own.y)
+      return byPlace ? { row: cell.row + on.offset.row, column: cell.column + on.offset.column } : cell
     },
     carriedCell: (from, pressed, point, layer, byCycles = false) => {
       const on = layerNamed(layer)
@@ -501,8 +502,10 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       return { row: from.row + rows, column: from.column + columns }
     },
     frameBox: (box) => {
+      // The Frame's rectangle as it lies on the Canvas: its own cells from its first row and column.
       const lying = 'technique' in box ? laidRect({ ...box, cell: sheetWeave?.cell ?? canvasCell }) : box
-      const shown = inViewport(displayedBox(lying, zoom, sheet ?? canvas))
+      const offset = (sheet ?? canvas).offset
+      const shown = inViewport(displayedBox({ ...lying, row: lying.row - offset.row, column: lying.column - offset.column }, zoom, sheet ?? canvas))
       const outset = frameOutsetPx(zoom)
       return { x: shown.x - outset, y: shown.y - outset, width: shown.width + outset * 2, height: shown.height + outset * 2 }
     },

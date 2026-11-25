@@ -2,7 +2,7 @@ import type { Rect } from '../domain/canvas'
 import { frameShapeOf } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, type Weave } from '../domain/weave'
-import type { GridPosition, FrameRef } from '../domain/grid'
+import type { FrameRef } from '../domain/grid'
 import { canvasWeave, frameScale as frameBeadScale, frameWeave } from '../domain/layerWeave'
 import { hasGuides, type Selection } from '../domain/selection'
 import type { MarginForm } from './marginForm'
@@ -59,7 +59,7 @@ export interface RulerLabel {
   index: number
   /** The row or column of beads a click on it marks out, over the whole ruled box. */
   selection: Selection
-  /** The absolute position of that row or column, for the current row and the cursor. */
+  /** The position of that row or column in its layer (a Frame's own), for the current row and the cursor. */
   position: number
 }
 
@@ -73,8 +73,9 @@ function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPiece
   const frame = frameById(project, ref)
   const own: RuledBox[] = []
   if (frame && !frameShapeOf(frame)) {
-    const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project, ref).cell })
-    own.push({ row, column, rows, columns, kind: 'frame', layer: ref, outset: scale.frameOutset })
+    // Counted from the Frame's own first row and column, wherever it lies.
+    const { rows, columns } = laidRect({ ...frame, cell: frameWeave(project, ref).cell })
+    own.push({ row: 0, column: 0, rows, columns, kind: 'frame', layer: ref, outset: scale.frameOutset })
   }
   return [
     ...own,
@@ -202,10 +203,10 @@ interface BoxLayout {
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer; size?: number; stepped?: boolean }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; layer: ViewLayer; size?: number; stepped?: boolean }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
-  const start = { row: box.row - place.offset.row, column: box.column - place.offset.column }
+  const start = { row: box.row, column: box.column }
   const margin = fontPx * 4
   const labels: RulerLabel[] = []
   const beads: RulerDot[] = []
@@ -297,7 +298,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const columnsAt = (alongRow: number, gridY: number, normal: [number, number]) => {
     for (let index = 0; index < count.columns; index += 1) {
       const gridX = area.x + description.rowOffset(alongRow, cell.width) + index * beadAcross + middle.x
-      const marked = { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
+      const marked = { top: box.row, left: box.column + index, rows: box.rows, columns: 1, layer: box.layer }
       along('column', index, gridX, gridY, normal, marked, box.column + index)
     }
   }
@@ -306,7 +307,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     for (let index = 0; index < count.rows; index += 1) {
       const gridY = area.y + description.columnOffset(alongColumn, cell.height) + index * rowDown + middle.y
       const first = box.row + index
-      const marked = { top: first, left: box.column, rows: 1, columns: box.columns }
+      const marked = { top: first, left: box.column, rows: 1, columns: box.columns, layer: box.layer }
       along('row', index, gridX, gridY, normal, marked, first)
     }
   }
@@ -345,8 +346,8 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), offset: frameById(project, ref)!, layer: ref, size: frameBeadScale(project, ref), stepped: expanded }, surface, viewport, frameScale)
-      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
+      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), layer: ref, size: frameBeadScale(project, ref), stepped: expanded }, surface, viewport, frameScale)
+      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.
   const numbered = laid.filter((box) => (box.kind === 'frame' ? expanded || sheet === 'full' : numbers))
