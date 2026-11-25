@@ -11,7 +11,7 @@ import { frameOf } from '../../domain/layerRecord'
 import { withFrameSheet } from '../../domain/frameSheet'
 import { TECHNIQUES } from '../../domain/weave'
 import { withLayers } from '../../testUtils/layerFields'
-import { withFrame } from '../../domain/frame'
+import { withFrame } from '../../testUtils/withFrame'
 
 afterEach(() => {
   vi.unstubAllGlobals()

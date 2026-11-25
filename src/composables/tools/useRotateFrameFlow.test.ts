@@ -1,7 +1,6 @@
 import { frameIdIn } from '../../testUtils/frameId'
 import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
 import { frameById } from '../../domain/layerRecord'
-import { frameAngleOf } from '../../domain/table'
 import { describe, expect, it, vi } from 'vitest'
 import { colorAt, withColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
@@ -147,74 +146,13 @@ describe('useRotateFrameFlow on an empty Frame (ticket 471)', () => {
   })
 })
 
-describe('a two-finger twist of the Frame (ticket 1190)', () => {
-  function twistSetup(project: Project) {
-    const view = { releaseFrameTwist: vi.fn(), easeFrameBack: vi.fn() }
-    const set = setup(project)
-    const flow = useRotateFrameFlow({ ...set.deps, frameTwistView: () => view })
-    return { ...set, ...flow, view }
-  }
-
-  it('keeps the angle it came to rest at as one Undo step, unannounced, never counted as a press', () => {
-    const { deps, harness, onTwistFrame, frameTurns } = twistSetup(framed)
-    expect(onTwistFrame(30, frameIdIn(framed))).toBe('kept')
-    expect(frameOf(harness.project)!.angle).toBe(30)
-    expect(deps.announce).not.toHaveBeenCalled()
-    expect(frameTurns.value).toBe(0)
-    harness.history.onUndo()
-    expect(frameOf(harness.project)!.angle).toBe(0)
-    expect(harness.history.canUndo.value).toBe(false)
-  })
-
-  it('asks Rotate Frame\'s question where it settled on another quarter turn with a pass done; Cancel eases it back', () => {
-    const woven = moveToRow(framed, 1, frameIdIn(framed))
-    const { deps, harness, onTwistFrame, cancelRotateFrame, view } = twistSetup(woven)
-    expect(onTwistFrame(90, frameIdIn(framed))).toBe('asked')
-    expect(deps.dialogs.open.value).toBe('rotate-frame')
-    expect(harness.project).toBe(woven)
-    cancelRotateFrame()
-    expect(view.easeFrameBack).toHaveBeenCalledOnce()
-    expect(harness.project).toBe(woven)
-    expect(harness.history.canUndo.value).toBe(false)
-  })
-
-  it('keeps the twist with the answer, its rows kept or started over, one Undo step', () => {
-    const woven = moveToRow(framed, 1, frameIdIn(framed))
-    const kept = twistSetup(woven)
-    kept.onTwistFrame(90, frameIdIn(framed))
-    kept.keepRowsRotateFrame()
-    expect(frameOf(kept.harness.project)).toMatchObject({ angle: 90, quarterTurns: 1 })
-    expect(rowProgressOf(kept.harness.project, frameIdIn(kept.harness.project))).toEqual(turnedWithFrame(rowProgressOf(woven, frameIdIn(woven)), 1))
-    expect(kept.view.releaseFrameTwist).toHaveBeenCalledOnce()
-    expect(kept.deps.announce).not.toHaveBeenCalled()
-    kept.harness.history.onUndo()
-    expect(kept.harness.history.canUndo.value).toBe(false)
-
-    const over = twistSetup(woven)
-    over.onTwistFrame(270, frameIdIn(framed))
-    over.startOverRotateFrame()
-    expect(frameOf(over.harness.project)!.angle).toBe(270)
-    expect(rowProgressOf(over.harness.project, frameIdIn(over.harness.project))).toEqual({ way: 'down' })
-  })
-
-  it('asks nothing for a lean about the quarter turn it is read by, a pass done', () => {
-    const woven = moveToRow(framed, 1, frameIdIn(framed))
-    const { harness, onTwistFrame } = twistSetup(woven)
-    expect(onTwistFrame(20, frameIdIn(framed))).toBe('kept')
-    expect(rowProgressOf(harness.project, frameIdIn(harness.project))).toEqual(rowProgressOf(woven, frameIdIn(woven)))
-  })
-})
-
-describe('Rotate Frame and the twist name their Frame (ticket 1218)', () => {
+describe('Rotate Frame names its Frame (ticket 1218)', () => {
   it('turn only the Frame named, and Undo puts back only that turn', () => {
     const project = twoFrames()
-    const { harness, onRotateFrame, onTwistFrame } = setup(project)
+    const { harness, onRotateFrame } = setup(project)
     onRotateFrame(SECOND)
     expect(frameById(harness.project, SECOND)!.quarterTurns).toBe(1)
     expect(frameById(harness.project, firstOf(project))).toEqual(frameById(project, firstOf(project)))
-    onTwistFrame(30, SECOND)
-    expect(frameAngleOf(harness.project!, SECOND)).toBe(30)
-    harness.history.onUndo()
     harness.history.onUndo()
     expect(frameById(harness.project, SECOND)).toEqual(frameById(project, SECOND))
     expect(harness.history.canUndo.value).toBe(false)

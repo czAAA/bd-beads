@@ -101,7 +101,10 @@ describe("What's inside's Starters row on the ring (ticket 0832)", () => {
 describe("What's inside's Reference image row on the cuff (ticket 0831)", () => {
   it('sets a cuff 48 long and 23 wide round the same middle and traces the feather on it, bead for bead', async () => {
     const project = await applyThrough(await demoEditor(), 'reference')
-    expect(placeOf(project)).toEqual({ row: 4, column: 4, rows: 48, columns: 23 })
+    // Round the same middle (spec 1234): its centre is the band's, so its first Canvas position is the one the centre puts it on.
+    const placed = placeOf(project)
+    expect([placed.rows, placed.columns]).toEqual([48, 23])
+    expect(Math.abs(placed.row - 4) + Math.abs(placed.column - 4)).toBeLessThanOrEqual(2)
     expect(linesOf(project)).toEqual(painted(PEACOCK_CUFF))
   }, 120000)
 

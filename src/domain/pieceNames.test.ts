@@ -10,6 +10,7 @@ import type { Project } from './project'
 import { removeSelectedLine } from './removeLine'
 import { rotateSelection } from './rotate'
 import { changeFrame } from './changeFrame'
+import { coversOf } from './sheets'
 import { frameGrid } from '../testUtils/frameGrid'
 import { countingBeads } from '../testUtils/countingBeads'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
@@ -148,7 +149,9 @@ describe('piece names', () => {
       const project = fox()
       const result = changeFrame(project, { make: { row: 0, column: 0, rows: 1, columns: 4 } }, frameIdIn(project))
 
-      expect(result.kind === 'changed' && frameSheetOf(result.project)).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      expect(result.kind === 'changed' && frameSheetOf(result.project)).toMatchObject({ technique: 'loom', rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      // It lies where the Piece does on the Canvas.
+      expect(result.kind === 'changed' && coversOf(result.project)[0]!.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
       expect(result.kind === 'changed' && namedPieces(result.project).map((piece) => piece.name)).toEqual(['Fox'])
     })
 

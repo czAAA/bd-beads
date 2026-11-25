@@ -2,13 +2,14 @@ import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { beadsShown, inMargin, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { beadsShown, coverOf, inMargin, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject } from './createProject'
-import { withFrame } from './frame'
+import { withFrameCentre } from './framePlacement'
 import type { GridPosition } from './grid'
 import type { Project } from './project'
 import { beadsOfLayer, withLayer } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
+import { withFrame } from '../testUtils/withFrame'
 import { scaledBead } from '../testUtils/squareBead'
 import { findBead } from './beads'
 
@@ -22,11 +23,11 @@ const rawPaint = (project: Project, positions: GridPosition[], color: string | n
 describe('the keep-out margin', () => {
   it('is the 4 positions all round the Frame, outside its line (ticket 0656)', () => {
     expect(MARGIN).toBe(4)
-    expect(inMargin(frame, { row: 6, column: 10 })).toBe(true)
-    expect(inMargin(frame, { row: 5, column: 10 })).toBe(false)
-    expect(inMargin(frame, { row: 4, column: 10 })).toBe(false)
-    expect(inMargin(frame, { row: 14 + 2, column: 16 + 2 })).toBe(true)
-    expect(inMargin(frame, { row: 11, column: 11 })).toBe(false)
+    expect(inMargin(coverOf(frame), { row: 6, column: 10 })).toBe(true)
+    expect(inMargin(coverOf(frame), { row: 5, column: 10 })).toBe(false)
+    expect(inMargin(coverOf(frame), { row: 4, column: 10 })).toBe(false)
+    expect(inMargin(coverOf(frame), { row: 14 + 2, column: 16 + 2 })).toBe(true)
+    expect(inMargin(coverOf(frame), { row: 11, column: 11 })).toBe(false)
     expect(inMargin(undefined, { row: 7, column: 10 })).toBe(false)
     expect(withMargin(frame)).toEqual({ row: 6, column: 6, rows: 12, columns: 14 })
   })
@@ -63,27 +64,27 @@ describe('the keep-out margin', () => {
 
 describe('a Piece tap keeps out of the margin (tickets 428, 433)', () => {
   it('allows a Selection wholly inside the Frame or wholly clear of the band, and nothing else (ticket 433)', () => {
-    expect(selectionAllowed(frame, { top: 10, left: 10, rows: 4, columns: 6 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 11, left: 11, rows: 1, columns: 1 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 3, columns: 3 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 4, columns: 4 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 5, left: 11, rows: 6, columns: 2 })).toBe(false)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 6, columns: 6 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 7, columns: 7 })).toBe(false)
-    expect(selectionAllowed(frame, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(false)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 40 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 6, left: 6, rows: 12, columns: 14 })).toBe(true)
-    expect(selectionAllowed(frame, { top: 7, left: 6, rows: 12, columns: 14 })).toBe(false)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 15 })).toBe(false)
+    expect(selectionAllowed(coverOf(frame), { top: 10, left: 10, rows: 4, columns: 6 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 11, left: 11, rows: 1, columns: 1 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 0, left: 0, rows: 3, columns: 3 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 0, left: 0, rows: 4, columns: 4 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 5, left: 11, rows: 6, columns: 2 })).toBe(false)
+    expect(selectionAllowed(coverOf(frame), { top: 0, left: 0, rows: 6, columns: 6 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 0, left: 0, rows: 7, columns: 7 })).toBe(false)
+    expect(selectionAllowed(coverOf(frame), { top: 8, left: 8, rows: 1, columns: 1 })).toBe(false)
+    expect(selectionAllowed(coverOf(frame), { top: 0, left: 0, rows: 40, columns: 40 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 6, left: 6, rows: 12, columns: 14 })).toBe(true)
+    expect(selectionAllowed(coverOf(frame), { top: 7, left: 6, rows: 12, columns: 14 })).toBe(false)
+    expect(selectionAllowed(coverOf(frame), { top: 0, left: 0, rows: 40, columns: 15 })).toBe(false)
     expect(selectionAllowed(undefined, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(true)
   })
 
   it('trims a rectangle to the side of the anchor, and refuses an anchor in the margin', () => {
     const wide = { top: 0, left: 10, rows: 30, columns: 3 }
-    expect(trimToAllowed(frame, wide, { row: 1, column: 11 })).toEqual({ top: 0, left: 10, rows: 6, columns: 3 })
-    expect(trimToAllowed(frame, wide, { row: 20, column: 11 })).toEqual({ top: 18, left: 10, rows: 12, columns: 3 })
-    expect(trimToAllowed(frame, { top: 11, left: 11, rows: 2, columns: 2 }, { row: 11, column: 11 })).toEqual({ top: 11, left: 11, rows: 2, columns: 2 })
-    expect(trimToAllowed(frame, wide, { row: 8, column: 11 })).toBeUndefined()
+    expect(trimToAllowed(coverOf(frame), wide, { row: 1, column: 11 })).toEqual({ top: 0, left: 10, rows: 6, columns: 3 })
+    expect(trimToAllowed(coverOf(frame), wide, { row: 20, column: 11 })).toEqual({ top: 18, left: 10, rows: 12, columns: 3 })
+    expect(trimToAllowed(coverOf(frame), { top: 11, left: 11, rows: 2, columns: 2 }, { row: 11, column: 11 })).toEqual({ top: 11, left: 11, rows: 2, columns: 2 })
+    expect(trimToAllowed(coverOf(frame), wide, { row: 8, column: 11 })).toBeUndefined()
   })
 })
 
@@ -99,14 +100,16 @@ describe('mayPlace (ticket 501)', () => {
 describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
   const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }, frameIdIn(base))
-  // Its Bead is three quarters the Canvas's size, so its 48 rows cover 36 of the Canvas's.
-  const woven = withLayer(placed, FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+  // Its Bead is three quarters the Canvas's size, so its 48 rows cover 36 of the Canvas's, 54 mm; laid with its corner at the Canvas's first position.
+  const scaled = withLayer(placed, FRAME_ID, { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+  const woven = withFrameCentre(scaled, { x: (11 * 0.75 * 1.5) / 2, y: 27 }, FRAME_ID)
 
-  it('hangs off what the Frame draws, so it is joined to it', () => {
-    // The Frame covers 36 loom rows: the 4 below are the margin, the rows after those are free Canvas.
+  it('hangs off what the Frame draws, 4 of its own beads wide, so it is joined to it', () => {
+    // The Frame covers 36 loom rows: the 4 own beads below it are 3 of the Canvas's rows, the rows after those are free Canvas.
+    expect(mayPlace(woven, { row: 35, column: 3 })).toBe(true)
     expect(mayPlace(woven, { row: 36, column: 3 })).toBe(false)
-    expect(mayPlace(woven, { row: 39, column: 3 })).toBe(false)
-    expect(mayPlace(woven, { row: 40, column: 3 })).toBe(true)
+    expect(mayPlace(woven, { row: 38, column: 3 })).toBe(false)
+    expect(mayPlace(woven, { row: 39, column: 3 })).toBe(true)
   })
 
   it('never calls a Frame bead margin, whatever its position says', () => {
@@ -124,16 +127,16 @@ describe('the Canvas beads that show (ticket 1012)', () => {
   ])
 
   it('leave out the beads under the Frame and its margin, and keep the rest', () => {
-    expect(beadsShown(beads, frame)).toEqual({ 0: { 0: '#f00' }, 5: { 6: '#00f' }, 12: { 25: '#0f0' } })
+    expect(beadsShown(beads, coverOf(frame))).toEqual({ 0: { 0: '#f00' }, 5: { 6: '#00f' }, 12: { 25: '#0f0' } })
   })
 
   it('are the beads themselves with no Frame or nothing under it, so a count kept on them stays', () => {
     expect(beadsShown(beads, undefined)).toBe(beads)
-    expect(beadsShown(beads, { row: 40, column: 40, rows: 2, columns: 2 })).toBe(beads)
+    expect(beadsShown(beads, coverOf({ row: 40, column: 40, rows: 2, columns: 2 }))).toBe(beads)
   })
 
   it('are worked out once for the same beads and Frame, and again for another Frame', () => {
-    expect(beadsShown(beads, frame)).toBe(beadsShown(beads, { ...frame }))
-    expect(beadsShown(beads, { ...frame, column: 30 })).not.toBe(beadsShown(beads, frame))
+    expect(beadsShown(beads, coverOf(frame))).toBe(beadsShown(beads, coverOf({ ...frame })))
+    expect(beadsShown(beads, coverOf({ ...frame, column: 30 }))).not.toBe(beadsShown(beads, coverOf(frame)))
   })
 })

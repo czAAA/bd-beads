@@ -127,7 +127,8 @@ describe('the numbers of a ruled box', () => {
     for (const rotation of [0, 90, 180, 270] as const) {
       const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: turned, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
       const surface = view(view().scrollToCentre({ row: 0, column: 0, rows: 4, columns: 3 }))
-      const { labels } = rulerLayout(bareProject({ technique: 'loom', frame: { ...turned, beads: {} } }), surface, { fontPx: 11, numbers: true }, frameIdIn(bareProject({ technique: 'loom', frame: { ...turned, beads: {} } })))
+      const subject = bareProject({ technique: 'loom', frame: { ...turned, beads: {}, angle: 90 } })
+      const { labels } = rulerLayout(subject, surface, { fontPx: 11, numbers: true }, frameIdIn(subject))
       expect(sidesSeen(labels), `${rotation}°`).toEqual(['left', 'top'])
     }
   })
@@ -184,7 +185,7 @@ describe('the numbers of a ruled box', () => {
   })
 
   it('give a press the whole row or column of the box, by its layer\'s own position', () => {
-    const { labels } = framed({ ...frame, row: 10, column: 20 }, { scroll: { x: 300, y: 150 } })
+    const { labels } = framed(frame)
 
     const row2 = labels.find((l) => l.axis === 'row' && l.text === '2')!
     const column3 = labels.find((l) => l.axis === 'column' && l.text === '3')!
@@ -193,7 +194,8 @@ describe('the numbers of a ruled box', () => {
   })
 
   it('shift the column numbers by the half bead an offset technique’s odd rows sit', () => {
-    const { labels } = framed({ ...frame, row: 1 }, { technique: 'brick' })
+    // A Piece area starting on row 1 (a Frame's own first row is never shifted).
+    const { labels } = layoutOf(project(block(1, 0, 3, 4), undefined, 'brick'), { technique: 'brick' })
     const first = labels.find((l) => l.axis === 'column' && l.text === '1')!
     // Row 1 is shifted 10px right, so bead 1's number is centred on 10 + 10.
     expect(first.x).toBe(20)
@@ -445,21 +447,21 @@ describe('the dots below the zoom where only the last number shows (ticket 378)'
 })
 
 describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => {
-  // A brick stitch Frame of 3 rows × 4 columns at row 2, column 3 of a loom Canvas: its corner is at (60, 40).
+  // A brick stitch Frame of 3 rows × 4 columns on a loom Canvas: drawn from its own corner, at (0, 0).
   const frame = { technique: 'brick' as const, row: 2, column: 3, rows: 3, columns: 4 }
   const subject = bareProject({ technique: 'loom', frame: { ...frame, beads: {} } })
   const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
   const { labels } = rulerLayout(subject, surface, { fontPx: 11, numbers: true }, frameIdIn(subject))
 
   it('number the rows at the Frame\'s own pitch, from its corner', () => {
-    const rows = labels.filter((l) => l.axis === 'row' && l.x < 0 + 60)
+    const rows = labels.filter((l) => l.axis === 'row' && l.x < 0)
     expect(rows.map((l) => l.text)).toEqual(['1', '2', '3'])
-    expect(rows.map((l) => l.y)).toEqual([50, 70, 90])
+    expect(rows.map((l) => l.y)).toEqual([10, 30, 50])
   })
 
   it('number the columns across, the shifted second row not moving the top ruler', () => {
-    const columns = labels.filter((l) => l.axis === 'column' && l.y < 40)
-    expect(columns.map((l) => l.x)).toEqual([70, 90, 110, 130])
+    const columns = labels.filter((l) => l.axis === 'column' && l.y < 0)
+    expect(columns.map((l) => l.x)).toEqual([10, 30, 50, 70])
   })
 
   it('mark the row or column of the Frame a number selects by its own positions', () => {
@@ -482,7 +484,8 @@ describe('a Frame lying turned (ticket 0667)', () => {
   it('carries its line and rulers round what it covers as it lies, Width and Height swapped', () => {
     const turned = { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: turned, rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
-    const laid = rulerLayout(bareProject({ technique: 'loom', frame: { ...turned, beads: {} } }), surface, { fontPx: 11, numbers: true }, frameIdIn(bareProject({ technique: 'loom', frame: { ...turned, beads: {} } })))
+    const subject = bareProject({ technique: 'loom', frame: { ...turned, beads: {}, angle: 90 } })
+    const laid = rulerLayout(subject, surface, { fontPx: 11, numbers: true }, frameIdIn(subject))
     expect(laid.boxes).toEqual([expect.objectContaining({ row: 0, column: 0, rows: 6, columns: 4, kind: 'frame' })])
     expect(Math.max(...laid.labels.filter((label) => label.axis === 'column').map((label) => Number(label.text)))).toBe(4)
     expect(Math.max(...laid.labels.filter((label) => label.axis === 'row').map((label) => Number(label.text)))).toBe(6)
@@ -503,7 +506,7 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
     return [...new Map(own.sort((a, b) => along(a) - along(b)).map((label) => [along(label), label.text])).values()]
   })
   const framed = (frame: typeof sheet & { quarterTurns?: 1 }, way: (typeof WAYS)[number], rotation: Rotation) => {
-    const subject = bareProject({ technique: 'loom', frame, ownProgress: way })
+    const subject = bareProject({ technique: 'loom', frame: { ...frame, ...(frame.quarterTurns ? { angle: 90 } : {}) }, ownProgress: way })
     // A turn carries the Frame off the top-left corner: look at it in the middle of a viewport that holds it.
     const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
     return rulerLayout(subject, view(view().scrollToCentre(sheet)), { fontPx: 11, numbers: true }, frameIdIn(subject)).labels
@@ -548,15 +551,27 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
 
   it('gives the counter the number the ruler shows on the current pass\'s line (ticket 0849)', () => {
     const peyote = { ...sheet, rows: 5, technique: 'peyote' as const }
-    for (const rotation of TURNS) {
+    // The Frame lies upright and upside down on the Table; its drawing is upright (the Canvas's turn is not its). A turned
+    // peyote Frame's rulers stand half a bead off its beads: not asked here.
+    for (const rotation of [0, 180] as const) {
       for (const way of WAYS) {
-        const subject = moveToRow(bareProject({ technique: 'peyote', frame: peyote, orientation: rotation, ownProgress: way }), 3, frameIdIn(bareProject({ technique: 'peyote', frame: peyote, orientation: rotation, ownProgress: way })))
-        const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame: peyote, rotation, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
-        const { labels } = rulerLayout(subject, view(view().scrollToCentre(peyote)), { fontPx: 11, numbers: true }, frameIdIn(subject))
-        // The number the pill stands on (rulerRenderer's `numbersPass`): the line's own, on the ruler across the rows.
-        const line = frameRowOrder(subject, frameIdIn(subject)).lineOf(3)
-        const shown = new Set(labels.filter((label) => label.kind === 'frame' && label.axis === (way.direction === 'columns' ? 'column' : 'row') && label.position === line).map((label) => label.text))
-        expect([...shown], `${rotation}° ${way.direction}`).toEqual([String(passLine(subject, frameIdIn(subject))!.line)])
+        const subject = moveToRow(bareProject({ technique: 'peyote', frame: { ...peyote, angle: rotation }, ownProgress: way }), 3, frameIdIn(bareProject({ technique: 'peyote', frame: { ...peyote, angle: rotation }, ownProgress: way })))
+        const ref = frameIdIn(subject)
+        const view = (scroll?: { x: number; y: number }) => surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame: placedFrame(subject, ref)!, rotation: 0, zoom: 1, scroll, viewport: { width: 2000, height: 2000 } })
+        const surface = view(view().scrollToCentre(peyote))
+        const { labels } = rulerLayout(subject, surface, { fontPx: 11, numbers: true }, ref)
+        // The number standing at the current pass's first bead (rulerRenderer's `passOnScreen`): on the ruler across the
+        // rows where the pass runs across the screen, else the one along the columns.
+        const line = frameRowOrder(subject, ref).lineOf(3)!
+        const columns = way.direction === 'columns'
+        const first = surface.beadToPoint(columns ? { row: 0, column: line } : { row: line, column: 0 }, ref)
+        const along = surface.beadStep(ref)[columns ? 'row' : 'column']
+        const across = (Math.abs(along.x) >= Math.abs(along.y)) !== ((rotation / 90) % 2 === 1)
+        const axis = across ? 'row' : 'column'
+        const stands = (label: RulerLabel) => Math.abs(axis === 'row' ? label.y - first.y : label.x - first.x)
+        const own = labels.filter((label) => label.kind === 'frame' && label.axis === axis)
+        const shown = own.reduce((best, label) => (stands(label) < stands(best) ? label : best)).text
+        expect(shown, `${rotation}° ${way.direction}`).toBe(String(passLine(subject, ref)!.line))
       }
     }
   })

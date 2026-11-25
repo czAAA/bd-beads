@@ -7,7 +7,7 @@ import type { Tool } from '../../domain/tool'
 import { stampCells } from '../../domain/selection'
 import { useCanvasPointer } from './useCanvasPointer'
 import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
-import { frameOf } from '../../domain/layerRecord'
+import { coversOf } from '../../domain/sheets'
 import { onLayer } from '../../domain/layers'
 import { paintCells } from '../../domain/drawing'
 
@@ -92,7 +92,7 @@ describe('useCanvasPointer', () => {
     })
 
     it('under the Eraser marks the hovered bead as one that would go, and shows nothing on an empty position (ticket 1014)', () => {
-      const { row, column } = frameOf(base)!
+      const { row, column } = coversOf(base)[0]!.frame
       const project = onLayer(base, FRAME_ID, (view) => paintCells(view, [{ row: 1, column: 2 }], '#e63746'))
       const { previewCells, onCellHover } = setup({ project, tool: 'erase' })
       onCellHover(row + 1, column + 2)
@@ -102,7 +102,8 @@ describe('useCanvasPointer', () => {
     })
 
     it('under the Eraser and Mirror marks only the counterparts that hold a bead (ticket 1014)', () => {
-      const { row, column } = frameOf(base)!
+      // Named by the Frame, so in its own rows and columns.
+      const [row, column] = [0, 0]
       const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
       const project = onLayer(base, FRAME_ID, (view) => paintCells(view, [{ row: 3, column: 0 }, { row: 0, column: 3 }], '#e63746'))
       const { previewCells, onCellHover } = setup({ project, tool: 'erase', mirror })
@@ -115,7 +116,8 @@ describe('useCanvasPointer', () => {
     })
 
     it('shows every counterpart of the hovered Frame bead under Mirror, those in finished rows left out (ticket 0703)', () => {
-      const { row, column } = frameOf(base)!
+      // Named by the Frame, so in its own rows and columns.
+      const [row, column] = [0, 0]
       const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
       const { previewCells, onCellHover } = setup({ project: moveToRow(base, 1, frameIdIn(base)), mirror })
       onCellHover(row + 3, column, FRAME_ID)

@@ -187,8 +187,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
     const placed = changeFrame(open, { custom: { shape: 'star', size: 2, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Star')
-    const { row, column } = frameOf(placed.project)!
-    const painted = paintAt(placed.project, [{ row, column, layer: FRAME_ID }], red.hex)
+    const painted = paintAt(placed.project, [{ row: 0, column: 0, layer: FRAME_ID }], red.hex)
     const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW, frameIdIn(painted)).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, runNote, en.print.wordChart.pairNote])
@@ -201,9 +200,8 @@ describe('printText Word chart (ticket 0574)', () => {
     const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 3, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Warped Square')
     const layout = frameLayoutOf(frameOf(placed.project)!)!
-    const { row, column } = frameOf(placed.project)!
     // Round 3's first side's beads, its first pair's second bead among them.
-    const cells = layout.positions.filter((position) => position.row === 2 && position.panel === 0).map((position) => ({ row: row + position.row, column: column + position.column, layer: FRAME_ID }))
+    const cells = layout.positions.filter((position) => position.row === 2 && position.panel === 0).map((position) => ({ row: position.row, column: position.column, layer: FRAME_ID }))
     expect(cells.length).toBe(3)
     const chart = printText(letters(paintAt(placed.project, cells, red.hex)), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(paintAt(placed.project, cells, red.hex)))).wordChart!
     expect(chart.notes).toEqual([en.print.wordChart.firstCentre, runNote, en.print.wordChart.pairNote])
@@ -230,9 +228,8 @@ describe('printText Word chart (ticket 0574)', () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })) })
     const placed = changeFrame(open, { custom: { shape: 'kite', size: 5, centre: { row: 20, column: 20 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error('expected a Kite')
-    const { row, column } = frameOf(placed.project)!
     // The right wing's beads of row 3.
-    const cells = frameLayoutOf(frameOf(placed.project)!)!.positions.filter((position) => position.row === 2 && position.panel === 1).map((position) => ({ row: row + position.row, column: column + position.column, layer: FRAME_ID }))
+    const cells = frameLayoutOf(frameOf(placed.project)!)!.positions.filter((position) => position.row === 2 && position.panel === 1).map((position) => ({ row: position.row, column: position.column, layer: FRAME_ID }))
     const chart = printText(letters(paintAt(placed.project, cells, red.hex)), en, 'en', at, ROW_BY_ROW, frameIdIn(letters(paintAt(placed.project, cells, red.hex)))).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.firstPoint, en.print.wordChart.sides, runNote, en.print.wordChart.middlePairNote])

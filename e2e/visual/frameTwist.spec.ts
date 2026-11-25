@@ -1,10 +1,11 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test, type Page } from '@playwright/test'
 import { frameById, frameIdOf, frameOf, orientationOf } from '../../src/domain/layerRecord'
-import { frameAngleOf, lieAlike } from '../../src/domain/table'
+import { frameAngleOf } from '../../src/domain/table'
 import { currentZoomPercent, openApp, savedProject, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { withFrameSheet } from '../../src/domain/frameSheet'
+import { onCanvas } from '../../src/testUtils/onCanvas'
 
 // A two-finger twist on touch (ticket 1190): one that starts on the Frame's sheet turns the Frame about its centre, one
 // anywhere else the Canvas, and pan and pinch move both, in Safari's engine at an iPad's density, as the owner's iPad.
@@ -109,7 +110,8 @@ test('pan, pinch and a twist on the Frame and off it each turn and move what the
   expect(leaning).toBeGreaterThan(15)
   expect(leaning).toBeLessThan(35)
   expect(orientationOf(saved)).toBe(0)
-  expect(lieAlike(saved, frameIdIn(saved))).toBe(false)
+  // It leans off the Canvas's quarter turns.
+  expect(frameAngleOf(saved, frameIdIn(saved)) % 90).not.toBe(0)
 
   // A twist that starts off the Frame turns the Canvas alone, easing onto the quarter turn.
   await twoFingers(page, twist({ x: box.x + 120, y: box.y + 120 }, 100, 50))
@@ -120,7 +122,7 @@ test('pan, pinch and a twist on the Frame and off it each turn and move what the
   await twoFingers(page, twist(sheetMiddle, 75, 30))
   await expect.poll(async () => frameOf(await savedProject(page))!.angle).toBe(90)
   const resaved = await savedProject(page)
-  expect(lieAlike(resaved, frameIdIn(resaved))).toBe(true)
+  expect(frameAngleOf(resaved, frameIdIn(resaved))).toBe(orientationOf(resaved))
 })
 
 test('a twist paced like an iPad\'s catches up with the fingers once they stop, and Fit puts the turns back (ticket 1227)', async ({ page }) => {
@@ -148,7 +150,7 @@ test('a twist paced like an iPad\'s catches up with the fingers once they stop, 
 test('a twist on one of two Frames turns that Frame alone (ticket 1220)', async ({ page }) => {
   const second = frameIdOf({ id: 'second' })
   const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
-  const pair = withFrameSheet(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'loom' }, { frame: second })
+  const pair = withFrameSheet(base, onCanvas(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'loom' }), { frame: second })
   await openApp(page, [pair])
   await settle(page)
   await expect(page.getByTestId('margin-sheet')).toHaveCount(2)

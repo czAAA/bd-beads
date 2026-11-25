@@ -45,6 +45,9 @@ function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra:
   return withLayers(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: LETTERS, letters: false, ...extra })
 }
 
+/** The Project as the export lays it before it plans a chart: the Table upright, the Frame by its own turn (ticket 1186). */
+const laidAsExported = (project: Project) => withLaidTurn(project, undefined, frameIdIn(project))
+
 /** The arms of the empty positions' crosses: the bare line segments stroked faint at 0.1 mm, as [x1, y1, x2, y2] in
  * points. The stroke's colour and width are only written when they change, so they are followed through the content. */
 function crossArms(content: string): number[][] {
@@ -68,7 +71,7 @@ function full(technique: Technique, beadId: string, columns: number, rows: numbe
   const base = createProject({ technique, beadId, ...(techniqueSettings ? { techniqueSettings } : {}), size: { width: columns, height: rows, unit: 'beads' } })
   const { columns: wide, rows: tall } = frameOf(base)!
   const beads = Object.fromEntries(Array.from({ length: tall }, (_, row) => [row, Object.fromEntries(Array.from({ length: wide }, (_, column) => [column, DARK]))]))
-  return withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation, paletteLetters: LETTERS, letters: false })
+  return laidAsExported(withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation, paletteLetters: LETTERS, letters: false }))
 }
 
 /** The ruler numbers the parts are drawn with: each text that is only digits, with its style and place in points. */
@@ -227,7 +230,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     // A 13 × 30 piece in the middle of a 30 × 39 Frame.
     const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 30, height: 39, unit: 'beads' } })
     const beads = Object.fromEntries(Array.from({ length: 30 }, (_, row) => [row + 4, Object.fromEntries(Array.from({ length: 13 }, (_, column) => [column + 8, DARK]))]))
-    const project = withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation: turn, paletteLetters: LETTERS, letters: false })
+    const project = laidAsExported(withLayers(base, { frame: { ...frameOf(base)!, beads }, orientation: turn, paletteLetters: LETTERS, letters: false }))
     const plan = planWithKey(project, { frame: frameIdIn(project) })
     const numbers = rulerTexts(project, plan, plan.parts.filter((part) => part.page === plan.parts[0]!.page))
     const [across, down] = turn % 180 === 0 ? [13, 30] : [30, 13]
@@ -235,6 +238,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     const top = Math.min(...numbers.map((text) => text.baseline))
     const bottom = Math.max(...numbers.map((text) => text.baseline))
 
+    process.stderr.write(`DBG ${turn} n=${numbers.length} ${JSON.stringify([...new Set(numbers.map((t) => `${t.align}:${Math.round(t.baseline)}`))])} top=${top} bottom=${bottom}\n`)
     expect(plan.parts).toHaveLength(1)
     for (const edge of [top, bottom]) expect(numbers.filter((text) => text.baseline === edge && text.align === 'center').sort((p, q) => p.x - q.x).map((text) => text.value)).toEqual(count(across))
     for (const side of ['right', 'left']) expect(numbers.filter((text) => text.align === side).sort((p, q) => p.baseline - q.baseline).map((text) => text.value)).toEqual(count(down))

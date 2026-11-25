@@ -83,7 +83,7 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
   it('writes the Frame\'s Weave, beads and name into its layer, leaving the Canvas as it was', () => {
     const before = framed()
     const after = withLayer(before, FRAME_ID, { weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beads: { 0: { 0: RED } }, name: 'Lily' })
-    expect(frameOf(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, beads: { 0: { 0: RED } }, name: 'Lily', row: frameOf(before)!.row })
+    expect(frameOf(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, beads: { 0: { 0: RED } }, name: 'Lily', centre: frameOf(before)!.centre })
     expect(canvasOf(after)).toBe(canvasOf(before))
   })
 
@@ -101,11 +101,11 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
     expect(frameOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: delica.id })
   })
 
-  it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and place', () => {
+  it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and centre', () => {
     const before = triangle()
     const after = withLayer(before, FRAME_ID, { weave: { technique: 'loom' }, beads: { 0: { 0: RED } } })
-    const { shape, settings, row, column } = frameOf(before)!
-    expect(frameOf(after)).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, shape, settings, row, column })
+    const { shape, settings, centre } = frameOf(before)!
+    expect(frameOf(after)).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, shape, settings, centre })
   })
 
   it('leaves the change unstamped, for the caller to stamp', () => {

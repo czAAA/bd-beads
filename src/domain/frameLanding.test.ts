@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { landedClear } from './frameLanding'
 import { frameMet } from './frameSpacing'
 import { createProject } from './createProject'
-import { footprintOf } from './footprint'
 import { frameById } from './layerRecord'
 import { MARGIN } from './margin'
 import { twoFrames, SECOND, firstOf } from '../testUtils/twoFrames'
 import { frameIdIn } from '../testUtils/frameId'
+import { placeOf } from '../testUtils/placeOf'
 import type { Project } from '../domain/project'
 
 /** The Project of `twoFrames` with its second Frame put at `at`, as a new Frame lies before it is nudged. */
@@ -23,7 +23,7 @@ describe('landedClear (spec 1214, ticket 1222)', () => {
     expect(frameMet(project, SECOND)).toBe(firstOf(project))
     const landed = landedClear(project, SECOND)
     expect(frameMet(landed, SECOND)).toBeUndefined()
-    const [first, moved] = [footprintOf(landed, firstOf(landed))!, footprintOf(landed, SECOND)!]
+    const [first, moved] = [placeOf(landed, firstOf(landed)), placeOf(landed, SECOND)]
     // The nearest clear places lie a Frame and two margins away, along a side: nothing nearer was free.
     const gap = Math.max(moved.row - (first.row + first.rows), first.row - (moved.row + moved.rows), moved.column - (first.column + first.columns), first.column - (moved.column + moved.columns))
     expect(gap).toBe(2 * MARGIN)

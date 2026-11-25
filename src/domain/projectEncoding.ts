@@ -7,6 +7,7 @@ import { liftFlatWeave, renamedBrickBlock, renamedBrickBlocks, type FlatProject,
 import type { FrameLayer, Grid, Project } from './project'
 import { storedPalette } from './palette'
 import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
+import { roundedMm } from './table'
 import { settingsOffDefault, type Weave } from './weave'
 
 /** The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with
@@ -261,8 +262,7 @@ function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
  * a mm), not its Canvas position; `quarterTurns` is read from the angle, so it is not kept. */
 function encodeFrame(frame: FrameLayer, centre: { x: number; y: number }): EncodedLayer {
   const { quarterTurns: _turns, centre: _centre, ...rest } = frame as FrameLayer & { quarterTurns?: unknown }
-  const rounded = (value: number) => Math.round(value * 1e6) / 1e6 || 0
-  return { ...encodeLayer(rest as FrameLayer), centreMm: { x: rounded(centre.x), y: rounded(centre.y) } }
+  return { ...encodeLayer(rest as FrameLayer), centreMm: { x: roundedMm(centre.x), y: roundedMm(centre.y) } }
 }
 
 /** The Project a file version 13 to 18 or library version 6 to 10 value holds (ticket 0664); it still goes through

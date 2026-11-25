@@ -10,6 +10,8 @@ import { paintAt } from '../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import { withLayers } from '../testUtils/layerFields'
+import { placeOf } from '../testUtils/placeOf'
+import { sheetAt } from '../testUtils/sheetAt'
 
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const R = '#e63746'
@@ -105,10 +107,11 @@ describe('the work a stroke step does', () => {
   /** A 300 × 300 Frame full of beads and a Canvas of 100 × 100 beads clear of its margin, each behind a counter. */
   function bigFramed() {
     const created = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 300, height: 300, unit: 'beads' } })
-    const frame = frameOf(created)!
+    // Frame cells are named by its own rows and columns, which lie over the Canvas positions from (0, 0).
+    const frame = { ...frameOf(created)!, ...placeOf(created) }
     const inFrame = countingBeads(withColors({}, block(0, 0, 300, 300)))
     const onCanvas = countingBeads(withColors({}, block(frame.row, frame.column + 300 + MARGIN + 10, 100, 100)))
-    const project: Project = withLayers(created, { beads: onCanvas.beads, frame: { ...frame, beads: inFrame.beads } })
+    const project: Project = withLayers(created, { beads: onCanvas.beads, frame: sheetAt(created, 0, 0, { beads: inFrame.beads }) })
     return { project, frame, inFrame: inFrame.reads, onCanvas: onCanvas.reads }
   }
 

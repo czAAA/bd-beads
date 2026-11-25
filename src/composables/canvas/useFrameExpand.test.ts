@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import { MAX_ZOOM } from '../../domain/grid'
-import { footprintOf } from '../../domain/footprint'
+import { coversOf } from '../../domain/sheets'
+import type { FrameRef } from '../../domain/grid'
 import { canvasOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -40,6 +41,9 @@ function setup(project: Project) {
   view.fit()
   return { current, viewport, compact, view, expand, stop: () => scope.stop() }
 }
+
+/** The Canvas positions a Frame's beads lie over (spec 1234). */
+const footprintOf = (project: Project, ref: FrameRef) => coversOf(project).find((cover) => cover.ref === ref)?.frame
 
 /** The Frame's beads on screen, in the view as it stands. */
 function beadsOnScreen(project: Project, zoom: number, scroll: { x: number; y: number }) {

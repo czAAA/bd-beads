@@ -5,6 +5,7 @@ import { encodeProject } from '../domain/projectEncoding'
 import type { FrameLayer, Project } from '../domain/project'
 import { rowProgressOf, type OwnRowProgress } from '../domain/rowProgress'
 import { turnedWay, type SeenWay } from '../domain/rowWays'
+import { coversOf } from '../domain/sheets'
 import { frameQuarterTurnOf } from '../domain/table'
 import { frameSheetOf } from './layerFields'
 
@@ -17,8 +18,12 @@ import { frameSheetOf } from './layerFields'
 export function legacyRecordOf(project: Project): FlatProject {
   const { layers: _layers, ...own } = project
   const { id: _id, orientation: _orientation, ...canvas } = canvasOf(project)
-  const { angle: _angle, ...sheet } = (frameSheetOf(project) ?? {}) as Partial<FrameLayer>
-  return { ...own, ...canvas, rotation: quarterTurnOf(project), rowProgress: ownProgressOf(project), ...('row' in sheet ? { frame: sheet as FlatProject['frame'] } : {}) }
+  const { angle: _angle, centre: _centre, quarterTurns: _turns, ...sheet } = (frameSheetOf(project) ?? {}) as Partial<FrameLayer>
+  // Its place on the Canvas is the rectangle of positions it covers, its turn the quarter turns off the Canvas's (spec 1234).
+  const covered = coversOf(project)[0]?.frame
+  const turns = ((frameQuarterTurnOf(project, frameIdIn(project)) - quarterTurnOf(project) + 360) % 360) / 90
+  const frame = covered ? { ...sheet, row: covered.row, column: covered.column, ...(turns ? { quarterTurns: turns } : {}) } : undefined
+  return { ...own, ...canvas, rotation: quarterTurnOf(project), rowProgress: ownProgressOf(project), ...(frame ? { frame: frame as FlatProject['frame'] } : {}) }
 }
 
 /** The pointer of each of the Frame's own ways, as such a file named them. */

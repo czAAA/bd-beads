@@ -4,7 +4,7 @@ import { isFrameLayer, type FrameRef, type GridPosition, type Rotation } from '.
 import { sameBeads } from './layerBeads'
 import { beadsOfLayer, frameById, framesOf, frameIdOf, type Layered, withLayer } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
-import { frameGeometryOf } from './layers'
+import { frameGeometryOf } from './frameGeometryOf'
 import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'

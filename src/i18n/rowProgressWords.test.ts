@@ -5,6 +5,7 @@ import { moveToRow, toggleRowDirection } from '../domain/rowProgress'
 import { withLayers } from '../testUtils/layerFields'
 import { en } from './en'
 import { rowProgressAnnouncement as announcement, rowProgressCount as count } from './rowProgressWords'
+import { canvasOf } from '../domain/layerRecord'
 import type { Layered } from '../domain/layerRecord'
 
 const words = en.rowProgress
@@ -14,7 +15,8 @@ const rowProgressCount = (w: typeof words, project: Layered) => count(w, project
 
 function framed(technique: 'loom' | 'peyote', columns: number, rows: number) {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  return withLayers(project, { frame: { technique, row: 0, column: 0, rows, columns, beads: {} } })
+  // The Frame lies as a new Project's Canvas does: turned a quarter on the Table, as its Technique's lines start left to right as seen.
+  return withLayers(project, { frame: { technique, row: 0, column: 0, rows, columns, beads: {}, quarterTurns: canvasOf(project).orientation / 90 } })
 }
 
 function atRow(project: ReturnType<typeof framed>, row: number, turned = false) {

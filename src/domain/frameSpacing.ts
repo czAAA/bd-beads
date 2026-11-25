@@ -48,7 +48,7 @@ export function stoppedMoveAt(project: Project, ref: FrameRef, delta: TablePoint
     }
     const [x, y] = [along(other.left, other.right, own.sheet.left, own.sheet.right, delta.x), along(other.top, other.bottom, own.sheet.top, own.sheet.bottom, delta.y)]
     const [enter, leave] = [Math.max(x[0], y[0]), Math.min(x[1], y[1])]
-    if (enter < leave && enter > 0 && enter < first) first = enter
+    if (enter < leave && enter >= 0 && enter < first) first = enter
   }
   return { x: delta.x * first, y: delta.y * first }
 }

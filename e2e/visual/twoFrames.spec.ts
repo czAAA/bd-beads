@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 import { gridBox, openApp, savedProject, setZoom, settle } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { withFrameSheet } from '../../src/domain/frameSheet'
-import { withFrameTurnedTo } from '../../src/domain/framePlacement'
-import { beadsOfLayer, frameIdOf } from '../../src/domain/layerRecord'
+import { beadsOfLayer, frameIdOf, withFrameFields } from '../../src/domain/layerRecord'
+import { onCanvas } from '../../src/testUtils/onCanvas'
 import type { Project } from '../../src/domain/project'
 
 // A Project file with two Frames opens and draws both (ticket 1219), what the app cannot make yet: each at its own place,
@@ -16,8 +16,8 @@ const SECOND = frameIdOf({ id: 'second' })
 function leaningPair(leaning: boolean, blank = false): Project {
   const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
   const beads = blank ? {} : Object.fromEntries(Array.from({ length: 8 }, (_, row) => [row, Object.fromEntries(Array.from({ length: 6 }, (_, column) => [column, (row + column) % 3 === 0 ? '#2f6fed' : '#e63746']))]))
-  const both = withFrameSheet(base, { row: 1, column: 22, rows: 8, columns: 6, beads, technique: 'loom' }, { frame: SECOND })
-  return leaning ? withFrameTurnedTo(both, 20, SECOND) : both
+  const both = withFrameSheet(base, onCanvas(base, { row: 1, column: 22, rows: 8, columns: 6, beads, technique: 'loom' }), { frame: SECOND })
+  return leaning ? withFrameFields(both, { angle: 20 }, SECOND) : both
 }
 
 for (const [name, media, zoom] of [

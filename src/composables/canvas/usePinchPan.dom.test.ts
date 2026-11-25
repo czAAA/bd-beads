@@ -1,10 +1,8 @@
-import { FRAME_ID } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import { usePinchPan } from './usePinchPan'
-import type { TwistTarget } from './useCanvasView'
 
-function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) => TwistTarget, nextFrame?: (run: () => void) => void) {
+function setup(zoom = 1, drawnAt?: number, nextFrame?: (run: () => void) => void) {
   const el = document.createElement('div')
   document.body.append(el)
   // The area drawn larger by CSS zoom (ticket 1071), its box from (40, 20) on screen.
@@ -18,7 +16,7 @@ function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; 
   })
   const cancelStroke = vi.fn()
   const endTwist = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist, twistTarget, nextFrame }))
+  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist, nextFrame }))
 
   const heard: string[] = []
   const child = document.createElement('div')
@@ -36,24 +34,6 @@ function setup(zoom = 1, drawnAt?: number, twistTarget?: (a: { clientX: number; 
 }
 
 describe('usePinchPan', () => {
-  it('turns the layer both fingers went down on, chosen as the second lands and kept through the gesture (ticket 1190)', () => {
-    // The Frame's sheet is left of x = 100 on screen.
-    const onFrame = (a: { clientX: number }, b: { clientX: number }): TwistTarget => (a.clientX < 100 && b.clientX < 100 ? FRAME_ID : 'canvas')
-    const t = setup(1, undefined, onFrame)
-    t.fire('pointerdown', 1, 10, 10)
-    // The first finger moved off the sheet before the second landed: where it went down counts.
-    t.fire('pointermove', 1, 150, 10)
-    t.fire('pointerdown', 2, 60, 60)
-    t.fire('pointermove', 2, 400, 400)
-    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ target: FRAME_ID }))
-    t.fire('pointerup', 1, 150, 10)
-    t.fire('pointerup', 2, 400, 400)
-    t.fire('pointerdown', 1, 10, 10)
-    t.fire('pointerdown', 2, 160, 60)
-    t.fire('pointermove', 2, 170, 60)
-    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ target: 'canvas' }))
-  })
-
   it('leaves a one-finger stroke to the surface', () => {
     const t = setup()
     t.fire('pointerdown', 1, 10, 10)
@@ -90,7 +70,7 @@ describe('usePinchPan', () => {
     t.fire('pointerdown', 2, 100, 0)
     t.fire('pointermove', 2, 200, 20)
     expect(t.pinch).toHaveBeenCalledOnce()
-    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 }, target: 'canvas' })
+    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 } })
   })
 
   it('does not twist for the small turn a pinch or pan carries (ticket 0709)', () => {
@@ -119,9 +99,9 @@ describe('usePinchPan', () => {
 
   describe('the glue twist (ticket 1227)', () => {
     /** A twist of the fingers that has engaged (90° of it), the frames held back until `frame()` runs them. */
-    function glued(twistTarget?: () => TwistTarget) {
+    function glued() {
       const queued: Array<() => void> = []
-      const t = setup(1, undefined, twistTarget, (run) => queued.push(run))
+      const t = setup(1, undefined, (run) => queued.push(run))
       const frame = () => queued.splice(0).forEach((run) => run())
       t.fire('pointerdown', 1, 0, 0)
       t.fire('pointerdown', 2, 100, 0)
@@ -164,13 +144,6 @@ describe('usePinchPan', () => {
       expect(shown(t)).toBeCloseTo(45, 6)
       expect(t.endTwist).toHaveBeenCalledOnce()
     })
-
-    it('glues a twist of the Frame the same, the target kept', () => {
-      const t = glued(() => FRAME_ID)
-      t.fire('pointermove', 1, 100, 0)
-      t.frame()
-      expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ turn: expect.closeTo(45 * 0.85, 6), target: FRAME_ID }))
-    })
   })
 
   it('turns the short way across the line where the angle wraps round', () => {
@@ -204,7 +177,7 @@ describe('usePinchPan', () => {
     t.fire('pointerdown', 1, 40, 20)
     t.fire('pointerdown', 2, 240, 20)
     t.fire('pointermove', 2, 440, 60)
-    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 }, target: 'canvas' })
+    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 } })
   })
 
   it('ignores a mouse and a pen', () => {

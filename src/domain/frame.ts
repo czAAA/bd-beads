@@ -100,7 +100,7 @@ export function frameResizedAround(weave: Weave, frame: Pick<Rect, 'rows' | 'col
   const [across, down] = [columnCycle(weave), rowCycle(weave)]
   const left = across > 1 ? across * Math.trunc((wide - frame.columns) / (2 * across)) : Math.trunc((wide - frame.columns) / 2)
   const top = down > 1 ? down * Math.trunc((tall - frame.rows) / (2 * down)) : Math.trunc((tall - frame.rows) / 2)
-  return { row: -top, column: -left, rows: tall, columns: wide }
+  return { row: -top || 0, column: -left || 0, rows: tall, columns: wide }
 }
 
 /** The Frame that wraps every Canvas bead drawn (Fit to drawing), or undefined when there is none. Canvas beads under a

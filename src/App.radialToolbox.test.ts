@@ -6,7 +6,7 @@ import { FRAME_ID } from './testUtils/frameId'
 import { beadColor, beadPoint, holdBead, hoverBead, outlinedBead, pressBead, rightClickBead } from './testUtils/beads'
 import { pickTool, pressBar, toolState } from './testUtils/pill'
 import { loadProjects } from './services/libraryStore'
-import { frameOf } from './domain/layerRecord'
+import { coversOf } from './domain/sheets'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
 
 // The Radial toolbox's wiring (ticket 1064, spec 1072): a right click on the Canvas reaches the ring's flow, and a pick
@@ -190,7 +190,7 @@ describe('the Radial toolbox', () => {
   /** A Project with a Selection of 2 x 3 beads on the Canvas, above the Frame, and its top-left bead position. */
   async function mountSelected() {
     const wrapper = await mountWithProject(6, 6, { attachTo: document.body })
-    const frame = frameOf(loadProjects()[0]!)!
+    const { frame } = coversOf(loadProjects()[0]!)[0]!
     const top = { row: frame.row - 10, column: frame.column }
     await pickTool(wrapper, 'select')
     await pressBead(wrapper, top)

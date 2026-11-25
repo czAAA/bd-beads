@@ -1,6 +1,5 @@
 // @vitest-environment node
-import { frameIdIn } from '../testUtils/frameId'
-import { framePlacement } from './framePlacement'
+import { coversOf } from './sheets'
 import type { CanvasLayer, FrameLayer } from './project'
 import { describe, expect, it } from 'vitest'
 import { withColorsInPalette } from './paletteEdits'
@@ -161,13 +160,13 @@ describe('encodeProject / decodeProject', () => {
 
     const decoded = decodeProject(JSON.parse(JSON.stringify(encodeProject(project))))
 
-    // Beside it, the marks normalizeProject reads: the list its Background positions are in (ticket 1000), and that
-    // each layer's Letters switch is its own (ticket 1092). The Frame keeps its centre on the table in place of its
-    // Canvas position (ticket 1185), and the Palette is in its sections, each code beside it by hex (ADR 0103).
-    const [canvas, { row: _row, column: _column, ...frame }] = project.layers as [CanvasLayer, FrameLayer]
+    // Beside it, the marks normalizeProject reads: the list its Background positions are in (ticket 1000), that each
+    // layer's Letters switch is its own (ticket 1092), the Frame's centre in mm as `centreMm`, its quarter turn read from
+    // its angle (ticket 1237), and the Palette in its sections, each code beside it by hex (ADR 0103).
+    const [canvas, { centre, quarterTurns: _turns, ...frame }] = project.layers as [CanvasLayer, FrameLayer]
     const { palette: _palette, paletteCodes: _codes, ...rest } = project
     const codes = Object.fromEntries(Object.entries(project.paletteCodes!).map(([hex, { code }]) => [hex, code]))
-    expect(decoded).toEqual({ ...rest, palette: [{ catalog: 'toho', colors: project.palette }], paletteCodes: codes, layers: [canvas, { ...frame, centre: framePlacement(project, frameIdIn(project))!.at }], backgroundPositions: 3, lettersByLayer: true })
+    expect(decoded).toEqual({ ...rest, palette: [{ catalog: 'toho', colors: project.palette }], paletteCodes: codes, layers: [canvas, { ...frame, centreMm: centre }], backgroundPositions: 3, lettersByLayer: true })
   })
 
   it('does not fold the grid colors into a field of their own on the Project', () => {
@@ -202,8 +201,9 @@ describe('encodeProject / decodeProject', () => {
     const encoded = encodeProject(withLayers(paint(makeProject(2, 1), () => '#ff0000'), { beads: { 5: { 5: '#00ff00' } } }))
 
     expect(encoded.layers[0]!.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
-    expect(encoded.layers[1]).toMatchObject({ technique: 'loom', angle: 0, centre: { x: 1, y: 0.5 }, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+    expect(encoded.layers[1]).toMatchObject({ technique: 'loom', angle: 0, centreMm: { x: 1.5, y: 0.75 }, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
     expect(encoded.layers[1]).not.toHaveProperty('row')
+    expect(encoded.layers[1]).not.toHaveProperty('centre')
     expect(encoded.layers[1]).not.toHaveProperty('beads')
   })
 
@@ -213,7 +213,8 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeGridProject(stored))
 
-    expect(frameSheetOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(frameSheetOf(read)).toMatchObject({ technique: 'loom', columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(coversOf(read)[0]!.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2 })
     expect(beadsOfLayer(read, 'canvas')).toEqual({})
   })
 })

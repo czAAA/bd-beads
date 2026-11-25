@@ -6,7 +6,8 @@ import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
-import { beadsOfLayer, frameOf, framesOf } from './domain/layerRecord'
+import { beadsOfLayer, framesOf } from './domain/layerRecord'
+import { coversOf } from './domain/sheets'
 import { defaultColorOf } from './testUtils/defaultColors'
 
 beforeEach(() => {
@@ -263,7 +264,7 @@ describe('App select, copy and paste', () => {
 
   it('Mirror on the Selection bar makes the Selection\'s rectangle the Mirror, clears it and shows the Mirror bar (ADR 0082)', async () => {
     const wrapper = await mountWithProject(6, 6) // 4x4
-    const frame = frameOf(loadProjects()[0]!)!
+    const { frame } = coversOf(loadProjects()[0]!)[0]!
     await pickTool(wrapper, 'select')
     const top = { row: frame.row - 10, column: frame.column }
     await pressBead(wrapper, top)
@@ -281,7 +282,7 @@ describe('App select, copy and paste', () => {
   it('The Mirror bar stays with a Selection, after the Selection bar in Tab order, and both work (ticket 0809)', async () => {
     const wrapper = await mountWithProject(6, 6) // 4x4
     await projectWithMotif(wrapper)
-    const frame = frameOf(loadProjects()[0]!)!
+    const { frame } = coversOf(loadProjects()[0]!)[0]!
     const top = { row: frame.row - 10, column: frame.column }
     await pressBead(wrapper, top)
     await hoverBead(wrapper, { row: top.row + 1, column: top.column + 2 }, { buttons: 1 })

@@ -28,6 +28,12 @@ export function turnedPoint({ x, y }: TablePoint, degrees: number): TablePoint {
   return { x: x * cos - y * sin || 0, y: x * sin + y * cos || 0 }
 }
 
+/** A length in mm kept to a millionth of a mm, as a file stores a centre: what a read centre is rounded to, so the Project
+ * reads back the same as it is written (ticket 1237). */
+export function roundedMm(value: number): number {
+  return Math.round(value * 1e6) / 1e6 || 0
+}
+
 /** The Table turn (spec 1234): how far the whole Table is shown turned, in degrees clockwise, 0 when upright. */
 export function tableTurnOf(project: Layered): number {
   return canvasOf(project).tableTurn ?? 0

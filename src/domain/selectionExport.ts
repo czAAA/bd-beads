@@ -28,12 +28,12 @@ function beadsInside(beads: BeadMap, area: Rect, cells: readonly GridPosition[] 
   return shiftedBeads(withColors({}, kept), -area.row, -area.column)
 }
 
-/** Whether a Selection can be exported: not on a Custom frame (its chart is its Frame shape's whole) nor one off the
- * Canvas's grid, which have no rectangle of beads to cut. */
+/** Whether a Selection can be exported: not on a Custom frame, whose chart is its Frame shape's whole and has no rectangle
+ * of beads to cut. */
 export function selectionExportable(project: Project, selection: Selection): boolean {
   const layer = selectionLayer(selection)
   const frame = frameById(project, layer)
-  return layer === 'canvas' || (!!frame && !frame.shape && !frame.centre)
+  return layer === 'canvas' || (!!frame && !frame.shape)
 }
 
 /** The Project to export for a Selection (ticket 1210), or none where it can't be. Only the Selection's layer is cut, a

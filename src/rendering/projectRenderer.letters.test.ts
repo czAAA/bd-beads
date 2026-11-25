@@ -112,7 +112,8 @@ function turningContext() {
 }
 
 describe('a letter reads upright however the Frame or the Canvas is turned (ticket 0728)', () => {
-  const region = { x: 0, y: 0, width: 200, height: 200 }
+  // Round the origin: a turned Canvas carries the Frame about it, to any side.
+  const region = { x: -200, y: -200, width: 400, height: 400 }
   // The letters in view, each with how it is turned and whether it is mirrored on screen.
   const lettered = (project: Project) => {
     const { context, letters } = turningContext()

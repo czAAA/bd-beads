@@ -5,10 +5,12 @@ import { changeFrame } from '../../domain/changeFrame'
 import type { FrameShapeId } from '../../domain/frameShape'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, rowProgressOf, rowProgressStarted } from '../../domain/rowProgress'
+import { coversOf } from '../../domain/sheets'
+import type { FrameRef } from '../../domain/grid'
 import { MAX_FRAMES } from '../../domain/frameLimit'
 import { frameMet } from '../../domain/frameSpacing'
 import { withFrameSheet } from '../../domain/frameSheet'
-import { withFrame } from '../../domain/frame'
+import { withFrame } from '../../testUtils/withFrame'
 import { laidFrame, seenSize } from '../../domain/frameOrientation'
 import { rotateFrame } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
@@ -55,13 +57,15 @@ function setupEditing(project: Project | null = sized) {
 /** A Frame\'s rectangle alone, without its Weave. */
 const rect = ({ technique: _technique, ...rectangle }: Rect & { technique: string }) => rectangle
 
-/** The rectangle of the Frame the last change left (its beads and name aside). */
+/** The Canvas positions a Frame covers (spec 1234): where it lies on the Canvas, as a rectangle of them. */
+function placedOf(project: Project, ref: FrameRef = frameIdIn(project)): Rect | undefined {
+  return coversOf(project).find((cover) => cover.ref === ref)?.frame
+}
+
+/** The rectangle of Canvas positions the Frame the last change left covers. */
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
   const last = deps.replaceProject.mock.calls.at(-1)?.[0]
-  const frame = last && frameSheetOf(last)
-  if (!frame) return undefined
-  const { beads: _beads, name: _name, technique: _technique, techniqueSettings: _settings, ...rectangle } = frame
-  return rectangle
+  return last && placedOf(last)
 }
 
 describe('useFrameFlow', () => {
@@ -79,7 +83,8 @@ describe('useFrameFlow', () => {
     const { deps, draftProject, press, drag, release } = setup(sized)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
-    expect(frameSheetOf(draftProject.value!)).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
+    expect(placedOf(draftProject.value!)).toEqual({ ...sizedRect, row: 1, column: 2 })
+    expect(frameOf(draftProject.value!)!.beads).toEqual({})
     release()
     expect(draftProject.value).toBe(deps.harness.project)
   })
@@ -300,9 +305,9 @@ describe('useFrameFlow', () => {
   it('adds a Frame round the reference image, a second beside the first, one Undo step each (tickets 0883, 1222)', () => {
     const { deps, setAround } = setup(open)
     setAround({ row: 2, column: 3, rows: 4, columns: 5 })
-    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5, name: 'Frame 1' })
+    expect({ ...placedOf(deps.harness.project), name: frameOf(deps.harness.project)!.name }).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5, name: 'Frame 1' })
     setAround({ row: 30, column: 3, rows: 6, columns: 6 })
-    expect(framesOf(deps.harness.project).map((frame) => rect(frame))).toMatchObject([{ row: 2, column: 3 }, { row: 30, column: 3, rows: 6, columns: 6, name: 'Frame 2' }])
+    expect(framesOf(deps.harness.project).map((frame) => ({ ...placedOf(deps.harness.project, frameIdOf(frame)), name: frame.name }))).toMatchObject([{ row: 2, column: 3 }, { row: 30, column: 3, rows: 6, columns: 6, name: 'Frame 2' }])
     deps.harness.history.onUndo()
     expect(framesOf(deps.harness.project)).toHaveLength(1)
   })
@@ -345,7 +350,7 @@ describe('useFrameFlow', () => {
     const named = withLayers(open, { beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] })
     const { deps, setTo } = setup(named)
     setTo({ row: 0, column: 2, rows: 1, columns: 4 })
-    expect(frameOf(deps.harness.project)).toMatchObject({ row: 0, column: 2, rows: 1, columns: 4 })
+    expect(placedOf(deps.harness.project)).toMatchObject({ row: 0, column: 2, rows: 1, columns: 4 })
     expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual(beads)
     expect(canvasOf(deps.harness.project).pieceNames).toEqual([{ row: 0, column: 0, name: 'Fox' }])
     expect(deps.showToast).not.toHaveBeenCalled()
@@ -625,7 +630,7 @@ describe('useFrameFlow', () => {
   it('brings the Frame into view', () => {
     const { deps, bringIntoView } = setup()
     bringIntoView()
-    expect(deps.centreOn).toHaveBeenCalledWith(frameOf(sized))
+    expect(deps.centreOn).toHaveBeenCalledWith(coversOf(sized)[0]!.sheet)
   })
 
   describe('the edge steppers (ticket 417)', () => {
@@ -633,6 +638,7 @@ describe('useFrameFlow', () => {
       const big = withLayers(sized, { frame: { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6, beads: {} } })
       const { deps, stepEdge } = setup(big)
       const frame = { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6 }
+      const beforeEdits = big
       stepEdge('right', 1)
       expect(lastFrame(deps)).toEqual({ ...rect(frame), columns: frame.columns + 1 })
       stepEdge('left', 1)
@@ -641,10 +647,10 @@ describe('useFrameFlow', () => {
       expect(lastFrame(deps)).toEqual({ ...rect(frame), column: frame.column - 1, columns: frame.columns + 2, row: frame.row + 1, rows: frame.rows - 1 })
       expect(deps.announce).toHaveBeenCalledTimes(3)
       deps.harness.history.onUndo()
-      expect(frameSheetOf(deps.harness.project)).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, beads: {} })
+      expect(placedOf(deps.harness.project)).toEqual({ ...rect(frame), column: frame.column - 1, columns: frame.columns + 2 })
       deps.harness.history.onUndo()
       deps.harness.history.onUndo()
-      expect(frameSheetOf(deps.harness.project)).toEqual({ ...frame, beads: {} })
+      expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(beforeEdits))
       expect(deps.harness.history.canUndo.value).toBe(false)
     })
 
@@ -655,25 +661,33 @@ describe('useFrameFlow', () => {
     })
 
     it('steps the top edge by a pair of rows where rows alternate', () => {
-      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'brick', frame: { technique: 'brick' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
+      const woven = withLayers(sized, { technique: 'brick', frame: { technique: 'brick' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } })
+      const was = placedOf(woven)!
+      const { deps, stepEdge } = setup(woven)
       stepEdge('top', 1)
-      expect(lastFrame(deps)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
+      // The Canvas positions it covers (by their middles) grow by the pair of rows on top, the columns as they were.
+      expect(lastFrame(deps)).toEqual({ ...was, row: was.row - 2, rows: was.rows + 2 })
     })
 
     it('steps the top edge by 2N rows on brick stitch with a Drop of N (ticket 0691)', () => {
-      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'brick', frame: { technique: 'brick' as const, techniqueSettings: { brickDrop: 2 }, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
+      const dropped = withLayers(sized, { technique: 'brick', frame: { technique: 'brick' as const, techniqueSettings: { brickDrop: 2 }, row: 4, column: 0, rows: 6, columns: 3, beads: {} } })
+      const was = placedOf(dropped)!
+      const { deps, stepEdge } = setup(dropped)
       stepEdge('top', 1)
-      expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 10, columns: 3 })
+      expect(lastFrame(deps)).toEqual({ ...was, row: was.row - 4, rows: was.rows + 4 })
     })
 
     it('steps the left edge by a pair of columns on peyote, by 2N with a Drop of N (tickets 0691, 0734)', () => {
       const peyote = { technique: 'peyote' as const, row: 0, column: 4, rows: 3, columns: 6, beads: {} }
-      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'peyote', frame: peyote }))
+      const woven = withLayers(sized, { technique: 'peyote', frame: peyote })
+      const was = placedOf(woven)!
+      const { deps, stepEdge } = setup(woven)
       stepEdge('left', 1)
-      expect(lastFrame(deps)).toEqual({ row: 0, column: 2, rows: 3, columns: 8 })
-      const dropped = setup(withLayers(sized, { technique: 'peyote', frame: { ...peyote, techniqueSettings: { peyoteDrop: 2 } } }))
+      expect(lastFrame(deps)).toEqual({ ...was, column: was.column - 2, columns: was.columns + 2 })
+      const withDrop = withLayers(sized, { technique: 'peyote', frame: { ...peyote, techniqueSettings: { peyoteDrop: 2 } } })
+      const dropped = setup(withDrop)
       dropped.stepEdge('left', 1)
-      expect(lastFrame(dropped.deps)).toEqual({ row: 0, column: 0, rows: 3, columns: 10 })
+      expect(lastFrame(dropped.deps)).toEqual({ ...placedOf(withDrop)!, column: placedOf(withDrop)!.column - 4, columns: placedOf(withDrop)!.columns + 4 })
     })
 
     it('does nothing with no Frame, or once Row progress holds it (ticket 411)', () => {
@@ -718,7 +732,8 @@ describe('useFrameFlow', () => {
       const frame = frameOf(deps.harness.project)!
       expect(frame).toMatchObject({ shape: 'star', settings: { partSize: 5 } })
       // Round the middle of the view, (20, 30).
-      expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
+      const at = placedOf(deps.harness.project)!
+      expect([at.row < 20, at.row + at.rows > 20, at.column < 30, at.column + at.columns > 30]).toEqual([true, true, true, true])
       expect(frame.beads).toEqual(starterDesign(star))
       expect(beadsOfLayer(deps.harness.project, 'canvas')).toBe(beadsOfLayer(painted, 'canvas'))
       expect(deps.announce).toHaveBeenCalledWith('Star Frame set, part size 5')
@@ -765,30 +780,31 @@ describe('useFrameFlow', () => {
 })
 
 describe('useFrameFlow on a turned Frame (ticket 1016)', () => {
-  /** A loom Frame of 4 rows and 6 columns turned a quarter: it lies 4 wide and 6 tall at (19, 21), its own top on the
-   * right as seen. */
+  /** A loom Frame of 4 rows and 6 columns turned a quarter: it lies 4 wide and 6 tall, its own top on the right as seen. */
   const turned = rotateFrame(withLayers(sized, { beads: {}, frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} } }), undefined, frameIdIn(withLayers(sized, { beads: {}, frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: {} } })))!
-  const seen = (flow: ReturnType<typeof setup>) => laidFrame(flow.deps.harness.project, frameIdIn(flow.deps.harness.project))
+  /** The size it lies at as seen: a Frame has no Canvas row and column of its own (spec 1234). */
+  const seen = (flow: ReturnType<typeof setup>) => sizeAsSeen(laidFrame(flow.deps.harness.project, frameIdIn(flow.deps.harness.project)))
+  const sizeAsSeen = (laid: Rect | undefined) => laid && { rows: laid.rows, columns: laid.columns }
 
   it('drags the seen edge a handle stands on, the opposite edge staying, as one announced Undo step', () => {
     const flow = setupEditing(turned)
     expect(flow.settingFrame.value).toBe(true)
     flow.press({ kind: 'handle', edges: ['right'] }, { row: 22, column: 24 })
     flow.drag({ row: 22, column: 26 })
-    expect(laidFrame(flow.draftProject.value!, frameIdIn(flow.draftProject.value!))).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
+    expect(sizeAsSeen(laidFrame(flow.draftProject.value!, frameIdIn(flow.draftProject.value!)))).toEqual({ rows: 6, columns: 6 })
     flow.release()
-    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 6 })
+    expect(seen(flow)).toEqual({ rows: 6, columns: 6 })
     expect(flow.deps.announce).toHaveBeenCalledWith('Frame set, width 6, height 6')
     flow.deps.harness.history.onUndo()
-    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(seen(flow)).toEqual({ rows: 6, columns: 4 })
   })
 
   it('steps an edge as seen from the Frame panel, and takes a Width and Height typed as seen', () => {
     const flow = setup(turned)
     flow.stepEdge('right', 1)
-    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 5 })
+    expect(seen(flow)).toEqual({ rows: 6, columns: 5 })
     flow.stepEdge('top', -1)
-    expect(seen(flow)).toEqual({ row: 20, column: 21, rows: 5, columns: 5 })
+    expect(seen(flow)).toEqual({ rows: 5, columns: 5 })
     flow.resizeTo(7, 9)
     expect(seenSize(frameOf(flow.deps.harness.project)!)).toEqual({ columns: 7, rows: 9 })
   })
@@ -796,9 +812,9 @@ describe('useFrameFlow on a turned Frame (ticket 1016)', () => {
   it('grows from its bottom-right as seen with Shift and the arrows', () => {
     const flow = setupEditing(turned)
     flow.onKey(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
-    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 6, columns: 5 })
+    expect(seen(flow)).toEqual({ rows: 6, columns: 5 })
     flow.onKey(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
-    expect(seen(flow)).toEqual({ row: 19, column: 21, rows: 7, columns: 5 })
+    expect(seen(flow)).toEqual({ rows: 7, columns: 5 })
   })
 })
 
@@ -835,7 +851,8 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     setAround({ row: 100, column: 100, rows: 4, columns: 5 })
     expect(framesOf(deps.harness.project)).toHaveLength(2)
     expect(framesOf(deps.harness.project)[0]).toEqual(framesOf(painted)[0])
-    expect(framesOf(deps.harness.project)[1]).toMatchObject({ row: 100, column: 100, rows: 4, columns: 5 })
+    expect(framesOf(deps.harness.project)[1]).toMatchObject({ rows: 4, columns: 5 })
+    expect(placedOf(deps.harness.project, frameIdOf(framesOf(deps.harness.project)[1]!))).toMatchObject({ row: 100, column: 100, rows: 4, columns: 5 })
     deps.harness.history.onUndo()
     expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(painted))
   })
@@ -876,9 +893,11 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     const { deps, settingFrame, press, drag, release } = setupEditing(triangle)
     expect(settingFrame.value).toBe(true)
     const frame = frameOf(triangle)!
-    const right = frame.column + frame.columns - 1
-    press({ kind: 'handle', edges: ['right'] }, { row: frame.row, column: right })
-    drag({ row: frame.row, column: right + frameOf(custom('triangle', 6))!.columns - frame.columns })
+    // The handle stands on the Canvas positions the Frame covers.
+    const at = placedOf(triangle)!
+    const right = at.column + at.columns - 1
+    press({ kind: 'handle', edges: ['right'] }, { row: at.row, column: right })
+    drag({ row: at.row, column: right + frameOf(custom('triangle', 6))!.columns - frame.columns })
     release()
     expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 6')
     deps.harness.history.onUndo()
@@ -897,10 +916,10 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } }, frameIdIn(open))
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, press, drag, release } = setupEditing(placed.project)
-    const frame = frameOf(placed.project)!
-    const bottom = frame.row + frame.rows - 1
-    press({ kind: 'handle', edges: ['bottom'] }, { row: bottom, column: frame.column })
-    drag({ row: bottom + 2, column: frame.column })
+    const at = placedOf(placed.project)!
+    const bottom = at.row + at.rows - 1
+    press({ kind: 'handle', edges: ['bottom'] }, { row: bottom, column: at.column })
+    drag({ row: bottom + 2, column: at.column })
     release()
     expect(deps.announce).toHaveBeenLastCalledWith('Fringe length: 14')
   })
@@ -920,7 +939,7 @@ describe('useFrameFlow asking for a Frame\'s settings popover (tickets 0935, 122
     const { deps, openSettings, popoverAsked } = setup()
     openSettings()
     expect(popoverAsked.value).toBe(frameIdIn(deps.harness.project))
-    expect(deps.centreOn).toHaveBeenCalledWith(frameOf(deps.harness.project))
+    expect(deps.centreOn).toHaveBeenCalledWith(coversOf(deps.harness.project)[0]!.sheet)
   })
 
   it('asks for none without a Frame', () => {

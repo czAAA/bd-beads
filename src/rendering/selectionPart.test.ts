@@ -1,9 +1,9 @@
 // @vitest-environment node
-import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
+import { frameIdIn } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { withFrame } from '../domain/frame'
+import { withFrame } from '../testUtils/withFrame'
 import { withLayer } from '../domain/layerRecord'
 import { wordChartOf } from '../domain/wordChart'
 import type { Project } from '../domain/project'
@@ -17,14 +17,14 @@ const RED = '#e63746'
 function framed(): Project {
   const base = withFrame(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 8, height: 40, unit: 'beads' } }), { row: 2, column: 1, rows: 30, columns: 6 }, frameIdIn(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 8, height: 40, unit: 'beads' } })))
   const beads = withColors({}, Array.from({ length: 30 }, (_, row) => ({ row, column: 2, color: RED })))
-  return withLayer(base, FRAME_ID, { beads })
+  return withLayer(base, frameIdIn(base), { beads })
 }
 
 describe('selectionPart', () => {
   it('keeps the whole chart\'s row and column numbers for a part of the Frame (ticket 1210)', () => {
     const project = framed()
     // Frame rows 11-19 (own).
-    const part = selectionPart(project, { top: 11, left: 2, rows: 9, columns: 3, layer: FRAME_ID }, 'part')!
+    const part = selectionPart(project, { top: 11, left: 2, rows: 9, columns: 3, layer: frameIdIn(project) }, 'part')!
     const trim = trimmedArea(part, frameIdIn(part))
 
     expect(downNumber(trim, trim.firstDown)).toBe(12)
@@ -34,7 +34,8 @@ describe('selectionPart', () => {
   })
 
   it('writes the Word chart\'s lines with the same numbers', () => {
-    const part = selectionPart(framed(), { top: 11, left: 2, rows: 9, columns: 3, layer: FRAME_ID }, 'part')!
+    const project = framed()
+    const part = selectionPart(project, { top: 11, left: 2, rows: 9, columns: 3, layer: frameIdIn(project) }, 'part')!
     const numbers = wordChartOf(part, frameIdIn(part))!.rows.map((row) => row.number)
 
     expect(numbers[0]).toBe(12)

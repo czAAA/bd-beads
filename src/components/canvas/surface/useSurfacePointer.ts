@@ -243,7 +243,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
    * is refused (the Frame's margin, also when the canvas moves under a still Pencil). */
   const penPointer = computed(() => {
     const { tool, picking, markerHidden, settingFrame } = props.tools
-    if (!penAt.value || settingFrame || markerHidden || handleCursor.value || refusesMargin(beadUnder(penAt.value))) return undefined
+    if (!penAt.value || settingFrame || markerHidden || handleCursor.value || refusesMargin(beadUnder(penAt.value)) || onRefusingSheet(pointInDrawing(penAt.value))) return undefined
     // The pointer that moves the canvas in the input mode shows the Hand, whatever the tool; the others their own.
     const image = penAt.value.moves ? toolPointerImage('hand')
       : eyedropperShown.value ? EYEDROPPER_IMAGE

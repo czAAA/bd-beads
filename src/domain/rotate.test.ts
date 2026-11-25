@@ -11,6 +11,7 @@ import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, 
 import { laidFrame } from './frameOrientation'
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
+import { placeOf } from '../testUtils/placeOf'
 import { frameSheetOf, type LayersChange, withLayers } from '../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
@@ -182,10 +183,12 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 3, column: 5, color: '#bb0000' }]))
     const turned = rotateFrame(project, undefined, frameIdIn(project))!
 
-    // The 4 x 6 Frame at (20, 20) lies 6 x 4 at (19, 21); its own size and beads are as they were.
-    expect(frameOf(turned)).toMatchObject({ row: 19, column: 21, rows: 4, columns: 6, quarterTurns: 1 })
+    // The 4 x 6 Frame at (20, 20) lies 6 x 4 about the same centre, at (19, 21); its own size and beads are as they were.
+    expect(frameOf(turned)).toMatchObject({ rows: 4, columns: 6, quarterTurns: 1 })
+    expect(frameOf(turned)!.centre).toEqual(frameOf(project)!.centre)
+    expect(placeOf(turned)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
     expect(frameOf(turned)!.beads).toBe(frameOf(project)!.beads)
-    expect(laidFrame(turned, frameIdIn(turned))).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(laidFrame(turned, frameIdIn(turned))).toEqual({ row: 0, column: 0, rows: 6, columns: 4 })
   })
 
   it('comes back after four turns, upright again', () => {

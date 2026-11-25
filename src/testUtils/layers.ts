@@ -5,11 +5,11 @@ import { fillArea, isFillRefusal, type FillReach } from '../domain/fill'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 
-/** Paints Canvas positions (a Frame's cells under them) the way a press does: on the layer the first position is on (the Frame's inside the Frame, the
+/** Paints Canvas positions (a Frame's cells under them; a position naming its layer is that layer's own cell) the way a press does: on the layer the first position is on (the Frame's inside the Frame, the
  * Canvas's elsewhere). */
 export function paintAt(project: Project, positions: GridPosition[], color: string | null): Project {
   const layer = layerAt(project, positions[0] ?? { row: 0, column: 0 })
-  return onLayer(project, layer, (view) => paintCells(view, positions.flatMap((position) => (layer === 'canvas' ? [position] : cellUnder(project, layer, position) ?? [])), color))
+  return onLayer(project, layer, (view) => paintCells(view, positions.flatMap((position) => (layer === 'canvas' || position.layer ? [position] : cellUnder(project, layer, position) ?? [])), color))
 }
 
 /** Bucket-fills from a Canvas position the way a press does: on the layer it is on, within Fill reach. A refused Fill

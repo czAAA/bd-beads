@@ -9,7 +9,7 @@ import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow
 import { changeFrame } from './changeFrame'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
-import { withFrame } from './frame'
+import { withFrame } from '../testUtils/withFrame'
 import { BEAD_CATALOG } from './beads'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'

@@ -15,6 +15,8 @@ import { surfaceView } from '../rendering/surfaceView'
 import { frameGrid } from './frameGrid'
 import { frameOf } from '../domain/layerRecord'
 import { canvasWeave, placedFrame } from '../domain/layerWeave'
+import { frameBeadOnCanvas } from '../domain/sheets'
+import { CELL_SIZE_PX } from '../rendering/cellSize'
 
 // Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109, 110). jsdom does no layout, so
 // a bead is found by its coordinates and hit-tested as for a real pointer (Surface view's pointToBead); results are
@@ -65,7 +67,9 @@ export function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; cli
   const onFrame = isFrameLayer(layer) && frameOf(project) ? { cell: canvasWeave(project).cell, frame: placedFrame(project, frameIdIn(project)), frameLayer: frameIdIn(project) } : {}
 
   const view = surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, ...onFrame, rotation, zoom, scroll: { x: scrollX, y: scrollY } })
-  const point = view.beadToPoint({ row, column }, onFrame.frame ? frameIdIn(project) : undefined)
+  // A Frame's cell lies where the Table puts it over the Canvas (spec 1234): aimed at through the Canvas's own view.
+  const onCanvas = isFrameLayer(layer) ? frameBeadOnCanvas(project, layer, { row, column }) : undefined
+  const point = onCanvas ? view.gridToPoint(onCanvas.x * CELL_SIZE_PX, onCanvas.y * CELL_SIZE_PX) : view.beadToPoint({ row, column }, onFrame.frame ? frameIdIn(project) : undefined)
   return { clientX: point.x, clientY: point.y }
 }
 

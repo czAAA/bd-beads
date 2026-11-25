@@ -1,15 +1,19 @@
 import type { FrameSheet, Rect } from './canvas'
 import { frameGeometry } from './frameShape'
 import type { FrameRef, GridPosition, Layer } from './grid'
-import { frameGeometryOf } from './layers'
+import { frameGeometryOf } from './frameGeometryOf'
 import { canvasOf, frameById, frameIdOf, framesOf, type Layered } from './layerRecord'
 import { canvasWeave, cellWidthMm, frameWeave } from './layerWeave'
-import { MARGIN, type Cover } from './margin'
+import type { Cover } from './margin'
 import { turnedPoint, type TablePoint } from './table'
 import { describeWeave, positionStep } from './weave'
 
 // Where a Frame's sheet lies on the Table (spec 1234, ticket 1237): the Frame and its keep-out margin as a rectangle in
 // mm, and the Canvas positions whose beads it hides. Layers differ only by quarter turns, so every sheet is upright.
+
+/** How many bead positions the margin is wide (MarginSheet card, ticket 0656): at 100% the room its sheet's top band
+ * and title block need, fixed, not a setting. Kept here, which `margin` reads, so the two do not import each other. */
+export const MARGIN = 4
 
 /** A rectangle on the Table, in mm. */
 export interface SheetBox {

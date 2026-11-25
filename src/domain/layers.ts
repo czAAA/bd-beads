@@ -1,13 +1,13 @@
-import { anyChangedPosition, colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
-import { isFrameLayer, type FrameRef, type GridPosition, type Layer } from './grid'
+import { anyChangedPosition, colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
+import { isFrameLayer, type GridPosition, type Layer } from './grid'
 
 export type { Layer }
 import { coversOf, layerUnder } from './sheets'
-import { frameGeometry, type ShapedSheet } from './frameShape'
+import type { ShapedSheet } from './frameShape'
+import { frameGeometryOf, shapedFrame } from './frameGeometryOf'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
 import { beadsOfLayer, frameById, type Layered, layerOf, withLayer } from './layerRecord'
 import { beadsShown } from './margin'
-import { frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
 import type { Weave } from './weave'
 
@@ -29,6 +29,8 @@ export interface LayerSheet {
 }
 
 
+export { frameGeometryOf }
+
 /** Which layer a position is on (ADR 0066): the one it names (a Frame's cell by its own row and column), else, for a
  * Canvas position, the Frame drawn on top at its bead's place on the Table (`layerUnder`), the Canvas anywhere else. The
  * one place that decides; a stroke asks once, at its press, and keeps the answer. */
@@ -43,33 +45,6 @@ export function layerAt(project: Layered, position: GridPosition): Layer {
  * as a whole (Select all, Fit to drawing); the same map back when there is no Frame. */
 export function shownBeads(project: Layered): BeadMap {
   return beadsShown(beadsOfLayer(project, 'canvas'), coversOf(project))
-}
-
-/** The Frame as its Frame shape reads it, in its own Weave with its Bead's cell. The Project must have a Frame. */
-function shapedFrame(project: Layered, frame: FrameRef): ShapedSheet {
-  const { rows, columns, shape, settings, quarterTurns } = frameById(project, frame)!
-  return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project, frame) }
-}
-
-// A Frame is never changed in place, so its geometry is built once for each Bead's cell it is drawn in.
-const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
-
-/** A Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have that Frame. */
-export function frameGeometryOf(project: Layered, ref: FrameRef): LayerGeometry {
-  const frame = frameById(project, ref)!
-  const cell = frameWeave(project, ref).cell
-  const key = cell ? `${cell.aspect}:${cell.roundness}` : ''
-  let known = geometries.get(frame)
-  if (!known) {
-    known = new Map()
-    geometries.set(frame, known)
-  }
-  let found = known.get(key)
-  if (!found) {
-    found = frameGeometry(shapedFrame(project, ref))
-    known.set(key, found)
-  }
-  return found
 }
 
 /** A layer as a command works on it (see `LayerSheet`): the Frame's from its own first row and column, or the Canvas,

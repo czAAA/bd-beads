@@ -1,4 +1,4 @@
-import { coversOf } from './sheets'
+import { coversOf, MARGIN } from './sheets'
 import { forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { isFrameLayer, type GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
@@ -6,6 +6,8 @@ import { sameBeads } from './layerBeads'
 import { beadsOfLayer, frameIdOf, framesOf, type Layered, withLayer } from './layerRecord'
 import type { Project } from './project'
 import type { Selection } from './selection'
+
+export { MARGIN }
 
 /** The keep-out margin round each Frame (CONTEXT.md, ticket 261, ADR 0066): 4 of the Frame's own bead positions outside
  * its line (spec 1234; 3 until ticket 427, 6 until ticket 0656) where nothing can be drawn on the Canvas. Erase still
@@ -30,10 +32,6 @@ export function coverList(covers: Covers): readonly Cover[] {
 export function coverOf(frame: Rect, margin: number = MARGIN): Cover {
   return { frame, sheet: withMargin(frame, margin) }
 }
-
-/** How many bead positions the margin is wide (MarginSheet card, ticket 0656): at 100% the room its sheet's top band
- * and title block need, fixed, not a setting. */
-export const MARGIN = 4
 
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Rect, margin: number = MARGIN): Rect {

@@ -9,7 +9,7 @@ import { isFrameShape, settingsOf, type QuarterTurns, type ShapedSheet } from '.
 import type { Rotation } from './grid'
 import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
-import { cellWidthMm, weaveOf } from './layerWeave'
+import { canvasWeave, cellWidthMm, weaveOf } from './layerWeave'
 import { readStoredPalette } from './palette'
 import { lettersOfPalette, withUsedColors } from './paletteEdits'
 import { readMirrorArea, readMirrorSetting, withFittedArea } from './mirror'
@@ -17,7 +17,7 @@ import { readPieceNames } from './pieceNames'
 import { readReferenceImage } from './referenceImage'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress, seenProgressOf, type OwnRowProgress } from './rowProgress'
-import { turnedPoint, type TablePoint } from './table'
+import { roundedMm, turnedPoint, type TablePoint } from './table'
 import { beadCell, describeWeave, isTechnique, withCell, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
@@ -230,7 +230,9 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string,
   const turns = (angle / 90) as QuarterTurns
   const sheet = { rows, columns, ...laid, ...(turns ? { quarterTurns: turns } : {}) }
   const probe: Project = { id: '', layers: [canvas, { ...layer, ...sheet, angle, centre: { x: 0, y: 0 }, rowProgress: { way: 'down' } }], palette: [], createdAt: 0, updatedAt: 0 }
-  const centre = current ? (stored.centreMm as TablePoint) : onTheTable(probe, stored, sheet)
+  // Kept to a millionth of a mm as a file stores it, so what is opened reads back the same once written.
+  const placed = current ? (stored.centreMm as TablePoint) : onTheTable(probe, stored, sheet)
+  const centre = { x: roundedMm(placed.x), y: roundedMm(placed.y) }
   const frame: FrameLayer = {
     ...layer,
     rows,
@@ -256,7 +258,7 @@ function onTheTable(probe: Project, stored: StoredLayer, sheet: Pick<FrameSheet,
   const [canvas, frame] = probe.layers as [CanvasLayer, FrameLayer]
   const mm = cellWidthMm(probe, 'canvas')
   if (readCentre(stored.centre)) return turnedPoint({ x: stored.centre.x * mm, y: stored.centre.y * mm }, -(canvas.tableTurn ?? 0))
-  const weave = describeWeave(weaveOf(canvas))
+  const weave = describeWeave(canvasWeave(probe))
   const corner = weave.origin({ row: stored.row ?? 0, column: stored.column ?? 0 }, 1, weave.cellAspect)
   const extent = extentMmOf(probe, frameIdOf(frame), sheet)
   const [across, down] = (canvas.orientation / 90) % 2 === 1 ? [extent.y, extent.x] : [extent.x, extent.y]

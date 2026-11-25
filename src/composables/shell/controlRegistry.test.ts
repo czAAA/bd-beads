@@ -139,12 +139,12 @@ describe('the control registry', () => {
     expect(CONTROLS.find((each) => each.id === 'add-frame-from-starter')!.enabled?.(deps(open))).toBe(true)
   })
 
-  it('says Remove row/column waits for the layers to lie alike, while the Frame does not (ticket 1188)', () => {
+  it('says Remove row/column waits for a whole row or column, whatever the Canvas or a Frame is turned to (ticket 1188, spec 1234)', () => {
     const remove = CONTROLS.find((control) => control.id === 'remove-line')!
     const framed = bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
     const deps = (activeProject: unknown) => ({ activeProject: () => activeProject }) as never
     expect(remove.disabledBody?.(en, deps(framed))).toBe(en.tooltips.removeLineDisabled)
-    expect(remove.disabledBody?.(en, deps(turnCanvasTo(framed, 90, { x: 0.5, y: 0 })))).toBe(en.tooltips.removeLineNotAlike)
+    expect(remove.disabledBody?.(en, deps(turnCanvasTo(framed, 90, { x: 0.5, y: 0 })))).toBe(en.tooltips.removeLineDisabled)
   })
 
   it('gives every action that can be disabled a reason, in every language', () => {

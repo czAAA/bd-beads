@@ -229,7 +229,7 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
   it('leaves a Piece\'s ruler number on the Frame\'s current line plain (ticket 1115)', () => {
     // A Piece well clear of the Frame and its margin, its rows running past the Frame's current line, row 11.
     const beside = withLayers(base, {
-      frame: { ...frameOf(base)!, row: 10, column: 0 },
+      frame: { ...frameOf(base)!, centre: undefined, row: 10, column: 0 },
       beads: withColors({}, [8, 9, 10, 11, 12, 13].map((row) => ({ row, column: 20, color: '#ff0000' }))),
     })
     const input = at(moveToRow(beside, 1, frameIdIn(beside)), 'full')
@@ -265,7 +265,7 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
 
   it('still ticks the Frame\'s line where only a Piece numbers the current row (ticket 1115)', () => {
     const beside = withLayers(base, {
-      frame: { ...frameOf(base)!, row: 10, column: 0 },
+      frame: { ...frameOf(base)!, centre: undefined, row: 10, column: 0 },
       beads: withColors({}, [8, 9, 10, 11, 12, 13].map((row) => ({ row, column: 20, color: '#ff0000' }))),
     })
     const input = at(moveToRow(beside, 1, frameIdIn(beside)), 'compact')
@@ -282,7 +282,7 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     const { context, fills } = fakeContext()
     drawRulers(context, input, frameIdIn(input.project))
 
-    const row = input.surface.beadToPoint({ row: frameOf(base)!.row + 1, column: frameOf(base)!.column }, FRAME_ID)
+    const row = input.surface.beadToPoint({ row: 1, column: 0 }, FRAME_ID)
     const line = lineOf(input)
     const ticks = marks(fills)
     expect(ticks).toHaveLength(2)
@@ -302,7 +302,7 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     const { context, fills } = fakeContext()
     drawRulers(context, input, frameIdIn(input.project))
 
-    const column = input.surface.beadToPoint({ row: frameOf(base)!.row, column: frameOf(base)!.column + 2 }, FRAME_ID)
+    const column = input.surface.beadToPoint({ row: 0, column: 2 }, FRAME_ID)
     const [tick, ...more] = marks(fills)
     expect(more).toEqual([])
     expect(tick!.rect[0]! + tick!.rect[2]! / 2).toBeCloseTo(column.x)
@@ -316,11 +316,13 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     expect(marks(off.fills)).toHaveLength(1)
   })
 
-  it('ticks the line where the full form shows no number of the pass: a Frame turned a quarter (ticket 0667), a Ruler step past it', () => {
+  it('ticks the line where the full form shows no number of the pass: a Ruler step past it, and numbers a Frame turned a quarter as any other (ticket 0667)', () => {
     const turned = fakeContext()
     drawRulers(turned.context, at(rotateFrame(moveToRow(base, 1, frameIdIn(base)), undefined, frameIdIn(base))!, 'full'), frameIdIn(base))
-    expect(marks(turned.fills).map((fill) => fill.rect[2])).toEqual([MARGIN_PX.pass.tick])
-    expect(turned.textStyles).not.toContain(LIGHT_THEME.canvas)
+    // A Frame lying turned numbers its passes as any other does (spec 1234): the pill stands on the number, no tick.
+    expect(marks(turned.fills)).toHaveLength(1)
+    expect(marks(turned.fills).map((fill) => fill.rect[2])).not.toEqual([MARGIN_PX.pass.tick])
+    expect(turned.textStyles).toContain(LIGHT_THEME.canvas)
 
     // Under 50% only the last number is drawn: the second row has none of its own.
     const skipped = fakeContext()
@@ -365,7 +367,7 @@ describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () =
     const input = at(project, 'compact', { from: 1, elapsed: ROW_MOTION.glide / 2 }, 0.5)
     const { context, fills } = fakeContext()
     drawRulers(context, input, frameIdIn(input.project))
-    const rowY = (row: number) => input.surface.beadToPoint({ row: frameOf(base)!.row + row, column: frameOf(base)!.column }, FRAME_ID).y
+    const rowY = (row: number) => input.surface.beadToPoint({ row: row, column: 0 }, FRAME_ID).y
     expect(marks(fills)).toHaveLength(2)
     for (const tick of marks(fills)) {
       expect(centreY(tick.rect)).toBeGreaterThan(rowY(1))

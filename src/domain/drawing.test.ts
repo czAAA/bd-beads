@@ -10,9 +10,8 @@ import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, orientationOf } from './layerRecord'
-import { rotateFrame, turnCanvasTo } from './rotate'
-import { framePlacement } from './framePlacement'
-import { lieAlike } from './table'
+import { rotateFrame, turnCanvasTo, turnTableTo } from './rotate'
+import { frameQuarterTurnOf, tableTurnOf } from './table'
 import { frameSheetOf, withLayers, pointersOf } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -107,19 +106,18 @@ describe('deleteAll', () => {
     expect(frameOf(cleared)!.rows).toBe(frameOf(before)!.rows)
   })
 
-  it('puts both turns back where a new Project starts them, the Frame alike on the Canvas under its centre (ticket 1188)', () => {
+  it('puts the Canvas turn back where a new Project starts it and the Table upright, every Frame as it was (spec 1234)', () => {
     const made = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } })
-    const leaning = turnCanvasTo(rotateFrame(paintAt(made, [{ row: 1, column: 1 }], '#e63746'), undefined, frameIdIn(made))!, 37.5, { x: 2, y: 1 })
-    expect(lieAlike(leaning, frameIdIn(leaning))).toBe(false)
+    const leaning = turnTableTo(turnCanvasTo(rotateFrame(paintAt(made, [{ row: 1, column: 1 }], '#e63746'), undefined, frameIdIn(made))!, 180, { x: 2, y: 1 }), 217.5)
+    expect(tableTurnOf(leaning)).toBe(37.5)
 
     const cleared = deleteAll(leaning)
 
     expect(orientationOf(cleared)).toBe(90)
-    expect(lieAlike(cleared, frameIdIn(cleared))).toBe(true)
-    expect(frameOf(cleared)).toMatchObject({ angle: 90, rows: 8, columns: 6 })
-    expect(frameOf(cleared)!.quarterTurns).toBeUndefined()
-    const [was, now] = [framePlacement(leaning, frameIdIn(leaning))!.at, framePlacement(cleared, frameIdIn(cleared))!.at]
-    expect(Math.hypot(now.x - was.x, now.y - was.y)).toBeLessThan(1.5)
+    expect(tableTurnOf(cleared)).toBe(0)
+    expect(frameOf(cleared)).toMatchObject({ rows: 8, columns: 6 })
+    expect(frameOf(cleared)!.centre).toEqual(frameOf(leaning)!.centre)
+    expect(frameQuarterTurnOf(cleared, frameIdIn(cleared))).toBe(frameQuarterTurnOf(leaning, frameIdIn(leaning)))
     expect(rowProgressOf(cleared, frameIdIn(cleared))).toEqual({ way: 'right' })
     expect(deleteAll(cleared)).toBe(cleared)
   })
