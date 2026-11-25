@@ -2,7 +2,7 @@ import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { pixelRatioOf } from '../../../composables/ui/cssZoom'
 import { changedRows } from '../../../domain/canvas'
 import { beadTotal } from '../../../domain/openingLimits'
-import { beadsOfLayer, frameById, frameIdOf, framesOf, layerOf } from '../../../domain/layerRecord'
+import { beadsOfLayer, frameIdOf, framesOf, layerOf } from '../../../domain/layerRecord'
 import type { FrameRef } from '../../../domain/grid'
 import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
@@ -18,7 +18,7 @@ import type { RulerLayout } from '../../../rendering/rulers'
 import type { Affine } from '../../../rendering/gestureView'
 import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
 import { spaceOf } from '../../../rendering/space'
-import { CELL_SIZE_PX, type Size } from '../../../rendering/cellSize'
+import type { Size } from '../../../rendering/cellSize'
 
 /** How long a draw waits for its animation frame before it draws without one, in ms (ticket 1152): far longer than a
  * frame takes to come, short enough that the wait is hardly seen.
@@ -258,10 +258,27 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       const region = { x: frame.scroll.x + own.x, y: frame.scroll.y + own.y, width: own.width, height: own.height }
       const placement = placementOf(frame.seam, drawing.pixelRatio!, own, box)
       // A rectangle of the surface, in the Frame's own device px: layers differ by quarter turns, so the placement is a shift.
-      const within = part === 'all' ? undefined : { ...part, x: part.x - placement.e, y: part.y - placement.f }
+      const within = part === 'all' ? undefined : intoOwn(part, placement)
       const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, slimSheet: frame.slim, layer: frame.ref, alone: true, rows: undefined, columns: undefined, covered: undefined, within }
       drawPlaced(context, placement, () => renderProject(context, laid))
     }
+  }
+
+  /** A rectangle of the surface's device px as the box that holds it in a Frame's own device px, the placement undone. */
+  function intoOwn(part: Region, { a, b, c, d, e, f }: Affine): Region {
+    const det = a * d - b * c
+    const corners = [
+      [part.x, part.y],
+      [part.x + part.width, part.y],
+      [part.x, part.y + part.height],
+      [part.x + part.width, part.y + part.height],
+    ].map(([px, py]) => {
+      const [x, y] = [px! - e, py! - f]
+      return { x: (d * x - c * y) / det, y: (-b * x + a * y) / det }
+    })
+    const [left, right] = [Math.min(...corners.map((p) => p.x)), Math.max(...corners.map((p) => p.x))]
+    const [top, bottom] = [Math.min(...corners.map((p) => p.y)), Math.max(...corners.map((p) => p.y))]
+    return { x: left, y: top, width: right - left, height: bottom - top }
   }
 
   /** Whether two boxes share any area. */
@@ -330,21 +347,11 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     drawFrames(context, drawing, box, draft, (frame) => {
       const sheet = canvasBoxOnSurface(drawing, frame.covered)
       const parts = bandRects.filter((rect) => overlap(rect, sheet))
-      const changed = changedRows(beadsOfLayer(was.get(frame.ref)!.project, frame.ref) ?? {}, beadsOfLayer(frame.project, frame.ref) ?? {}).sort((x, y) => x - y)
-      if (changed.length > MOST_ROWS_WORTH_A_BAND) return 'all'
-      if (changed.length > 0) parts.push(framesRowsOnSurface(frame, changed, box, pixelRatio, props.zoom))
+      // A Frame's own beads changed: that Frame is drawn again whole. Its changed rows' rectangle is not worked out, as it
+      // missed the beads of a Frame turned or leaning apart from the Canvas.
+      if (beadsOfLayer(frame.project, frame.ref) !== beadsOfLayer(was.get(frame.ref)!.project, frame.ref)) return 'all'
       return parts.length > 0 ? unionOf(parts) : undefined
     })
-  }
-
-  /** The rectangle of the surface, in its device px, that a Frame's changed rows take, two beads more all round. */
-  function framesRowsOnSurface(frame: LaidFrame, changed: readonly number[], box: Region, pixelRatio: number, zoom: number): Region {
-    const held = frameById(frame.project, frame.ref)!
-    const [first, last] = [changed[0]!, changed.at(-1)!]
-    const area = frame.surface.beadBox({ row: first, column: 0, rows: last - first + 1, columns: held.columns }, frame.ref)
-    // Two beads more all round: the neighbours' edges and the shading a bead's redraw touches.
-    const pad = CELL_SIZE_PX * zoom * 2
-    return { x: (area.x - pad - box.x) * pixelRatio, y: (area.y - pad - box.y) * pixelRatio, width: (area.width + 2 * pad) * pixelRatio, height: (area.height + 2 * pad) * pixelRatio }
   }
 
   /** The smallest box holding all of `boxes`. */
