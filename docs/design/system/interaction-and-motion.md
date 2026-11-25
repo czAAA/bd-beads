@@ -49,7 +49,7 @@ The RadialToolbox card has the whole design; this is how it answers and moves. T
 - **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag shows the grab cursor, and the grabbing cursor while dragging; the Hand tool shows its Tool pointer, `hand`, and `hand-grabbing` while dragging (`assets/Cursors/`, ticket 0542). A hovering Apple Pencil gets no CSS cursor from Safari, so the app draws the same Tool pointer (and the eyedropper's) at the Pencil's tip while it hovers: hidden on contact, lift, cancel and leave, the Hand's open hand for a Pencil that moves the canvas (Mouse mode), nothing over the Frame's margin or in Set Frame (ticket 546).
 - **Zoom** (⌘ or Ctrl + wheel, pinch, ⌘ or Ctrl + plus, minus and 0, the strip's buttons) is Canvas zoom, the only zoom: Page zoom is locked (ADR 0034), so a pinch, double-tap or ⌘ or Ctrl + wheel that starts outside the canvas does nothing, and one that drifts onto it stays inert. It keeps the point under the pointer still. It stops at the 10% Zoom floor on every screen.
 - **Set Frame:** the Frame follows the drag and snaps to whole beads with no animation; its size tag updates as it moves.
-- **Bring into view** (the Frame number) scrolls the canvas over `--duration-base` with `--ease-out`; under reduced motion it jumps.
+- **Bring into view** (the Project panel's Show this Frame) scrolls the canvas over `--duration-base` with `--ease-out`; under reduced motion it jumps.
 - **Margin:** its dashed outline fades in over `--duration-fast` while the Frame is set, moved or resized and after a refused press, and out again; opacity only. Beads moved out of it appear in their new place with no travel animation.
 - **Rotate Frame** (ticket 1016): the Frame is seen turning a quarter about its middle over `--frame-turn-duration` (150ms) with `--ease-standard`, a copy of it as it was drawn turning over the Frame drawn turned; the margin sheet and its band go to their new place at once, and a copy of the Rotate Frame button waits where it was pressed (MarginSheet card). Only a press plays it: Undo, Redo and opening a Project jump. Under reduced motion it jumps.
 - **Rotate:** the Selection's beads turn at once, and the turned rectangle is the new Selection. Beads it covers are simply replaced, with no travel animation; the Message says how many and offers Undo.
@@ -57,9 +57,9 @@ The RadialToolbox card has the whole design; this is how it answers and moves. T
 
 ## Row progress (ticket 0729)
 
-Approved on the claude.ai design canvas "OpenBeads progress & done animations" (link on ticket 0729 in the private docs repo): variant 6 in the Progress bar, variant 7 on the keep-out margin. The values are in `components/bundle.css` and `src/styles/design-values.css`, the spark and Pattern done classes (`.bb-spark`, `.bb-pattern-done-*`) in `bundle.css`.
+Approved on the claude.ai design canvas "OpenBeads progress & done animations" (link on ticket 0729 in the private docs repo): variant 6 on the Row progress track, variant 7 on the keep-out margin. The values are in `components/bundle.css` and `src/styles/design-values.css`, the spark and Pattern done classes (`.bb-spark`, `.bb-pattern-done-*`) in `bundle.css`.
 
-**Row done** (the button or its key, in the Progress bar or on the margin sheet):
+**Row done** (the button or its key, on the Frame's Row progress strip):
 
 - **Glint:** each bead of the pass just finished is washed in `--row-glint` (white) from nothing to `--row-glint-peak` (55%) and back over `--row-glint-duration` (380ms, `--ease-out`), one bead after another in the Row direction, `--row-glint-step` (24ms) apart, the step shortened so the whole pass starts within `--row-glint-span` (480ms). On peyote only the beads that pass adds glint; a Custom frame's pass glints in its Row order. Nothing runs along the line: no thread, no band. The canvas draws it, as opacity only.
 - **Then the dimming:** the pass takes the finished look (BeadBoard card) after `--row-dim-delay` (520ms), so the glint shows at full color.

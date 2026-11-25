@@ -33,9 +33,9 @@
   --box: #fafafa; /* Canvas box background. */
   --page-ground: #ebebeb; /* The Homepage's page around its canvas box, darker than the box so the box stands off it. */
   --box-line: #e5e5e5; /* Canvas box border. */
-  --box-muted: #6a6a6a; /* Meta text in the canvas box header strip and Progress bar. Strip dividers are this at 22% opacity. */
-  --box-button: #00000000; /* Button fill in the Progress bar (transparent in light). */
-  --box-button-line: #c7c7c7; /* Button border in the Progress bar. */
+  --box-muted: #6a6a6a; /* Meta text in the canvas box header strip and the Homepage's Progress bar. Strip dividers are this at 22% opacity. */
+  --box-button: #00000000; /* Button fill of the box look (transparent in light). */
+  --box-button-line: #c7c7c7; /* Button border of the box look. */
   --switch-off: #858585; /* The Switch track while off (3.5:1 light, 4.1:1 dark on box). */
   --board: #e8e3df; /* The rounded board the beads sit on (PatternTheme background). */
   --ruler: #6a6a6a; /* Row and column numbers on the canvas rulers (5.2:1 light, 4.9:1 dark on box); the current pass's number is canvas on a marker pill (ticket 0685). */
@@ -46,7 +46,7 @@
   --kind-fixed: #7a36b0; /* A Fixed Release note's kind label (KindLabel card, ticket 1047). */
   --accent-2: #0f766e; /* The second accent (ticket 1121), never the one accent's yellow or orange: the edge and label of the export buttons (PNG, PDF), and what is folded in a panel (a closed section header, a closed fold row, the folded Export quality). */
   --accent-2-soft: #e2f1ee; /* The fill under accent-2 on the export buttons (ticket 1121). */
-  --track: #e5e5e5; /* Progress bar track. */
+  --track: #e5e5e5; /* Track of Row progress, of the Homepage's Progress bar and of Loading's share bar. */
   --word: #f1eadd; /* The background technique word ("Loom") behind the board. */
   --print-board: #f7f3ec; /* The board behind the chart in PDF and PNG exports. Exports are always light, so it is the same in every theme. */
   --curve: rgba(250,82,15,.32); /* The 1.5px decorative curve behind the board. */
@@ -203,7 +203,7 @@
   --space-6: 6px; /* Buttons in the Edit row and swatch grid; tight control groups. */
   --space-8: 8px; /* Buttons in a row; label to its group's content. */
   --space-10: 10px; /* Header gap between items; save box label to its content; disclosure row padding. */
-  --space-12: 12px; /* Canvas strip gap; Progress bar gap; message padding (vertical). */
+  --space-12: 12px; /* Canvas strip gap; the Homepage's Progress bar gap; message padding (vertical). */
   --space-14: 14px; /* Left column to canvas box; Beads needed / Saved Patterns padding; board padding. */
   --space-16: 16px; /* Gap between left-column boxes; save box padding (vertical); message padding (horizontal). */
   --space-20: 20px; /* Gap between Tool groups; save box and panel horizontal padding. */
@@ -229,21 +229,21 @@
   --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */
   --dock-max-width: 480px; /* The Dock's widest, centred. */
   --float-edge: 12px; /* Screen edge to what floats over the screen (the colour popover): the canvas box itself is flush, with only env(safe-area-inset-*) round it. */
-  --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the Progress bar), and from the colour popover. */
+  --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the canvas box's foot), and from the colour popover. */
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
   --radial-radius: 84px; /* The Radial toolbox: from its centre to the centres of its tiles. With its 48px band (pill-thickness) the ring is 216px across round a 120px hole. */
-  --panel-width: 520px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
+  --panel-width: 520px; /* The Menu and Project panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
   --panel-width-small: 360px; /* The Export panel dropdown from the Canvas strip's Export button (ExportPanel card); held 8px from the screen's edge on a narrow one. */
   --panel-width-wide: 736px; /* Menu's Keyboard shortcuts Subpanel (ShortcutsHelp card): pushing it widens the dropdown from panel-width, Back narrows it; held 8px from the screen's edge on a narrow one. */
   --shortcut-keys-width: 144px; /* The keys' track of a Keyboard shortcuts row, right after the name (ShortcutsHelp card): holds the widest chord, Ctrl + Shift + S. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */
-  --panel-row: 28px; /* A row of the Menu, Project or Frame panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
+  --panel-row: 28px; /* A row of the Menu or Project panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
   --panel-row-touch: 36px; /* panel-row on a coarse pointer: a deliberate exception to touch-target, since the rows touch and each row is its own hit area (responsive.md). */
   --panel-row-two-line: 40px; /* A two-line panel row: a project in the Projects library (name over maker). */
   --panel-row-two-line-touch: 48px; /* panel-row-two-line on a coarse pointer. */
   --picker-height: 24px; /* The PanelPicker button on a setting row, and the panel's small SegmentedControl and Stepper. */
   --picker-height-touch: 32px; /* picker-height on a coarse pointer. */
-  --slider-track: 4px; /* The QualitySlider track and its filled part (Export quality in the Frame panel). */
+  --slider-track: 4px; /* The QualitySlider track and its filled part (Export quality in the Export panel). */
   --slider-thumb: 20px; /* The QualitySlider thumb; the native range input is touch-target tall around it, so the hit area is 44px. */
   --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
@@ -252,8 +252,8 @@
   --field-height-phone: 48px; /* Form buttons (Create Pattern, Convert image) on a phone. */
   --loading-delay: 300ms; /* Wait before any loading indicator appears, so fast work never flashes. */
   --z-canvas-overlay: 10; /* Rulers, current-row marker, Selection, paste preview: inside the canvas box. */
-  --z-chrome: 20; /* Header, Dock, Progress bar when they overlap scrolling content. */
-  --z-context-bar: 30; /* The Selection ContextBar above the Progress bar. */
+  --z-chrome: 20; /* Header, Dock and the Save reminder when they overlap scrolling content. */
+  --z-context-bar: 30; /* The Selection ContextBar, anchored to the Selection. */
   --z-sheet: 50; /* ToolSheets; the modal Pattern sheet and its scrim. */
   --z-popover: 60; /* Menus, OverflowMenu. */
   --z-toast: 70; /* Toast messages: above sheets so a result is never hidden, below modals. */

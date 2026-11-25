@@ -2,8 +2,8 @@
 
 The Tab order across the desktop layout and the keyboard rules: one stop per group, arrows inside, Escape closes the top-most layer.
 
-- Order (ADR 0075): Canvas strip (three stops: Menu/Project/Frame, the Wordmark, the right-hand tools), Tool pill, Progress bar, Frame controls, Selection bar. There is no skip link.
-- Roving tabindex inside each stop; the arrows of its axis step and stop at the ends (the Tool pill: ↑/↓ docked left or right, ←/→ top or bottom). Enter or ↓ opens Menu, Project and Frame; an open Menu wraps Tab inside itself. The Pattern takes no keyboard focus (ADR 0099).
+- Order (ADR 0075): Canvas strip (three stops: Menu/Project, the Wordmark, the right-hand tools), Tool pill, each Frame's sheet (Expand the Frame, the Move bar, the tools, the title block, Row progress), Selection bar. There is no skip link.
+- Roving tabindex inside each stop; the arrows of its axis step and stop at the ends (the Tool pill: ↑/↓ docked left or right, ←/→ top or bottom). Enter or ↓ opens Menu, Project and Export; an open Menu wraps Tab inside itself. The Pattern takes no keyboard focus (ADR 0099).
 - Modals and the modal Pattern sheet trap focus and return it to their opener.
 - The ring is `focus-ring` (`ink`: neutral, never yellow or orange), 2px, just inside the control's edge (3px black in high contrast); `scroll-margin` keeps focused things clear of the header and Dock.
 - **On a lit control** (ticket 0857), one filled with `ink` (Rulers on, Edit Frame on, a chosen segment), an `ink` ring would vanish into the fill: there the ring is `surface` (`--focus-ring-lit`), drawn inside the control's ink edge (`--focus-offset-lit`, the usual offset less the ring's width), so the edge stays and the light ring shows against the fill in every theme.
