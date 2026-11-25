@@ -174,7 +174,7 @@ test('the iPad flow: Frames of other Techniques, a Table turn, then Rotate Frame
   // Rotate canvas: the Canvas a quarter on, both Frames and the Table turn exactly as they were.
   await page.getByTestId('strip-rotate-canvas').click()
   await settle(page)
-  await expect.poll(async () => orientationOf(await savedProject(page))).toBe(orientationOf(twisted) + 90 > 360 ? orientationOf(twisted) - 270 : orientationOf(twisted) + 90)
+  await expect.poll(async () => canvasOf(await savedProject(page)).orientation).toBe((canvasOf(twisted).orientation + 90) % 360)
   const canvasTurned = await savedProject(page)
   expect(tableTurnOf(canvasTurned)).toBe(table)
   // The file keeps each centre from the Canvas's origin, which Rotate canvas moved: the Frames' own turns and their distance stay.
