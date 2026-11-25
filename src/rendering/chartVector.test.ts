@@ -240,7 +240,6 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     const top = Math.min(...numbers.map((text) => text.baseline))
     const bottom = Math.max(...numbers.map((text) => text.baseline))
 
-    process.stderr.write(`DBG ${turn} n=${numbers.length} ${JSON.stringify([...new Set(numbers.map((t) => `${t.align}:${Math.round(t.baseline)}`))])} top=${top} bottom=${bottom}\n`)
     expect(plan.parts).toHaveLength(1)
     for (const edge of [top, bottom]) expect(numbers.filter((text) => text.baseline === edge && text.align === 'center').sort((p, q) => p.x - q.x).map((text) => text.value)).toEqual(count(across))
     for (const side of ['right', 'left']) expect(numbers.filter((text) => text.align === side).sort((p, q) => p.baseline - q.baseline).map((text) => text.value)).toEqual(count(down))

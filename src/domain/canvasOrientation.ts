@@ -33,7 +33,7 @@ export function tiltOf(orientation: number): number {
 
 /** Where a twist comes to rest as the fingers lift (one rule for both layers, spec 1182): on the first of `bases`'
  * quarter turns it is within about 10° of (a base at an angle, or a quarter off it), else where it is. The Canvas's
- * base is the screen; the Frame's are the Canvas's angle, then the screen (`settledFrameAngle`). */
+ * base is the screen; the Frame's are the Canvas's angle, then the screen. */
 export function settledOrientation(orientation: number, bases: readonly number[] = [0]): number {
   for (const base of bases) {
     const off = orientation - base

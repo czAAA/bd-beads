@@ -39,7 +39,7 @@ The rectangle around one or more Pieces, with its own rulers (ticket 1012: with 
 _Avoid_: group, cluster, island
 
 **Table** (spec 1182, ticket 1185; spec 1234):
-The one plane pan and zoom move, that every layer lies on, measured in millimetres and belonging to no layer. The Canvas lies on it by an origin and a quarter turn; each Frame by its own centre and a quarter turn (0°, 90°, 180° or 270°), never by Canvas rows and columns: nothing snaps a Frame to the Canvas's grid, and no edit, turn or setting of one layer moves or turns another, not even by a rounding. What a layer is read by (a Frame's Row direction as seen, its rulers, its sizes as seen, its exports) goes by its own quarter turn on the Table. Decided 2026-11-25 (spec 1234); code catches up in tickets 1236-1239: until then a Frame can lie on or off the Canvas's grid, measured in the Canvas's bead widths.
+The one plane pan and zoom move, that every layer lies on, measured in millimetres and belonging to no layer. The Canvas lies on it by an origin and a quarter turn; each Frame by its own centre and a quarter turn (0°, 90°, 180° or 270°), never by Canvas rows and columns: nothing snaps a Frame to the Canvas's grid, and no edit, turn or setting of one layer moves or turns another, not even by a rounding. What a layer is read by (a Frame's Row direction as seen, its rulers, its sizes as seen, its exports) goes by its own quarter turn on the Table. Decided 2026-11-25 (spec 1234).
 _Avoid_: world, scene; lie alike, on the Canvas's grid, off the grid (retired with spec 1234: no layer is placed against another)
 
 **Table turn** (spec 1234):

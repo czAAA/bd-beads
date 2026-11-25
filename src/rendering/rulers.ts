@@ -200,9 +200,6 @@ interface BoxLayout {
   step: number
 }
 
-// Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
-// number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
-// from 100 up turn. The Ruler step is worked out once per axis.
 /** A Frame's own grid lying turned (ticket 0667): numbered by its own rows and columns where each bead lies, not by the
  * rectangle it is laid in, whose rows and columns are not its own. */
 interface TurnedOwn {
@@ -215,6 +212,9 @@ interface TurnedOwn {
 // step, in laid px.
 const TURNED_STEPS: Record<number, [[number, number], [number, number]]> = { 1: [[0, 1], [-1, 0]], 2: [[-1, 0], [0, -1]], 3: [[0, -1], [1, 0]] }
 
+// Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
+// number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
+// from 100 up turn. The Ruler step is worked out once per axis.
 function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; layer: ViewLayer; size?: number; stepped?: boolean; turned?: TurnedOwn }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).

@@ -41,10 +41,9 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
     mirrorAxes?: unknown
     mirrorArea?: unknown
     /** The Frame's own angle on the table and its centre there (file version 15, ticket 1185), in the Canvas's bead widths
-     * from its origin; with `offGrid`, since 1188, a centre the Canvas's grid does not give. Read, never written. */
+     * from its origin. Read, never written. */
     angle?: number
     centre?: TablePoint
-    offGrid?: boolean
     /** The Frame's centre in mm from the Canvas's origin (file version 18, ticket 1237). */
     centreMm?: TablePoint
     /** Its first row and column on the Canvas, before file version 15. */

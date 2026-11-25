@@ -11,9 +11,8 @@ import { useFrameExpand } from './useFrameExpand'
 /** What the canvas view needs from the app shell: the open Project. */
 export interface CanvasFramingDeps {
   currentProject: () => Project | undefined
-  /** Saves the Canvas's orientation a two-finger twist settled on (ticket 0672), and how far its origin moved (1188). */
+  /** Saves the Canvas's orientation a two-finger twist settled on (ticket 0672). */
   keepTwist?: CanvasViewOptions['keepTwist']
-  /** Keeps the angle a two-finger twist of the Frame settled on, or asks first (ticket 1190). */
   /** The view a Project opens at this once, in place of its fit: the address's (ticket 0879) or a reload's (1108). */
   opening?: CanvasViewOptions['opening']
   /** Under bp-tablet (ticket 1169): the expanded Frame's sheet takes its smaller insets and gap there. */
