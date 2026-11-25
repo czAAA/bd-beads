@@ -1,6 +1,6 @@
 import { isFrameLayer, type FrameRef, type GridPosition, type PreviewCell } from '../domain/grid'
 import { describeWeave, type Technique, type Weave } from '../domain/weave'
-import { footprintOf } from '../domain/footprint'
+import { coversOf } from '../domain/sheets'
 import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, type BeadCell } from '../domain/weave'
 import { rowOrderOf } from '../domain/frameShape'
@@ -19,7 +19,7 @@ import { outsetBox, type HandleId, type Outset } from './frameHandles'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import { rulersOf, type RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView, type ViewLayer } from './surfaceView'
+import { gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView, type ViewLayer } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { joinedTouching } from './touchingCells'
 import { lookSideOf } from './pieceGround'
@@ -1014,14 +1014,12 @@ function drawLayoutAxes(context: DrawingContext, symmetry: LayoutSymmetry & { ce
   context.restore()
 }
 
-/** Whether a position is on the Frame (ticket 492): the layer it names (by its own row and column), or else, for a Canvas
- * position, whether it lies under what the Frame draws (ADR 0066). Given `ref`, on that Frame only, a Canvas position
- * never; else on any, which the Canvas leaves (ticket 1219). */
-function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, covered: Rect | undefined, position: GridPosition, ref?: FrameRef): boolean {
-  if (frame === undefined) return false
+/** Whether a position is on the Frame (ticket 492): the layer it names, by its own row and column; a Canvas position never
+ * is (spec 1234). Given `ref`, on that Frame only; else on any, which the Canvas leaves (ticket 1219). */
+function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, position: GridPosition, ref?: FrameRef): boolean {
+  if (frame === undefined || !position.layer) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
-  if (position.layer) return isFrameLayer(position.layer) && (ref === undefined || position.layer === ref) && (!geometry?.grid || frameContains({ row: 0, column: 0, rows: frame.rows, columns: frame.columns }, position))
-  return ref === undefined && covered !== undefined && frameContains(covered, position)
+  return isFrameLayer(position.layer) && (ref === undefined || position.layer === ref) && (!geometry?.grid || frameContains({ row: 0, column: 0, rows: frame.rows, columns: frame.columns }, position))
 }
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. Transparent wherever
@@ -1049,22 +1047,22 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // Which layers' items this draws: on the Canvas, one of them where asked (ticket 1187).
   const ofCanvas = space.open && !isFrameLayer(layer)
   const ofFrame = !space.open || layer !== 'canvas'
-  const covered = footprintOf(project, ref)
+  const covered = coversOf(project).find((cover) => cover.ref === ref)
   const canvasWeaveOf = canvasWeave(project)
   const frameSpace = frame ? spaceOf(project, false, ref) : undefined
   const geometry = frame || !space.open ? geometryDrawnAlone(project, ref) : undefined
 
   // The Canvas's items: all of them when it is the only layer, else those not on the Frame.
-  const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, geometry, covered, cell))
+  const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, geometry, cell))
   const ownLayer: Layer = space.open ? (selection ? selectionLayerOf(selection) : 'canvas') : ref
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasView = () => visibleBeadsInSpace(canvasWeaveOf, space, region, zoom, quarterTurnOf(project))
-  const offFrameStamp = (stamp: PasteStamp) => (stamp.layer === 'canvas' ? stampInView(stamp, canvasView(), frame && ((cell) => !onFrame(frame, geometry, covered, cell))) : [])
+  const offFrameStamp = (stamp: PasteStamp) => (stamp.layer === 'canvas' ? stampInView(stamp, canvasView(), frame && ((cell) => !onFrame(frame, geometry, cell))) : [])
   const canvasCells = preview && space.open ? splitOnce(preview.cells, project, space, 'canvas', offFrame) : []
   const canvasStamp = preview?.stamp && space.open ? offFrameStamp(preview.stamp) : []
 
   if (space.open && ofFrame && marginOutline > 0 && frameById(project, ref)) {
-    drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
+    if (covered) drawMarginOutline(context, canvasWeaveOf, covered.frame, zoom, marginOutline, theme, margin)
   }
   // The Mirror's Area (ADR 0082), drawn while it is on: a Canvas rectangle with its Axes and its handles after, or the
   // whole Frame's Axes.
@@ -1092,17 +1090,17 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const sheetSpace = space.open ? frameSpace : space
   if (ofFrame && sheetSpace && (frame || !space.open)) {
     const sheetWeave = frameWeave(project, ref)
-    const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
+    const origin = { x: 0, y: 0 }
     // The Frame's own px are its Bead's size over the Canvas's (ticket 0665); drawn alone, they are the space's.
     const scale = frame ? frameScale(project, ref) : 1
-    const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, covered, cell, ref)) : [...cells])
+    const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, cell, ref)) : [...cells])
     // A shape keeps its positions, counted from the layer's first, so its outline is worked out only once.
     const layerOrigin = { row: 0, column: 0 }
     const sheetSelection = selection && ownLayer === ref ? selection : undefined
     const sheetView = (): VisiblePositions => {
       if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, quarterTurnOf(project), origin, scale)
       // A Custom frame's cells are named by round and place: only those its rectangle holds can be on it.
-      return covered ? { firstRow: 0, lastRow: covered.rows - 1, columnsOf: () => ({ first: 0, last: covered.columns - 1 }) } : EVERYWHERE
+      return frame ? { firstRow: 0, lastRow: frame.rows - 1, columnsOf: () => ({ first: 0, last: frame.columns - 1 }) } : EVERYWHERE
     }
     const onSheetStamp = (stamp: PasteStamp) => (frame && stamp.layer !== ref ? [] : stampInView(stamp, sheetView()))
     context.save()

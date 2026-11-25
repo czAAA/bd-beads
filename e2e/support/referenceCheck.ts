@@ -47,9 +47,7 @@ const FINISHED_SHARE = 0.5
 function expectedCentre(shown: Project, ownRow: number, ownColumn: number, satin: boolean): [number, number, number] {
   // The Frame as it is drawn, at its own quarter turn on a Canvas laid under it (ticket 1188): its beads by position.
   const project = withLaidTurn(shown, undefined, frameIdIn(shown))
-  const frame = frameOf(project)
-  const [row, column] = [ownRow + (frame?.row ?? 0), ownColumn + (frame?.column ?? 0)]
-  const color = beadColorAt(project, row, column)
+  const color = beadColorAt(project, ownRow, ownColumn, frameIdIn(project))
   if (color === null && satin) return rgb(tileColorOf(LIGHT_THEME.canvas))
   const flat = flatCentre(project, ownRow, ownColumn, rgb(color ?? LIGHT_THEME.emptyBead))
   if (color === null || !satin) return flat
@@ -131,7 +129,7 @@ export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
   // A Frame drawn otherwise than its Canvas (ticket 1188) shows as at its own quarter turn, where its surface is pinned.
   const shift = frameShift(project, zoom)
-  const laid = shift ? withLaidTurn(project, undefined, frameIdIn(project)) : project
+  const laid = project
   const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: shift?.rotation ?? quarterTurnOf(project), zoom, ...(shift ? { frame: placedFrame(laid, frameIdIn(laid)) } : {}) })
   const whole = projectFrame(laid, frameIdIn(laid))
   // On its own surface the Frame's cells are named by its own row and column, from 0, 0.

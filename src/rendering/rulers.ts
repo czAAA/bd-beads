@@ -9,7 +9,7 @@ import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 import { type Layered, frameById } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers along the left and the top of the Frame
@@ -346,7 +346,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project, ref), { origin: frameOriginPx(canvasWeave(project), frameById(project, ref)!), layer: ref, size: frameBeadScale(project, ref), stepped: expanded }, surface, viewport, frameScale)
+      ? layBox(box, frameWeave(project, ref), { origin: { x: 0, y: 0 }, layer: ref, size: frameBeadScale(project, ref), stepped: expanded }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.

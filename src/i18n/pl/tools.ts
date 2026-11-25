@@ -162,7 +162,6 @@ export const tools: ToolsTranslations = {
     rotateInFinishedRows: 'Zaznaczony obszar sięga rzędów oznaczonych jako gotowe.',
     removeLine: 'Usuwa zaznaczony rząd lub kolumnę i zamyka lukę.',
     removeLineDisabled: 'Najpierw zaznacz cały rząd lub całą kolumnę.',
-    removeLineNotAlike: 'Najpierw obróć ramkę lub płótno, aż będą leżeć tak samo.',
     namePiece: 'Nadaj zaznaczonemu kawałkowi nazwę, a stanie się schematem.',
     namePieceDisabled: 'Najpierw zaznacz jeden kawałek.',
     clear: 'Czyści wszystko z płótna.',

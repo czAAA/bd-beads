@@ -1,12 +1,13 @@
-import { beadsOver, anyChangedPosition, beadsWithout, colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
+import { anyChangedPosition, colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import { isFrameLayer, type FrameRef, type GridPosition, type Layer } from './grid'
 
 export type { Layer }
-import { footprintOf, layerUnder } from './footprint'
+import { coversOf, layerUnder } from './sheets'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { beadsOfLayer, frameById, frameIdOf, framesOf, type Layered, layerOf, withLayer } from './layerRecord'
-import { frameWeave, laidOnCanvas } from './layerWeave'
+import { beadsOfLayer, frameById, type Layered, layerOf, withLayer } from './layerRecord'
+import { beadsShown } from './margin'
+import { frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
 import type { Weave } from './weave'
 
@@ -29,8 +30,8 @@ export interface LayerSheet {
 
 
 /** Which layer a position is on (ADR 0066): the one it names (a Frame's cell by its own row and column), else, for a
- * Canvas position, the Frame that hides it where one lies over it (`footprintOf`), the Canvas anywhere else. The one place
- * that decides; a stroke asks once, at its press, and keeps the answer. */
+ * Canvas position, the Frame drawn on top at its bead's place on the Table (`layerUnder`), the Canvas anywhere else. The
+ * one place that decides; a stroke asks once, at its press, and keeps the answer. */
 export function layerAt(project: Layered, position: GridPosition): Layer {
   if (position.layer) {
     return isFrameLayer(position.layer) && frameById(project, position.layer) ? position.layer : 'canvas'
@@ -38,22 +39,10 @@ export function layerAt(project: Layered, position: GridPosition): Layer {
   return layerUnder(project, position)
 }
 
-/** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
- * frame's hide them, having no Canvas positions). For what asks about the picture as a whole (Select all, Fit to
- * drawing); the same map back when there is no Frame. */
+/** Every Canvas bead you see, by Canvas position: those no Frame's sheet covers (spec 1234). For what asks about the picture
+ * as a whole (Select all, Fit to drawing); the same map back when there is no Frame. */
 export function shownBeads(project: Layered): BeadMap {
-  let shown = beadsOfLayer(project, 'canvas')
-  for (const frame of framesOf(project)) {
-    const id = frameIdOf(frame)
-    const covered = footprintOf(project, id)
-    // A Frame off the Canvas's grid covers none of its positions (ticket 1188): the Canvas's beads are what lie on them.
-    if (!covered) continue
-    const hidden = beadsWithout(shown, covered)
-    // Only a grid's positions are the Canvas's, moved by the Frame's corner (through millimetres in another Bead, ticket
-    // 0665); a Custom frame's are named by round and place.
-    shown = frameGeometryOf(project, id).grid ? beadsOver(hidden, laidOnCanvas(project, beadsOfLayer(project, id)!, frameById(project, id)!, id)) : hidden
-  }
-  return shown
+  return beadsShown(beadsOfLayer(project, 'canvas'), coversOf(project))
 }
 
 /** The Frame as its Frame shape reads it, in its own Weave with its Bead's cell. The Project must have a Frame. */
@@ -129,10 +118,7 @@ export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSh
     return project
   }
   let beads = made
-  for (const frame of framesOf(project)) {
-    const covered = footprintOf(project, frameIdOf(frame))
-    if (covered) beads = keepUnderFrame(before, beads, covered, options.underFrame)
-  }
+  for (const { frame } of coversOf(project)) beads = keepUnderFrame(before, beads, frame, options.underFrame)
   // Everything the command did was under the Frame, so nothing is left of it.
   if (beads !== made && !anyChangedPosition(before, beads)) {
     return project

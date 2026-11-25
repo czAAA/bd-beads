@@ -2,14 +2,12 @@ import { findBead, type Bead } from './beads'
 import { forEachBead, type BeadMap } from './canvas'
 import { frameChanged, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { landedClear } from './frameLanding'
-import { laidSize } from './frameOrientation'
-import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
+import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
 import type { GridDimensions, GridPosition, FrameRef } from './grid'
 import { createProject, type CreateProjectInput } from './createProject'
 import { resolveProjectBead } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
-import { frameToLay, orientationOf, withBackground, withCanvas, withLayer } from './layerRecord'
-import { quarterTurnsOff } from './canvasOrientation'
+import { frameToLay, withBackground, withCanvas, withLayer } from './layerRecord'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
@@ -391,7 +389,7 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
  * margin it goes to the nearest place clear of them (spec 1214). */
 export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition, ref: FrameRef): FrameChangeResult {
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
-  const placement = starterPlacement(project, starter, choice, centre, bead ?? resolveProjectBead(project)!)
+  const placement = starterPlacement(starter, choice, centre, bead ?? resolveProjectBead(project)!)
   const placed = frameChanged(project, placement, ref)
   if (placed.kind !== 'changed') return placed
   if (!bead && choice.background === undefined) return { kind: 'changed', project: landedClear(placed.project, ref) }
@@ -403,18 +401,16 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
 
 /** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`
  * and its angle the one it is seen at (`seenTurn`), on the Canvas's grid. */
-function starterPlacement(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
+function starterPlacement(starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
   const beads = chosenBeads(starter, choice)
   const weave = weaveIn(starter, choice)
   const seen = seenTurn(starter, weave)
-  // Its angle on the table is the one it is seen at, laid on the Canvas's grid as a new Frame lies (ticket 1188).
-  const quarterTurns = seen === undefined ? 0 : quarterTurnsOff(seen, orientationOf(project))
-  const turned = quarterTurns ? { quarterTurns } : {}
+  // Its quarter turn on the Table is the one it is seen at (ticket 1188, spec 1234).
+  const quarterTurns = seen === undefined ? undefined : ((seen / 90) as QuarterTurns)
+  const turned = quarterTurns === undefined ? {} : { quarterTurns }
   if (starter.shape) return { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads, weave, ...turned } }
   const { rows, columns } = starterFrameSize(starter, choice, bead)
-  const laid = laidSize({ rows, columns, ...turned, ...withCell(weave, beadCell(bead, weave.technique)) })
-  const frame = { row: centre.row - Math.floor(laid.rows / 2), column: centre.column - Math.floor(laid.columns / 2), rows, columns }
-  return { place: { frame, weave, beads, ...turned } }
+  return { place: { frame: { rows, columns }, centre, weave, beads, ...turned } }
 }
 
 /** A new Project from a Starter (New Project's Pick a starter): its Frame as the setup sets it, with its first row and

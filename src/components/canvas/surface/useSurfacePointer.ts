@@ -2,7 +2,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn
 import { ownLength, ownPoint } from '../../../composables/ui/cssZoom'
 import { pressBecomes, type CanvasPress, type CanvasPressStep } from '../../../domain/canvasPress'
 import { layerAt } from '../../../domain/layers'
-import { footprintsOf } from '../../../domain/footprint'
+import { coversOf, tablePointOfCanvas } from '../../../domain/sheets'
+import type { TablePoint } from '../../../domain/table'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import { isFrameLayer, type FrameId, type GridPosition, type Layer, type PreviewCell, type Rotation } from '../../../domain/grid'
@@ -16,7 +17,7 @@ import type { ToolCapabilities } from '../../../domain/tool'
 import { AREA_SHEET_OUTSET, areaPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { SheetArea } from '../../../composables/tools/selectionBarPlacement'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
-import type { Size } from '../../../rendering/cellSize'
+import { CELL_SIZE_PX, type Size } from '../../../rendering/cellSize'
 import type { TiltedView } from '../../../rendering/tiltedView'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
@@ -51,9 +52,9 @@ export interface SurfacePointerEvents {
   /** Ctrl/⌘ + wheel (or a trackpad pinch) asked to change the zoom by this factor about a point of the viewport. */
   'zoom-by': [factor: number, anchor: Scroll]
   /** Edit Frame: a press grabbed a handle, the inside of the Frame or the Canvas, at this bead position. */
-  'frame-press': [target: FramePress, cell: GridPosition, frame: FrameId]
+  'frame-press': [target: FramePress, cell: GridPosition, frame: FrameId, at: TablePoint]
   /** Edit Frame: the pointer moved with the press held, over this bead position. */
-  'frame-drag': [cell: GridPosition]
+  'frame-drag': [cell: GridPosition, at: TablePoint]
   /** Edit Frame: the press ended. */
   'frame-release': []
   /** The Selection's handles or inside were pressed (ticket 414), at this bead position; or the move grip of an
@@ -412,7 +413,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     // A Frame whose kind offers no Selection refuses one as the margin does (a Custom frame, ticket 0592), and so does
     // any Frame in Mirror mode: it mirrors whole (ADR 0082).
     const layer = layerAt(props.project, bead)
-    return inMargin(footprintsOf(props.project), bead) || (isFrameLayer(layer) && (props.tools.marksArea || !frameAllows(props.project, 'select', layer)))
+    return inMargin(coversOf(props.project), bead) || (isFrameLayer(layer) && (props.tools.marksArea || !frameAllows(props.project, 'select', layer)))
   }
 
   function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -553,10 +554,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
    * Selection on it, the Canvas's for the Move handle and anything else. */
   let gestureLayer: ViewLayer = 'canvas'
 
-  /** The bead position nearest a pointer, wherever it is: dragging needs one even between beads. In the layer's own count,
-   * or with `byPlace` as the Frame's place counts (dragging the Frame itself). */
-  function cellNear(event: PointerEvent, layer: ViewLayer = gestureLayer, byPlace = false): GridPosition {
-    return surface.value.pointToCell(pointInDrawing(event), layer, byPlace)
+  /** The bead position nearest a pointer, wherever it is: dragging needs one even between beads. In the layer's own count. */
+  function cellNear(event: PointerEvent, layer: ViewLayer = gestureLayer): GridPosition {
+    return surface.value.pointToCell(pointInDrawing(event), layer)
+  }
+
+  /** The point of the Table a point of the drawing lies over, in mm: where the Move handle carries a Frame to (spec 1234). */
+  function tableAt(point: { x: number; y: number }): TablePoint {
+    const grid = surface.value.pointToGrid(point)
+    return tablePointOfCanvas(props.project, { x: grid.x / CELL_SIZE_PX, y: grid.y / CELL_SIZE_PX })
   }
 
   /** Whether the Mirror's Canvas Area's handles take a press (no Selection holds them): under any tool that draws, so
@@ -623,12 +629,6 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     return frameHandleIdAt(frameById(props.project, frame), view, point, touch)
   }
 
-  /** The layer the Move handle carries the Frame by (ticket 1188): the Canvas's positions while it lies on their grid,
-   * else its own rows and columns, which lie along it on screen. */
-  function moveLayer(ref: FrameId): ViewLayer {
-    return frameById(props.project, ref)?.centre ? ref : 'canvas'
-  }
-
   /** Whether a point of the drawing is on a margin sheet that refuses the tool there (ticket 1188): the sheet of a Frame
    * drawn on its own surface, at any angle, as the keep-out margin refuses beside a Frame on the Canvas's grid. */
   function onRefusingSheet(point: { x: number; y: number }): boolean {
@@ -651,8 +651,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   let carryGrip: { from: GridPosition; pressed: { x: number; y: number }; byCycles: boolean } | undefined
 
   /** Begins a move at the press, by whole stagger cycles for a Piece's shape; returns the position pressed. */
-  function beginCarry(event: PointerEvent, byCycles = false, byPlace = false): GridPosition {
-    const from = cellNear(event, gestureLayer, byPlace)
+  function beginCarry(event: PointerEvent, byCycles = false): GridPosition {
+    const from = cellNear(event, gestureLayer)
     carryGrip = { from, pressed: surface.value.pointToGrid(pointInDrawing(event)), byCycles }
     return from
   }
@@ -660,7 +660,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   /** Reports the cell at `point` to whichever drag is held: a Frame's, a Selection's adjust or a Select drag. */
   function followHeldDrag(point: { x: number; y: number }): void {
     const carried = carryGrip && surface.value.carriedCell(carryGrip.from, carryGrip.pressed, point, gestureLayer, carryGrip.byCycles)
-    if (framing.value) emit('frame-drag', carried ?? surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer, true))
+    if (framing.value) emit('frame-drag', surface.value.pointToCell({ x: point.x + frameGrip.x, y: point.y + frameGrip.y }, gestureLayer), tableAt(point))
     else if (adjusting.value) emit('selection-drag', carried ?? surface.value.pointToCell(point, gestureLayer))
     else if (selectDrag) {
       const near = surface.value.pointToCell(point, selectLayer)
@@ -772,9 +772,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     framing.value = true
     hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
-    gestureLayer = moveLayer(frame)
+    gestureLayer = frame
+    carryGrip = undefined
     frameGrip = { x: 0, y: 0 }
-    emit('frame-press', { kind: 'move' }, beginCarry(event, false, true), frame)
+    emit('frame-press', { kind: 'move' }, cellNear(event), frame, tableAt(pointInDrawing(event)))
     event.preventDefault()
   }
 
@@ -845,13 +846,13 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
         hotFrame.value = frame
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
-        gestureLayer = target.kind === 'handle' ? frame : moveLayer(frame)
+        gestureLayer = frame
         carryGrip = undefined
-        const pressed = cellNear(event, gestureLayer, true)
+        const pressed = cellNear(event, gestureLayer)
         const point = pointInDrawing(event)
-        const middle = surface.value.beadToPoint(pressed, gestureLayer, true)
+        const middle = surface.value.beadToPoint(pressed, gestureLayer)
         frameGrip = { x: middle.x - point.x, y: middle.y - point.y }
-        emit('frame-press', target, pressed, frame)
+        emit('frame-press', target, pressed, frame, tableAt(point))
         event.preventDefault()
         return
       }

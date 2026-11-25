@@ -42,6 +42,13 @@ export function frameScale(project: Layered, ref: FrameRef): number {
   return describeWeave(frameWeave(project, ref)).beadMm(frame).widthMm / describeWeave(canvasWeave(project)).beadMm(canvas).widthMm
 }
 
+/** A layer's cell width in mm: its Bead as its Technique lays it (ADR 0079), the Table's unit (spec 1234); 1 where it
+ * has no Bead copy. */
+export function cellWidthMm(project: Layered, layer: Layer): number {
+  const { bead } = beadOfLayer(project, layer)
+  return bead ? describeWeave(layerWeave(project, layer)).beadMm(bead).widthMm : 1
+}
+
 /** Whether the Frame's Bead draws its cells as the Canvas's does (ticket 0665): as wide, and as tall where the Bead
  * shape is Real. Without a Frame, the Canvas is alike itself. */
 export function sameBeadSize(project: Layered, frame: FrameRef): boolean {

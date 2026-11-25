@@ -1,7 +1,6 @@
 import type { FrameRef } from '../domain/grid'
-import type { Rect } from '../domain/canvas'
+import type { FrameSheet, Rect } from '../domain/canvas'
 import { currentPass, frameRowOrder, ownRowWayOf, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
-import { lieAlike } from '../domain/table'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -135,11 +134,10 @@ function passOnScreen({ project, surface, layout }: RulerDrawInput, at: number |
 }
 
 /** Whether a ruler number is the current pass's own: only the Frame's can be, never a Piece's on the same Canvas line
- * (ticket 1115). A Frame that does not lie alike has rulers counting the cells it covers, not its own rows (ticket 0667): none of its
- * numbers is. */
+ * (ticket 1115). */
 function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject, ref: FrameRef): boolean {
   const frame = frameById(project, ref)
-  if (label.kind !== 'frame' || !frame || !lieAlike(project, ref)) return false
+  if (label.kind !== 'frame' || !frame) return false
   const columns = ownRowWayOf(project, undefined, ref).direction === 'columns'
   return label.axis === (columns ? 'column' : 'row') && label.position === pass.line
 }
@@ -317,7 +315,7 @@ function drawHotHandle(context: DrawingContext, handle: Handle, hot: boolean, co
 
 /** What the Frame carries while being set (Frame and MarginSheet cards): its hot corners on its line in `accent`, and
  * the size Tooltip. */
-export function drawFrameEditing(context: DrawingContext, input: { frame: Rect; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string; hot?: HandleId }): void {
+export function drawFrameEditing(context: DrawingContext, input: { frame: Rect | FrameSheet; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string; hot?: HandleId }): void {
   const box = input.surface.frameBox(input.frame)
   drawHotCorners(context, { ...input, box, handles: frameHandles(box, input.touch), color: input.theme.accent })
 }

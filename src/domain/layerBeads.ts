@@ -1,8 +1,8 @@
-import { anyChangedPosition, beadsFromColors, colorAt, frameContains, hasBeads, sameFrame, type BeadMap } from './canvas'
+import { anyChangedPosition, beadsFromColors, colorAt, hasBeads, sameFrame, type BeadMap } from './canvas'
 import type { FrameRef, Layer } from './grid'
 import { sameWeave, weaveOf } from './layerWeave'
 import { beadsOfLayer, frameById, frameIdOf, framesOf, heldWeave, type Layered } from './layerRecord'
-import { cellUnder } from './footprint'
+import { canvasRectCentre, cellUnder, layerUnder } from './sheets'
 import { DEFAULT_BEAD } from './beads'
 import type { Grid, LayerFields } from './project'
 import { DEFAULT_TECHNIQUE, type Weave } from './weave'
@@ -17,10 +17,10 @@ export function beadColorAt(project: Layered, row: number, column: number, layer
     const named = frameById(project, layer)
     return colorAt(named ? named.beads : beadsOfLayer(project, 'canvas'), row, column)
   }
-  const under = framesOf(project).find((each) => frameContains(each, { row, column }))
-  if (!under) return colorAt(beadsOfLayer(project, 'canvas'), row, column)
-  const own = cellUnder(project, frameIdOf(under), { row, column })
-  return colorAt(under.beads, own.row, own.column)
+  const under = layerUnder(project, { row, column })
+  if (under === 'canvas') return colorAt(beadsOfLayer(project, 'canvas'), row, column)
+  const own = cellUnder(project, under, { row, column })
+  return own ? colorAt(beadsOfLayer(project, under)!, own.row, own.column) : null
 }
 
 /** Whether the Canvas holds a bead (a Frame's own do not count). */
@@ -101,10 +101,10 @@ export function framedGrid(grid: Grid, layer: Weave & Partial<Pick<LayerFields, 
   const { cell: _cell, technique, techniqueSettings, beadId = DEFAULT_BEAD.id, ...bead } = layer
   const own = { ...weaveOf({ technique, techniqueSettings }), beadId, ...bead }
   const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))
-  return {
-    layers: [
-      { id: 'canvas', name: '', ...own, beads: {}, orientation: 0 },
-      { id: 'frame', ...own, row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads, angle: 0, rowProgress: { way: 'down' } },
-    ],
-  }
+  const [rows, columns] = [grid.length, grid[0]?.length ?? 0]
+  const canvas = { id: 'canvas', name: '', ...own, beads: {}, orientation: 0 }
+  const laid = { layers: [canvas] as Layered['layers'] }
+  // Its first bead lies on the Canvas's first position, as the picture is drawn from it.
+  const centre = canvasRectCentre(laid, { row: 0, column: 0, rows, columns })
+  return { layers: [canvas, { id: 'frame', ...own, columns, rows, beads, angle: 0, centre, rowProgress: { way: 'down' } }] }
 }

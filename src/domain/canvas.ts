@@ -21,7 +21,7 @@ export interface Rect {
 /** The Frame as a Project holds it (ADR 0066): a rectangle laid on the Canvas that owns its own beads. The rectangle is
  * in Canvas positions; `beads` are counted from the Frame's own first row and column, so moving the Frame moves them
  * with it and changes nothing else. */
-export interface FrameSheet extends Rect, Weave {
+export interface FrameSheet extends Pick<Rect, 'rows' | 'columns'>, Weave {
   /** The Frame's own beads, counted from its first row and column. Its Weave, a Technique and its settings, is its own
    * too (ticket 492): the Canvas is woven in another if the weaver likes. */
   beads: BeadMap
@@ -217,9 +217,21 @@ export function frameContains(frame: Rect, { row, column }: GridPosition): boole
   return row >= frame.row && row < frame.row + frame.rows && column >= frame.column && column < frame.column + frame.columns
 }
 
-/** Whether two rectangles are the same place and size (either may be absent): an unchanged Frame is no change. */
-export function sameFrame(a: Rect | undefined, b: Rect | undefined): boolean {
-  return a === b || (!!a && !!b && a.row === b.row && a.column === b.column && a.rows === b.rows && a.columns === b.columns)
+/** A Frame or a rectangle as `sameFrame` compares it: its size, and where it lies where it says (a rectangle's first row
+ * and column, a Frame's centre and angle on the Table). */
+type Placed = Pick<Rect, 'rows' | 'columns'> & Partial<Pick<Rect, 'row' | 'column'>> & { centre?: { x: number; y: number }; angle?: number }
+
+/** Whether two are where they lie on the Table alike, where both say. */
+function sameWhere(a: Placed, b: Placed): boolean {
+  return (!a.centre || !b.centre || (a.centre.x === b.centre.x && a.centre.y === b.centre.y)) && (a.angle === undefined || b.angle === undefined || a.angle === b.angle)
+}
+
+/** Whether two Frames or rectangles are the same place and size (either may be absent): an unchanged Frame is no change. */
+export function sameFrame(a: Placed | undefined, b: Placed | undefined): boolean {
+  return (
+    a === b ||
+    (!!a && !!b && (a.row ?? 0) === (b.row ?? 0) && (a.column ?? 0) === (b.column ?? 0) && a.rows === b.rows && a.columns === b.columns && sameWhere(a, b))
+  )
 }
 
 /** Something with a size in beads: plain dimensions, or a Project (a canvas with or without a Frame). */
@@ -235,7 +247,7 @@ export function sizeOf(sized: Sized, frame: FrameRef): GridDimensions {
 }
 
 /** A Frame's size, as the dimensions the grid-shaped helpers (adjacency, fit zoom) take. */
-export function frameDimensions(frame: Rect): GridDimensions {
+export function frameDimensions(frame: Pick<Rect, 'rows' | 'columns'>): GridDimensions {
   return { columns: frame.columns, rows: frame.rows }
 }
 

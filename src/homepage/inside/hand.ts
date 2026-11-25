@@ -1,6 +1,6 @@
 import { nextTick, reactive } from 'vue'
 import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
-import { cellUnder, layerUnder } from '../../domain/footprint'
+import { cellUnder, layerUnder } from '../../domain/sheets'
 import { isFrameLayer, type GridPosition } from '../../domain/grid'
 import type { CanvasContext, ShellFrameContext } from '../../composables/shell/useAppShell'
 import { easeStandard } from '../../rendering/rowMotion'
@@ -367,7 +367,7 @@ export function createHand(deps: HandDeps) {
     const project = deps.canvas.activeProject.value
     const layer = project && !first.layer ? layerUnder(project, first) : undefined
     if (!project || !isFrameLayer(layer)) return (cell) => cell
-    return (cell) => ({ ...cellUnder(project, layer, cell), layer })
+    return (cell) => ({ ...(cellUnder(project, layer, cell) ?? cell), layer })
   }
 
   /** One stroke of the active tool through `cells`, in order: Paint, Fill or Erase as a beader's drag does, `ms` from a

@@ -158,7 +158,6 @@ export const tools: ToolsTranslations = {
     rotateInFinishedRows: 'This Selection reaches into rows marked done.',
     removeLine: 'Remove the selected row or column and close the gap.',
     removeLineDisabled: 'Select one whole row or column first.',
-    removeLineNotAlike: 'Turn the Frame or the Canvas until they lie the same way first.',
     namePiece: 'Give the selected Piece a name.',
     namePieceDisabled: 'Select one Piece first.',
     clear: 'Clear everything from the Canvas.',

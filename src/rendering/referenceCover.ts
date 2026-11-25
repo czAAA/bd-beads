@@ -1,12 +1,12 @@
 import type { Rect } from '../domain/canvas'
 import { isFrameLayer, type GridPosition, type Layer } from '../domain/grid'
 import { type Layered, frameById } from '../domain/layerRecord'
-import { frameGeometryOf } from '../domain/layers'
-import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
+import { frameBeadOnCanvas } from '../domain/sheets'
+import { canvasWeave } from '../domain/layerWeave'
 import { pointOnPicture, turnedExtent, type ReferencePlace } from '../domain/referenceImage'
 import { describeWeave, type Weave } from '../domain/weave'
-import { cellSizePx } from './cellSize'
-import { beadStepPx, frameOriginPx, inGridPx, positionBoxPx, type Region } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import { beadStepPx, positionBoxPx, type Region } from './surfaceView'
 
 // What the reference image covers on the Canvas (ReferenceImage card, ticket 0883): the size the chip shows, the Frame
 // Set Frame around the picture makes and the beads Convert to beads lays all start from the same positions.
@@ -70,12 +70,8 @@ export function pressOnPicture(project: Layered, position: GridPosition, layer: 
   const frame = frameById(project, on)
   const canvas = canvasWeave(project)
   if (!frame || !isFrameLayer(on)) return pointOnPicture(place, height, centreOf(positionBoxPx(canvas, position.row, position.column)))
-  const placed = frameGeometryOf(project, on).place(position)
-  const box = placed ? inGridPx(placed.box) : positionBoxPx(frameWeave(project, on), position.row, position.column)
-  const origin = frameOriginPx(canvas, frame)
-  const scale = frameScale(project, on)
-  const centre = centreOf(box)
-  return pointOnPicture(place, height, { x: origin.x + centre.x * scale, y: origin.y + centre.y * scale })
+  const centre = frameBeadOnCanvas(project, on, position)
+  return centre && pointOnPicture(place, height, { x: centre.x * CELL_SIZE_PX, y: centre.y * CELL_SIZE_PX })
 }
 
 function centreOf({ x, y, width, height }: Region): { x: number; y: number } {

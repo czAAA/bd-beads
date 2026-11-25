@@ -10,7 +10,7 @@ import type { FrameId } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { frameLabel } from '../../i18n/frameLabel'
 import { useI18n } from '../../i18n/useI18n'
-import { frameById, frameIdOf, framesOf, frameOf, lastEditedFrameId, NO_FRAME, soloFrame } from '../../domain/layerRecord'
+import { frameById, frameIdOf, framesOf, frameOf, lastEditedFrameId, soloFrame } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
 // What the Export panel holds (ticket 0652; ExportPanel card), also unfolded under the Project panel's Export row (1058):
@@ -40,7 +40,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 /** Fit a Frame to the drawing needs something drawn. */
-const nothingToFit = computed(() => fitToDrawing(props.project, NO_FRAME) === undefined)
+const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Frames to choose from, and the one the rows are of. */
 const frames = computed(() => framesOf(props.project))
 const chosen = computed(() => (props.frame && frameById(props.project, props.frame) ? props.frame : lastEditedFrameId(props.project)))

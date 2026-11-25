@@ -6,6 +6,8 @@ import { withFrameSheet } from './frameSheet'
 import { pieceNameAt } from './pieceNames'
 import type { Project } from './project'
 import { selectionFrame, selectionLayer, type Selection } from './selection'
+import { canvasRectCentre } from './sheets'
+import type { TablePoint } from './table'
 
 // A Selection exported as a part (ticket 1210; ExportPanel card): the Project as a Frame laid on just the Selection, so
 // the Picture, the Printable chart, Beads needed, the Word chart and the Cover page need no other path than a Frame's.
@@ -47,7 +49,7 @@ export function selectionExportProject(project: Project, selection: Selection, p
     if (!area) return undefined
     const beads = beadsInside(beadsOfLayer(project, layer)!, area, selection.cells)
     const { shape: _shape, settings: _settings, folded: _folded, quarterTurns: _turns, ...kept } = frame
-    const cut: FrameSheet & Partial<typeof frame> = { ...kept, row: frame.row + area.row, column: frame.column + area.column, rows: area.rows, columns: area.columns, beads }
+    const cut: FrameSheet & Partial<typeof frame> = { ...kept, rows: area.rows, columns: area.columns, beads }
     return withLayer(withFrameSheet(withLayer(project, 'canvas', { beads: {} }), cut, { frame: layer }), layer, { name: partName })
   }
   const area = snappedFrame(heldWeave(project, 'canvas'), asked)
@@ -55,7 +57,7 @@ export function selectionExportProject(project: Project, selection: Selection, p
   const piece = selection.cells?.[0] && pieceNameAt(project, selection.cells[0])
   const unframed = framesOf(project).reduce((next, frame) => withFrameSheet(next, undefined, { frame: frameIdOf(frame) }), project)
   const base = withLayer(unframed, 'canvas', { beads: {} })
-  const sheet: FrameSheet = { row: area.row, column: area.column, rows: area.rows, columns: area.columns, beads: shiftedBeads(beads, asked.row - area.row, asked.column - area.column), ...heldWeave(project, 'canvas') }
+  const sheet: FrameSheet & { centre: TablePoint } = { centre: canvasRectCentre(base, area), rows: area.rows, columns: area.columns, beads: shiftedBeads(beads, asked.row - area.row, asked.column - area.column), ...heldWeave(project, 'canvas') }
   // The one Frame of the Project made, named by the id it is made with.
   const made = frameIdOf({ id: crypto.randomUUID() })
   const laid = withFrameSheet(base, { ...sheet, id: made }, { anew: true, frame: made })

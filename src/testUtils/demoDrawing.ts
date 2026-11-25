@@ -13,8 +13,8 @@ const COLORS: Record<string, string> = Object.fromEntries(Object.entries(PEACOCK
 
 /** The Frame's place and size, and nothing else of it. */
 export function placeOf(project: Project) {
-  const { row, column, rows, columns } = frameOf(project)!
-  return { row, column, rows, columns }
+  const { rows, columns } = frameOf(project)!
+  return { row: 0, column: 0, rows, columns }
 }
 
 /** The Frame's beads as lines of parts, as a drawing writes them: a line for each column, a part for each bead along, by the Frame's own rows and columns.

@@ -8,7 +8,7 @@ import { groupThousands } from '../../domain/formatNumber'
 import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { DEFAULT_MAX_IMAGE_COLORS, MAX_IMAGE_COLORS, type PixelData } from '../../domain/imageConversion'
 import { snappedFrame } from '../../domain/frame'
-import { beadOfLayer, canvasOf, heldWeave, firstFrameId } from '../../domain/layerRecord'
+import { beadOfLayer, canvasOf, heldWeave } from '../../domain/layerRecord'
 import { canvasWeave } from '../../domain/layerWeave'
 import { brandColors, defaultPalette } from '../../domain/palette'
 import type { Grid, Project } from '../../domain/project'
@@ -175,11 +175,11 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
     const project = deps.currentProject()
     const made = conversion.value
     if (!project || !made || convertOff.value || dragging.value) return undefined
-    return keepAllowedEdits(project, withConvertedBeads(project, made.changes, firstFrameId(project)))
+    return keepAllowedEdits(project, withConvertedBeads(project, made.changes))
   })
   const replaced = computed(() => {
     const project = deps.currentProject()
-    return project && conversion.value ? beadsReplaced(project, conversion.value.changes, firstFrameId(project)) : 0
+    return project && conversion.value ? beadsReplaced(project, conversion.value.changes) : 0
   })
 
   async function readPixels(): Promise<void> {
@@ -227,7 +227,7 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   function convert(): void {
     const made = conversion.value
     if (!made || reducing.value || convertOff.value) return
-    const outcome = deps.edit('drawing', (project) => withConvertedBeads(project, made.changes, firstFrameId(project)))
+    const outcome = deps.edit('drawing', (project) => withConvertedBeads(project, made.changes))
     converting.value = false
     if (outcome.kind !== 'applied') return
     told(made.changes.length, made.colors.length, hideAfter.value)
@@ -237,7 +237,7 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
    * Convert does, one Undo step, the same toast. */
   function addGrid(grid: Grid, request: AllSettingsRequest): void {
     const changes = gridChanges(grid, request.box)
-    const outcome = deps.edit('drawing', (project) => withConvertedBeads(project, changes, firstFrameId(project)))
+    const outcome = deps.edit('drawing', (project) => withConvertedBeads(project, changes))
     if (outcome.kind === 'applied') told(changes.length, new Set(changes.map((change) => change.color)).size, request.hideAfter)
   }
 

@@ -1,5 +1,7 @@
 import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
-import { beadsFromColors } from './canvas'
+import { beadsFromColors, type Rect } from './canvas'
+import type { FrameRef } from './grid'
+import { canvasRectCentre } from './sheets'
 import { weaveOf } from './layerWeave'
 import { newLayerId, startingRowProgressOf, withCanvas, withFrameFields, withLayer, withStartingRowProgress, firstFrameId, frameById } from './layerRecord'
 import { normalizeMakerName } from './makerName'
@@ -60,12 +62,11 @@ export function createProject(input: CreateProjectInput): Project {
   // Both layers take the form's settings (ADR 0079).
   const ids = { canvas: newLayerId(), frame: newLayerId() }
   const canvas = { id: ids.canvas, name, ...layer, orientation: startOrientation(created.technique) }
+  // The Frame lies on the Canvas's first positions, as the Canvas does (spec 1234), from then on on its own.
+  const frame = dimensions && { id: ids.frame, ...layer, columns: dimensions.columns, rows: dimensions.rows, angle: canvas.orientation, centre: canvasRectCentre({ layers: [canvas] }, { row: 0, column: 0, ...dimensions }), rowProgress: startingRowProgressOf(created) }
   return {
     id: crypto.randomUUID(),
-    layers: [
-      canvas,
-      ...(dimensions ? [{ id: ids.frame, ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, angle: canvas.orientation, rowProgress: startingRowProgressOf(created) }] : []),
-    ],
+    layers: [canvas, ...(frame ? [frame] : [])],
     palette,
     ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}),
     paletteLetters: lettersOfPalette(palette, undefined),
@@ -87,6 +88,12 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
   palette?: { ids: PaletteIds; codes: PaletteCodes }
 }
 
+/** The rows and columns of the Frame a Project holds. */
+function dimensionsOf(project: Project, ref: FrameRef): Pick<Rect, 'rows' | 'columns'> {
+  const { rows, columns } = frameById(project, ref)!
+  return { rows, columns }
+}
+
 /** Creates a Project from a picture (ticket 58): a new Project with its cells painted and its Canvas upright, as the
  * preview showed it (ticket 0965). Conversion never edits an open Project (ADR 0010). The grid is fitted to the stated
  * dimensions (missing cells empty, surplus dropped), so they never disagree. */
@@ -95,7 +102,8 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
   const upright = withCanvas(createProject(input), { orientation: 0 })
   // A new Project's one Frame.
   const ref = firstFrameId(upright)
-  const project = withStartingRowProgress(withFrameFields(upright, { angle: 0 }, ref), ref)
+  const centre = canvasRectCentre(upright, { row: 0, column: 0, ...dimensionsOf(upright, ref) })
+  const project = withStartingRowProgress(withFrameFields(upright, { angle: 0, centre }, ref), ref)
   const frame = frameById(project, ref)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>

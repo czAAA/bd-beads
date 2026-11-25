@@ -21,20 +21,18 @@ export function laidSize(frame: Oriented): GridDimensions {
   return frameShapeOf(frame) ? { rows: frame.rows, columns: frame.columns } : turnedGridSize(frame)
 }
 
-/** The rectangle a Frame covers on the Canvas as it lies (ticket 0667), from its first row and column: the Frame itself
- * where that is its own rectangle (upright, or a Custom frame). What its footprint, margin, line and handles go by; not
+/** The rectangle a Frame covers on the Table as it lies (ticket 0667), from its own first row and column: its own rows
+ * and columns where that is its own rectangle (upright, or a Custom frame). What its margin, line and handles go by; not
  * a Frame, whose own rows and columns its geometry is built from. */
-export function laidRect(frame: Rect & Oriented): Rect {
-  if (!frame.quarterTurns || frameShapeOf(frame)) return frame
-  return { row: frame.row, column: frame.column, ...laidSize(frame) }
+export function laidRect(frame: Pick<Rect, 'rows' | 'columns'> & Oriented): Rect {
+  return { row: 0, column: 0, ...(!frame.quarterTurns || frameShapeOf(frame) ? { rows: frame.rows, columns: frame.columns } : laidSize(frame)) }
 }
 
 /** The rectangle the Project's Frame covers on the Canvas as it lies (see `laidRect`), in its Weave with the Bead
  * shape's cell; none without a Frame. */
 export function laidFrame(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = frameById(project, ref)
-  if (!frame?.quarterTurns) return frame
-  return laidRect({ ...frame, ...frameWeave(project, ref) })
+  return frame && laidRect({ ...frame, ...frameWeave(project, ref) })
 }
 
 /** A Frame's Width and Height as seen (ticket 0667): a Frame's own columns and rows, swapped while it lies a
@@ -59,11 +57,11 @@ export function ownSize(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>, seen:
 /** A turned Frame with the given edges as seen dragged to a bead `cell` of the rectangle it lies in (ticket 1016), as
  * `frameWithEdges` drags an upright one: the own rectangle a resize sets, each own edge under a dragged one moved by its
  * own steps (whole cycles for its top and left) to the count whose turned extent comes nearest the pointer. */
-export function turnedWithEdges(frame: Rect & Oriented, edges: readonly FrameEdge[], cell: GridPosition): Rect {
+export function turnedWithEdges(frame: Pick<Rect, 'rows' | 'columns'> & Oriented, edges: readonly FrameEdge[], cell: GridPosition): Rect {
   const laid = laidRect(frame)
-  const at = { row: cell.row - frame.row, column: cell.column - frame.column }
+  const at = cell
   const asked: Record<FrameEdge, number> = { top: laid.rows - at.row, bottom: at.row + 1, left: laid.columns - at.column, right: at.column + 1 }
-  const own: Rect = { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }
+  const own: Rect = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
   return edges.reduce((rect, seen) => withOwnSide(frame, rect, seen, asked[seen]), own)
 }
 

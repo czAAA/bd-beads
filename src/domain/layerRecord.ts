@@ -1,5 +1,5 @@
 import { beadCopy, type Bead } from './beads'
-import { nearestQuarterTurn, normalizedOrientation, quarterTurnsOff } from './canvasOrientation'
+import { nearestQuarterTurn, normalizedOrientation } from './canvasOrientation'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { FrameId, FrameRef, Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
@@ -48,14 +48,14 @@ function frameIndex(project: Layered | undefined, frame: Layer): number {
   return project.layers.findIndex((layer, index) => index > 0 && layer.id === frame)
 }
 
-/** A Frame layer as the Project holds it: its own angle on the table, no `quarterTurns`. */
+/** A Frame layer as the Project holds it: its own quarter turn on the Table, no `quarterTurns`. */
 function heldFrame(project: Layered | undefined, frame: Layer): FrameLayer | undefined {
   const index = frameIndex(project, frame)
   return index > 0 ? (project!.layers[index] as FrameLayer) : undefined
 }
 
-/** A Frame as the Project holds it (ticket 1216): its own angle on the table and no `quarterTurns` (see frameById), for
- * what lays it on the table itself. */
+/** A Frame as the Project holds it (ticket 1216): its own angle and centre on the Table and no `quarterTurns` (see
+ * frameById), for what lays it on the Table itself. */
 export function heldFrameById(project: Layered, frame: Layer): FrameLayer | undefined {
   return heldFrame(project, frame)
 }
@@ -63,8 +63,8 @@ export function heldFrameById(project: Layered, frame: Layer): FrameLayer | unde
 /** Each layer list's Frames as read (see frameById), so a Frame read twice from one Project is the same object. */
 const readFrames = new WeakMap<Layered['layers'], Map<FrameLayer, FrameLayer>>()
 
-/** A Frame by its reference (ADR 0066, 0079, ticket 1216), with `quarterTurns` read from its own angle on the table and
- * the Canvas's (spec 1182): how it lies on the Canvas's grid, what its laying, sizes and handles go by. None for the
+/** A Frame by its reference (ADR 0066, 0079, ticket 1216), with `quarterTurns` read from its own quarter turn on the Table
+ * (spec 1234, whatever the Canvas's): how its grid lies turned, what its laying, sizes and handles go by. None for the
  * Canvas, a Frame the Project lacks, or no Project open. */
 export function frameById(project: Layered | undefined, frame: Layer): FrameLayer | undefined {
   const held = heldFrame(project, frame)
@@ -76,9 +76,7 @@ export function frameById(project: Layered | undefined, frame: Layer): FrameLaye
   }
   const found = known.get(held)
   if (found) return found
-  // Off the Canvas's grid a Frame without a shape lies on none (ticket 1188): no quarter turns, its own rows upright on
-  // its own drawing. A Custom frame's layout is still built turned by them.
-  const turns = held.centre && !held.shape ? 0 : quarterTurnsOff(held.angle, canvasOf(project!).orientation)
+  const turns = (nearestQuarterTurn(held.angle) / 90) as 0 | 1 | 2 | 3
   const { quarterTurns: _stale, ...rest } = held
   const read = turns === (held.quarterTurns ?? 0) ? held : turns ? { ...rest, quarterTurns: turns } : rest
   known.set(held, read)
@@ -251,9 +249,9 @@ export function withCanvas(project: Project, change: Partial<CanvasLayer>): Proj
   return { ...project, layers: [{ ...canvasOf(project), ...change }, ...framesOf(project)] }
 }
 
-/** The Project with a Frame laid as a sheet as `withFrameSheet` (frameSheet.ts) lays it, before a Frame off the
- * Canvas's grid is carried to its place on the table (ticket 1188): what only that module calls. The Frame named is
- * laid anew in its place, or removed without a sheet; one the Project lacks is added after the others. */
+/** The Project with a Frame laid as a sheet as `withFrameSheet` (frameSheet.ts) lays it: what only that module calls. The
+ * Frame named is laid anew in its place, or removed without a sheet; one the Project lacks is added after the others.
+ * The sheet's `centre`, in mm on the Table, is where it lies; a Frame laid anew with none lies at the Table's origin. */
 export function laidFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined, { anew = false, frame }: { anew?: boolean; frame: FrameRef }): Project {
   const canvas = canvasOf(project)
   const index = frameIndex(project, frame)
@@ -265,22 +263,23 @@ export function laidFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   // A Frame named by an id the Project lacks is made with that id.
   const id = frame
   const kept = held ? frameIdentity(held) : { ...frameIdentity({ ...canvas, rowProgress: startingRowProgressOf(sheet) }), id }
-  const { cell: _cell, quarterTurns, angle: _angle, centre: _centre, ...laid } = sheet
+  const { cell: _cell, quarterTurns, angle: given, centre, ...laid } = sheet
+  // A Frame laid anew lies as the sheet says, else as the Canvas does; a changed one turns by the quarters its sheet adds.
   const turned = 90 * ((quarterTurns ?? 0) - (placed ? (frameById(project, frame)!.quarterTurns ?? 0) : 0))
-  const angle = normalizedOrientation((placed ? placed.angle : canvas.orientation) + turned)
-  const made = { ...kept, ...laid, angle }
+  const angle = normalizedOrientation(placed ? placed.angle + turned : (given ?? canvas.orientation))
+  const made = { ...kept, ...laid, angle, centre: centre ?? placed?.centre ?? { x: 0, y: 0 } }
   return index > 0 ? withFrameById(project, frame, () => made) : { ...project, layers: [...project.layers, made] }
 }
 
-/** The Project with a Frame layer's own fields set as given (its angle, its Row progress), as the Project holds them:
+/** The Project with a Frame layer's own fields set as given (its angle, centre, Row progress), as the Project holds them:
  * no sheet is laid. The same Project without that Frame. Not stamped. */
-export function withFrameFields(project: Project, change: Partial<Pick<FrameLayer, 'angle' | 'rowProgress'>>, frame: FrameRef): Project {
+export function withFrameFields(project: Project, change: Partial<Pick<FrameLayer, 'angle' | 'centre' | 'rowProgress'>>, frame: FrameRef): Project {
   return withFrameById(project, frame, (held) => ({ ...held, ...change }))
 }
 
 /** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Background, Letters
  * switch and Row progress. A Frame made anew in place of another keeps them. */
-export function frameIdentity({ id, beadId, bead, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet | 'angle'> & LayerFields): Omit<FrameLayer, keyof FrameSheet | 'angle'> {
+export function frameIdentity({ id, beadId, bead, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet | 'angle' | 'centre'> & LayerFields): Omit<FrameLayer, keyof FrameSheet | 'angle' | 'centre'> {
   return {
     id,
     beadId,
@@ -303,16 +302,17 @@ export function withStartingRowProgress(project: Project, frame: FrameRef): Proj
   return withFrameById(project, frame, (held) => ({ ...held, rowProgress: startingRowProgressOf(held) }))
 }
 
-/** The Canvas's orientation (ADR 0079): its angle on the table, in degrees, any angle (ticket 0672); none with no
- * Project open. */
+/** The Canvas's angle on screen (ADR 0079, spec 1234): its quarter turn on the Table and the Table turn, in degrees, any
+ * angle; none with no Project open. What the view lays the Canvas at; the Canvas's own quarter turn is
+ * `canvasOf(project).orientation`. */
 export function orientationOf(project: Layered): number
 export function orientationOf(project: Layered | undefined): number | undefined
 export function orientationOf(project: Layered | undefined): number | undefined {
-  return project && canvasOf(project).orientation
+  return project && normalizedOrientation(canvasOf(project).orientation + (canvasOf(project).tableTurn ?? 0))
 }
 
-/** The quarter turn the Canvas's orientation is nearest (ticket 0672): what it is drawn, exported and measured as seen
- * at; only the view on screen leans off it. */
+/** The Canvas's own quarter turn on the Table (spec 1234): what it is drawn, exported and measured as seen at, whatever
+ * the Table turn. */
 export function quarterTurnOf(project: Layered): Rotation {
   return nearestQuarterTurn(canvasOf(project).orientation)
 }

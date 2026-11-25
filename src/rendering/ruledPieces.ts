@@ -2,8 +2,8 @@ import { beadBounds, changedPositions, frameContains, type BeadMap, type Rect } 
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
 import { beadsOfLayer, pieceNamesOf } from '../domain/layerRecord'
-import { footprintsOf } from '../domain/footprint'
-import { beadsShown, withMargin } from '../domain/margin'
+import { coversOf } from '../domain/sheets'
+import { beadsShown } from '../domain/margin'
 import { namedPieces, namedPiecesFrom, type NamedPiece } from '../domain/pieceNames'
 import { type WalkedPieces } from '../domain/pieces'
 import { pieceAreasOf } from '../domain/pieceAreas'
@@ -38,8 +38,8 @@ const NAMED_REACH = 1
 export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking, idleWalk }: { numbers: boolean; stroking: boolean; idleWalk?: IdleWalk }): RuledPieces {
   const weave = canvasWeave(project)
   const beads = beadsOfLayer(project, 'canvas')
-  const footprints = footprintsOf(project)
-  const shown = beadsShown(beads, footprints)
+  const covers = coversOf(project)
+  const shown = beadsShown(beads, covers)
   const held = stroking && previous && previous.touch === touchKey(weave) && (previous.areas !== undefined) === numbers
   if (!held && (numbers || pieceNamesOf(project)?.length) && tooManyToWalk(beads)) {
     // Never walked on open or in a press (ticket 0716): in idle time under the size gate, never above it.
@@ -51,7 +51,7 @@ export function ruledPieces(previous: RuledPieces | undefined, project: RuledPro
     return { beads, touch: touchKey(weave), areas: numbers ? pieceAreasOf(shown, weave) : undefined, named: namedPieces(project) }
   }
   if (previous.beads === beads) return previous
-  const covered = footprints.map((footprint) => withMargin(footprint))
+  const covered = covers.map(({ sheet }) => sheet)
   const painted = changedPositions(previous.beads, beads).filter((at) => beads[at.row]?.[at.column] !== undefined && !covered.some((cover) => frameContains(cover, at)))
   const areas = previous.areas && painted.reduce(grownAreas, previous.areas)
   const named = previous.named.map((piece) => painted.reduce((grown: NamedPiece, at) => (reaches(grown, at, NAMED_REACH) && !frameContains(grown, at) ? { ...grown, ...holding(grown, at) } : grown), piece))

@@ -1,21 +1,20 @@
 import type { FrameRef, GridPosition, Layer } from './grid'
 import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { QuarterTurns } from './frameShape'
-import { laidSize } from './frameOrientation'
-import { nearestQuarterTurn, turnedOrientation } from './canvasOrientation'
+import { turnedOrientation } from './canvasOrientation'
 import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
-import { canvasDistance, canvasWeave, frameWeave, layerWeave } from './layerWeave'
-import { beadsOfLayer, canvasOf, heldWeave, orientationOf, withFrameFields, withLayer, frameById } from './layerRecord'
+import { layerWeave } from './layerWeave'
+import { beadsOfLayer, canvasOf, heldWeave, orientationOf, withLayer, frameById } from './layerRecord'
 import { touchFrameSheet } from './frameSheet'
 import { touch, type FrameLayer, type Project } from './project'
 import { rowProgressStarted } from './rowProgress'
 import { turnedWithFrame } from './rowWays'
 import type { WovenChoice } from './wovenLines'
-import { withCanvasTurned, withFrameTurnedTo } from './framePlacement'
-import { frameMet, twistStop } from './frameSpacing'
-import { frameQuarterTurnOf, type TablePoint } from './table'
+import { withCanvasTurned, withTableTurned } from './framePlacement'
+import { frameMet } from './frameSpacing'
+import type { TablePoint } from './table'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionLayer, selectionMask, type Selection } from './selection'
@@ -187,21 +186,11 @@ export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: 
   if (!frame) {
     return undefined
   }
-  const own = frameWeave(project, ref)
   const turns = ((frame.quarterTurns ?? 0) + 1) % 4
   const { quarterTurns: _turns, ...upright } = frame
-  const turned: FrameSheet = { ...upright, ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
-  // Its centre stays: the corner moves by half what it covered less half what it covers now, so turns come back to it.
-  const half = (sheet: FrameSheet) => {
-    const { rows, columns } = laidSize({ ...sheet, ...own })
-    return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2), ref)
-  }
-  const [was, now] = [half(frame), half(turned)]
-  const [row, column] = [frame.row + was.row - now.row, frame.column + was.column - now.column]
-  // Upright again it starts where a Frame may (ticket 1016): a resize while turned can leave it between.
-  const canvas = canvasWeave(project)
-  const at = turns ? { row, column } : { row: snapRow(canvas, row), column: snapColumn(canvas, column) }
-  const made = touchFrameSheet(project, { ...turned, ...at, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
+  const turned: FrameSheet & { centre: TablePoint } = { ...upright, ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
+  // Its centre stays where it is on the Table, so turns come back to the place it began (spec 1234).
+  const made = touchFrameSheet(project, { ...turned, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
   return metOnTurn(project, made, ref) ? undefined : made
 }
 
@@ -220,27 +209,21 @@ function turnedRowProgress(project: Project, turns: number, woven: WovenChoice, 
   return woven === 'keep' ? turnedWithFrame(rowProgress, turns) : { way: rowProgress.way }
 }
 
-/** A two-finger twist of the Frame come to rest at `asked` (ticket 1190, spec 1182): the Frame turned about its own
- * centre (`withFrameTurnedTo`), one Undo step, stopped short of another Frame's margin (ticket 1218). Settled on another quarter turn with a pass done, `woven` answers
- * `twistFrameQuestion` as it answers Rotate Frame's. No Frame: undefined. */
-export function twistFrameTo(project: Project, asked: number, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
-  if (!frameById(project, ref)) return undefined
-  // It stops short of another Frame's margin (spec 1214).
-  const angle = twistStop(project, asked, ref)
-  const turns = ((nearestQuarterTurn(angle) - frameQuarterTurnOf(project, ref) + 360) / 90) % 4
-  return touch(withFrameFields(withFrameTurnedTo(project, angle, ref), { rowProgress: turnedRowProgress(project, turns, woven, ref) }, ref), {})
-}
-
-/** Rotate canvas (ticket 471): the Canvas a quarter turn clockwise further from whatever angle it is at (ticket 0672),
- * its origin moved `moved`; a view, no bead changes.
+/** Rotate canvas (ticket 471, spec 1234): the Canvas a quarter turn clockwise further, its origin moved `moved` on screen
+ * by the middle of the view it turns about; every Frame stays where it is on the Table; a view, no bead changes.
  * @internal The flow turns through the view (turnCanvasTo); tests turn a Canvas a quarter without one. */
 export function rotateCanvas(project: Project, moved?: TablePoint): Project {
   return turnCanvasTo(project, turnedOrientation(orientationOf(project), 90), moved)
 }
 
-/** The Canvas at an orientation, any angle in degrees (a two-finger twist, ticket 0672), its origin moved `moved` on the
- * table by the pivot it turned about: only the Canvas turns, the Frame stays where it is on the table (ticket 1188,
+/** The Canvas turned to the quarter turn nearest `angle` on screen, its origin moved `moved` on screen (see
  * withCanvasTurned); a view, no bead changes. */
-export function turnCanvasTo(project: Project, orientation: number, moved?: TablePoint): Project {
-  return touch(withCanvasTurned(project, orientation, moved), {})
+export function turnCanvasTo(project: Project, angle: number, moved?: TablePoint): Project {
+  return touch(withCanvasTurned(project, angle, moved), {})
+}
+
+/** The whole Table turned until the Canvas lies at `angle` on screen, every layer together (a two-finger twist, spec 1234);
+ * a view, no bead changes. */
+export function turnTableTo(project: Project, angle: number): Project {
+  return touch(withTableTurned(project, angle), {})
 }
