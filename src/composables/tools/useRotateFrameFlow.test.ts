@@ -1,5 +1,9 @@
 import { frameIdIn } from '../../testUtils/frameId'
 import { firstOf, SECOND, twoFrames } from '../../testUtils/twoFrames'
+import { withFrameSheet } from '../../domain/frameSheet'
+import { onCanvas } from '../../testUtils/onCanvas'
+import { turnTableTo } from '../../domain/rotate'
+import { tableTurnOf } from '../../domain/table'
 import { frameById } from '../../domain/layerRecord'
 import { describe, expect, it, vi } from 'vitest'
 import { colorAt, withColors } from '../../domain/canvas'
@@ -29,6 +33,7 @@ function setup(project: Project | null = framed) {
     edit: harness.edit,
     currentProject: harness.currentProject,
     announce: vi.fn(),
+    showToast: vi.fn(),
     messages: () => en,
     locale: () => 'en' as const,
     dialogs: useDialogs(),
@@ -158,11 +163,26 @@ describe('Rotate Frame names its Frame (ticket 1218)', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('leaves a Frame unturned, and says nothing, where the turn would meet the other Frame', () => {
+  it('leaves a Frame unturned, and says which Frame it would meet, where the turn would meet the other Frame (spec 1234)', () => {
     const { deps, harness, onRotateFrame, frameTurns } = setup(twoFrames({ row: 0, column: 14 }, { rows: 20, columns: 2 }))
     onRotateFrame(SECOND)
     expect(harness.history.canUndo.value).toBe(false)
     expect(frameTurns.value).toBe(0)
     expect(deps.announce).not.toHaveBeenCalled()
+    expect(deps.showToast).toHaveBeenCalledWith('frame-meets', 'Too close to Frame 1. Frames and their margins can’t meet.', 'warning')
+  })
+
+  it('turns a peyote Frame on a loom Canvas, with a Table turn on, about its own centre and nothing else', () => {
+    const loom = twoFrames()
+    const peyote = withFrameSheet(loom, onCanvas(loom, { row: 20, column: 20, rows: 6, columns: 4, beads: {}, technique: 'peyote' }), { frame: SECOND })
+    const turned = turnTableTo(peyote, 40)
+    const { harness, onRotateFrame } = setup(turned)
+    const centre = frameById(turned, SECOND)!.centre
+    onRotateFrame(SECOND)
+    const after = frameById(harness.project, SECOND)!
+    expect(after.quarterTurns).toBe(1)
+    expect(after.centre).toEqual(centre)
+    expect(tableTurnOf(harness.project)).toBe(40)
+    expect(frameById(harness.project, firstOf(peyote))).toEqual(frameById(turned, firstOf(peyote)))
   })
 })

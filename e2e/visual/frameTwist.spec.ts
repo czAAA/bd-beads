@@ -1,6 +1,6 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import { expect, test, type Page } from '@playwright/test'
-import { frameById, frameIdOf, frameOf, orientationOf } from '../../src/domain/layerRecord'
+import { canvasOf, frameById, frameIdOf, frameOf, orientationOf } from '../../src/domain/layerRecord'
 import { canvasAngleOf, frameAngleOf, tableTurnOf } from '../../src/domain/table'
 import { currentZoomPercent, openApp, savedProject, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
@@ -156,4 +156,44 @@ test('a twist with two Frames turns the Table, both Frames with it and neither a
   expect(frameAngleOf(saved, frameIdIn(saved))).toBe(frameAngleOf(saved, second))
   expect(frameById(saved, second)!.angle).toBe(0)
   expect(canvasAngleOf(saved)).toBe(frameAngleOf(saved, second))
+})
+
+test('the iPad flow: Frames of other Techniques, a Table turn, then Rotate Frame and Rotate canvas turn only their own layer (ticket 1238)', async ({ page }) => {
+  const second = frameIdOf({ id: 'second' })
+  const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
+  const pair = withFrameSheet(base, onCanvas(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'peyote' }), { frame: second })
+  await openApp(page, [pair])
+  await settle(page)
+  const sheet = (await page.locator('[data-testid="project-surface"]').boundingBox())!
+  await pacedTwoFingers(page, twist({ x: sheet.x + sheet.width / 2, y: sheet.y + sheet.height / 2 }, 35, 80))
+  const twisted = await savedProject(page)
+  const table = tableTurnOf(twisted)
+  expect(table).toBeGreaterThan(20)
+  expect(table).toBeLessThan(40)
+
+  // Rotate canvas: the Canvas a quarter on, both Frames and the Table turn exactly as they were.
+  await page.getByTestId('strip-rotate-canvas').click()
+  await settle(page)
+  await expect.poll(async () => canvasOf(await savedProject(page)).orientation).toBe((canvasOf(twisted).orientation + 90) % 360)
+  const canvasTurned = await savedProject(page)
+  expect(tableTurnOf(canvasTurned)).toBe(table)
+  // The file keeps each centre from the Canvas's origin, which Rotate canvas moved: the Frames' own turns and their distance stay.
+  const apart = (project: typeof twisted) => {
+    const [a, b] = [frameById(project, frameIdIn(project))!.centre, frameById(project, second)!.centre]
+    return Math.hypot(a.x - b.x, a.y - b.y)
+  }
+  expect(apart(canvasTurned)).toBeCloseTo(apart(twisted), 3)
+  for (const id of [second, frameIdIn(twisted)]) expect(frameById(canvasTurned, id)!.angle).toBe(frameById(twisted, id)!.angle)
+
+  // Rotate Frame: only the one Frame, about its own centre.
+  await page.locator(`[data-testid="margin-frame-tools"][data-frame="${second}"]`).click()
+  await page.getByTestId('margin-frame-tools-rotate').click()
+  await settle(page)
+  await expect.poll(async () => frameById(await savedProject(page), second)!.quarterTurns).toBe(1)
+  const frameTurned = await savedProject(page)
+  expect(frameById(frameTurned, second)!.centre).toEqual(frameById(canvasTurned, second)!.centre)
+  expect(frameById(frameTurned, frameIdIn(twisted))!.centre).toEqual(frameById(canvasTurned, frameIdIn(twisted))!.centre)
+  expect(tableTurnOf(frameTurned)).toBe(table)
+  expect(canvasOf(frameTurned).orientation).toBe(canvasOf(canvasTurned).orientation)
+  expect(frameById(frameTurned, frameIdIn(twisted))!.quarterTurns ?? 0).toBe(0)
 })
