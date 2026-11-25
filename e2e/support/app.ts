@@ -4,6 +4,7 @@ import { normalizeProject } from '../../src/domain/storedProject'
 import type { Project } from '../../src/domain/project'
 import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
 import type { Tool } from '../../src/domain/tool'
+import { RECORD_FORMAT } from '../../src/services/indexedLibraryStore'
 import { SETTLE_MS } from '../../src/rendering/gestureView'
 
 /** Opens the app with these Projects in the library (the most recent opens), or none; at the editor's address
@@ -211,7 +212,7 @@ export async function setConvertWidth(page: Page, beads: number): Promise<void> 
  * happened. */
 export async function storedProjects(page: Page): Promise<EncodedProject[]> {
   const stored = await page.evaluate(
-    () =>
+    (formats) =>
       new Promise<string[]>((resolve) => {
         const open = indexedDB.open('openbeads-library')
         open.onerror = () => resolve([])
@@ -225,7 +226,7 @@ export async function storedProjects(page: Page): Promise<EncodedProject[]> {
           const all = db.transaction('projects').objectStore('projects').getAll()
           all.onsuccess = () => {
             db.close()
-            resolve((all.result as { format: number; stored: string }[]).filter((record) => [1, 2, 3, 4].includes(record.format)).map((record) => record.stored))
+            resolve((all.result as { format: number; stored: string }[]).filter((record) => formats.includes(record.format)).map((record) => record.stored))
           }
           all.onerror = () => {
             db.close()
@@ -233,6 +234,7 @@ export async function storedProjects(page: Page): Promise<EncodedProject[]> {
           }
         }
       }),
+    Array.from({ length: RECORD_FORMAT }, (_none, index) => index + 1),
   )
   return stored.map((json) => JSON.parse(json) as EncodedProject)
 }

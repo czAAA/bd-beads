@@ -1,6 +1,7 @@
 import { frameIdIn } from '../../src/testUtils/frameId'
 import type { Rotation } from '../../src/domain/grid'
 import type { Technique } from '../../src/domain/weave'
+import { beadCopy, findBead } from '../../src/domain/beads'
 import { BUILT_IN_COLORS, addedColorId } from '../../src/domain/palette'
 import { framedGrid } from '../../src/domain/layerBeads'
 import type { Cell, Project } from '../../src/domain/project'
@@ -41,6 +42,12 @@ export interface FixtureOptions {
  * the Palette was the Project's own, so the references stay. */
 const TWELVE_AS_ADDED = BUILT_IN_COLORS.map((color) => addedColorId(color.hex))
 
+/** The Bead by id with its copy, as a Project holds it: the Frame's centre on the Table is worked out in the Bead's mm, so a
+ * layer without the copy (as the app reads it with) would put the Frame elsewhere (spec 1234). */
+function beadFields(beadId: string): { beadId: string; bead: ReturnType<typeof beadCopy> } {
+  return { beadId, bead: beadCopy(findBead(beadId)!) }
+}
+
 /** A deterministic busy Project: most of the Palette in diagonal bands, some beads empty, fixed ids and dates (a
  * stable library). */
 export function fixtureProject({
@@ -63,7 +70,7 @@ export function fixtureProject({
     grid[row]![column] = { color }
   }
 
-  const [canvas, frame] = framedGrid(grid, { technique, beadId: 'toho-cube-1.5mm' }).layers
+  const [canvas, frame] = framedGrid(grid, { technique, ...beadFields('toho-cube-1.5mm') }).layers
   const project: Project = {
     id: `fixture-${technique}`,
     layers: [
@@ -128,7 +135,7 @@ export function frameShift(project: Layered, zoom: number): { rotation: Rotation
 export function pieceProject({ technique, beadId, picture, inFrame = false }: { technique: Technique; beadId: string; picture: readonly string[]; inFrame?: boolean }): Project {
   const colors: Record<string, string> = { '#': '#e63746', o: '#ffffff', y: '#f2c94c' }
   const grid: Cell[][] = picture.map((line) => [...line].map((mark) => ({ color: colors[mark] ?? null })))
-  const [canvas, frame] = framedGrid(grid, { technique, beadId }).layers
+  const [canvas, frame] = framedGrid(grid, { technique, ...beadFields(beadId) }).layers
   return {
     id: `piece-${technique}`,
     layers: inFrame ? [{ ...canvas!, id: 'piece-canvas', name: 'Piece' }, { ...frame!, id: 'piece-frame' }] : [{ ...canvas!, id: 'piece-canvas', name: 'Piece', beads: frame!.beads }],

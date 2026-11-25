@@ -52,8 +52,9 @@ export function boxesMeet(a: SheetBox, b: SheetBox): boolean {
   return a.left < b.right - TOUCH && b.left < a.right - TOUCH && a.top < b.bottom - TOUCH && b.top < a.bottom - TOUCH
 }
 
-/** Whether a point lies inside a rectangle of the Table, its left and top edges in. */
-function boxHolds(box: SheetBox, { x, y }: TablePoint): boolean {
+/** Whether a point lies inside a rectangle of the Table, its left and top edges in, or with `open`, none on its edge. */
+function boxHolds(box: SheetBox, { x, y }: TablePoint, open = false): boolean {
+  if (open) return x > box.left + TOUCH && x < box.right - TOUCH && y > box.top + TOUCH && y < box.bottom - TOUCH
   return x >= box.left && x < box.right && y >= box.top && y < box.bottom
 }
 
@@ -81,8 +82,9 @@ export function tablePointOf(project: Layered, position: GridPosition): TablePoi
 }
 
 /** The Canvas positions whose bead centres lie inside a rectangle of the Table, as the rectangle round them; none where
- * no bead centre does. */
-function positionsUnder(project: Layered, box: SheetBox): Rect | undefined {
+ * no bead centre does. A bead whose centre is on the edge is half under it: `open` leaves it out, so a staggered Canvas
+ * takes the same positions at the top as at the bottom (a peyote Frame's sheet, which the view fits to). */
+function positionsUnder(project: Layered, box: SheetBox, open = false): Rect | undefined {
   const { origin, turn, mm } = canvasPlace(project)
   const weave = describeWeave(canvasWeave(project))
   // The rectangle in the Canvas's own bead widths: turned back by its quarter turn, which keeps it upright.
@@ -101,7 +103,7 @@ function positionsUnder(project: Layered, box: SheetBox): Rect | undefined {
   for (let row = seen.firstRow; row <= seen.lastRow; row += 1) {
     const { first, last } = seen.columnsOf(row)
     for (let column = first; column <= last; column += 1) {
-      if (!boxHolds(box, tablePointOf(project, { row, column }))) continue
+      if (!boxHolds(box, tablePointOf(project, { row, column }), open)) continue
       top = Math.min(top, row)
       bottom = Math.max(bottom, row)
       left = Math.min(left, column)
@@ -133,7 +135,7 @@ export function coversOf(project: Layered): readonly FrameCover[] {
   if (!covers) {
     covers = refs.flatMap((ref) => {
       const boxes = frameBoxesOf(project, ref)!
-      const [frame, sheet] = [positionsUnder(project, boxes.frame), positionsUnder(project, boxes.sheet)]
+      const [frame, sheet] = [positionsUnder(project, boxes.frame), positionsUnder(project, boxes.sheet, true)]
       return sheet ? [{ ref, frame: frame ?? { row: sheet.row, column: sheet.column, rows: 0, columns: 0 }, sheet }] : []
     })
     if (memo.size >= MAX_MEMO) memo.clear()
