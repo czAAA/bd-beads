@@ -35,9 +35,9 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard (every c
 
 ## Keyboard
 
-- Tab order (ADR 0075): the Canvas strip (one stop per section: Menu/Project/Frame, the Wordmark, the right-hand tools), the Tool pill (its colour control and recents included), the Progress bar (only with a Frame), the Frame's controls, the Selection bar (only with a Selection). Shift+Tab walks it backwards. The Pattern takes no focus and there is no skip link (ADR 0099).
+- Tab order (ADR 0075): the Canvas strip (one stop per section: Menu/Project, the Wordmark, the right-hand tools), the Tool pill (its colour control and recents included), each Frame's sheet (Expand the Frame, the Move bar, the tools, the title block's controls, then Row progress, one stop; MarginSheet card), the Selection bar (only with a Selection). Shift+Tab walks it backwards. The Pattern takes no focus and there is no skip link (ADR 0099).
 - One stop per group; arrow keys inside it (roving tabindex), stopping at the ends. In the strip and the Progress and Selection bars ←/→ step; the Tool pill follows its axis (↑/↓ when it stands left or right, ←/→ when top or bottom, the other axis does nothing), with Home and End.
-- Enter or ↓ on Menu, Project, Frame or Export opens the panel with focus on its first item. In every open panel Tab and Shift+Tab wrap, so focus never leaves it for the controls under it (ticket 0939). In the Menu ←/→ closes or opens a row's dropdown, Enter or Space opens it, ↓/↑ step past it to the next row, Escape closes the panel and returns focus to its button.
+- Enter or ↓ on Menu, Project or Export opens the panel with focus on its first item. In every open panel Tab and Shift+Tab wrap, so focus never leaves it for the controls under it (ticket 0939). In the Menu ←/→ closes or opens a row's dropdown, Enter or Space opens it, ↓/↑ step past it to the next row, Escape closes the panel and returns focus to its button.
 - Modals and the modal Pattern and Menu panels trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
@@ -59,7 +59,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard (every c
 | Token | Value | Layer |
 | --- | --- | --- |
 | `z-canvas-overlay` | 10 | Rulers, current-row marker, Selection, paste preview: inside the canvas box. |
-| `z-chrome` | 20 | Header, Dock, Progress bar when they overlap scrolling content. |
+| `z-chrome` | 20 | Header, Dock and the Save reminder when they overlap scrolling content. |
 | `z-context-bar` | 30 | The Selection ContextBar (anchored to the Selection since ticket 415). |
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
 | `z-popover` | 60 | Menus, the HeaderMenu. |
@@ -73,7 +73,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard (every c
 
 - **Keys:** `R` toggles the rulers, `5` picks the Hand tool; no key starts Set Frame (ticket 0846). Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
 - **Frame keys:** on the Frame's focused Move handle, arrows move the Frame by one bead and Shift + arrows resize it.
-- **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Frame number is "Frame 1, bring it into view". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
+- **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Project panel's show button for a Frame is "Show this Frame". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
 - **Announced:** "Frame set, width 21, height 19", "Frame removed", and the rotate notice in full: "Pattern rotated. 1 piece was in the way and moved outside the Frame."
 - **Never colour alone:** the Frame is a line plus its rulers; a piece is a rectangle plus its rulers. The Frame line is `ink`, the strongest mark on every canvas background. The piece rectangle (`line-strong`) is decoration: the rulers carry the information.
 - **Touch targets:** every resize handle (the Frame's, a Selection's, the Mirror's Area's, the crop's and the reference image's) is the Handle card's: drawn small, with a 44px touch area round where it is drawn.

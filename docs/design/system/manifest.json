@@ -176,7 +176,7 @@
     {
       "name": "ConvertImage",
       "group": "Screens",
-      "summary": "The Convert image page: a live bead preview with a floating tool bar beside one scrolling pane of five steps, Picture & bead, Background, Size, Colors and Review, which the Progress bar follows."
+      "summary": "The Convert image page: the beads are the page: a live bead preview with a short column of four decisions beside it, settings in popovers, and Create Project from the first second, with no steps and no Progress bar (a dock and sheets on a phone)."
     },
     {
       "name": "DisclosureRow",
@@ -206,7 +206,7 @@
     {
       "name": "FrameControls",
       "group": "Screens",
-      "summary": "The Frame disclosure row opened in place, and the Estimated size warning."
+      "summary": "Retired record: the Frame disclosure row opened in place, and the Estimated size warning."
     },
     {
       "name": "Glossary",
@@ -386,7 +386,7 @@
     {
       "name": "ProgressBar",
       "group": "Canvas",
-      "summary": "The 56px bar along the canvas box's bottom edge holding every Row progress control."
+      "summary": "The Homepage's bar of steps along the canvas box's bottom edge: counter, a track with a named step per section, Back and Next. Row progress's bar was retired by ticket 1223; each Frame's strip holds it."
     },
     {
       "name": "ProjectPanel",
@@ -396,7 +396,7 @@
     {
       "name": "LayerSettings",
       "group": "Overlays",
-      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead, Background; in New Project, Project and the Frame panel."
+      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead, Background; in New Project, Project, a Frame's title block and Starter setup."
     },
     {
       "name": "ValueSlider",
@@ -411,7 +411,7 @@
     {
       "name": "MarginSheet",
       "group": "Canvas",
-      "summary": "The Frame's keep-out margin as a drafting sheet: 4 beads in its own color, the Frame's tools and Row progress in its top band, a title block in its corner, its zoom forms, and Expand the Frame, which fits the Frame to the screen with a slim sheet (approved 2026-11-20, built by ticket 1169)."
+      "summary": "The Frame's keep-out margin as a drafting sheet: 4 beads in its own color, the Frame's tools in its top band, a title block in its corner with Row progress on a strip under it, the ··· popover with the Frame's size and Beads needed, its zoom forms, and Expand the Frame, which fits the Frame to the screen with a slim sheet (approved 2026-11-20, built by ticket 1169)."
     },
     {
       "name": "ReferenceImage",
@@ -496,7 +496,7 @@
     {
       "name": "StarterGallery",
       "group": "Screens",
-      "summary": "The two-step Starter gallery: category and option cards with bead-drawn hero pictures, and the setup with Use design / Start empty, the option's sizes, the Estimated size and Create Project, Add Frame or Replace Frame."
+      "summary": "The two-step Starter gallery: category and option cards with bead-drawn hero pictures, and the setup with Use design / Start empty, the option's sizes, the Estimated size and Create Project or Add Frame."
     },
     {
       "name": "TextField",

@@ -41,7 +41,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Selection ContextBar (phone) | "Удалить выделенный ряд/столбец" (the app's string) breaks the bar; on the paste bar "Отмена" is cut. | **The ContextBar drops labels right to left** when it does not fit: Remove line, then Rotate, then Copy become icon buttons with their names as `aria-label`. Cancel keeps its label. 
 | Saved Patterns names | Names such as "Панно с логотипом" wrap and run into their neighbours. | **Thumbnail names are one line**, cut with an ellipsis at 58px, the full name in the tooltip (as the writing rules say for Pattern names). 
 | Mirror summary | "l–r 1 · t–b 0" has no good Russian short form. | Use arrows in both languages: **"↔ 1 · ↕ 0"**. 
-| Toolbox tabs, menus, modals, forms, messages, Progress bar | "Заливка", "Выделение", "Отражение", "Инструменты" fit with 2–4px to spare; long hints and errors wrap as designed. | Dock and BottomToolbar buttons share the width equally (no fixed 56–60px), so the label may use all of it. 
+| Toolbox tabs, menus, modals, forms, messages | "Заливка", "Выделение", "Отражение", "Инструменты" fit with 2–4px to spare; long hints and errors wrap as designed. | Dock and BottomToolbar buttons share the width equally (no fixed 56–60px), so the label may use all of it. 
 | PDF and PNG | "Ткачество" is longer than "Loom"; Cyrillic falls back to Source Serif 4 italic for the word and name; color names and grams fit the 48 mm column; the grams note wraps to three lines. | The Beads needed note may wrap; nothing else changes. 
 | Copy found on the way | Cards used British "Colour", "Colours", "Custom colour" in UI labels. | US English in the app: **Color, Colors, Custom color** (cards corrected). 
 
@@ -57,14 +57,14 @@ The one glossary of the words the app shows, in every language: CONTEXT.md and t
 | Bead / beads | бисеринка / бисер | One bead is бисеринка everywhere, never бусина or бисерина («4 бисеринки», «Бисеринок»); the material and amounts are бисер (ticket 0864) |
 | Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
 | Palette | палитра |  |
-| Row progress | прогресс по рядам | Row done / Ряд готов; Back a row / Назад на ряд (ticket 0972, was Row not done / Ряд не готов); never a bare «Готово», which reads as closing something. Where a pair has no room in the Progress bar it becomes Следующий / Предыдущий (ticket 0864) |
+| Row progress | прогресс по рядам | Row done / Ряд готов; Back a row / Назад на ряд (ticket 0972, was Row not done / Ряд не готов); never a bare «Готово», which reads as closing something. |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
 | Clear | Очистить; confirm Очистить? | Empties the cells; the Schema stays. Not «Очистить всё», which was Delete all |
 | Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
 | in this browser | в этом браузере | Where Projects are kept, said one way everywhere (ticket 0992): Saved in this browser, Kept by this browser, removed from this browser, Couldn't save in this browser. Never "local browser" or "this device" for where the work lives |
 | Delete all | Очистить всё | Empties the cells; the Schema stays |
 | Mirror | Отражение | Estimated size / Примерный размер |
-| Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place). Defined in the Frame button's Tooltip: The Frame marks the part you export and weave. (ticket 0989) |
+| Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place). Defined where the Project panel's Frames section meets an empty Project: A Frame sets the size, the exports and Beads needed. (ticket 0989, 1222) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Folded beads | свёрнутые бисеринки | The Frame's own beads beyond its edge, out of sight (ADR 0066); proposed, ticket 0641 |
 | Canvas · Hand · Rulers | Холст · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers; the Canvas is холст everywhere, never полотно (ticket 0864) |
@@ -152,7 +152,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | Counts | 1 424 | 1 424 | Group thousands from four digits (`Intl.NumberFormat`, ticket 368). English, Russian, Ukrainian, Belarusian and Polish use a no-break space (the rule DESIGN.md set); Spanish writes 1.424 and Chinese 1,424. |
 | Decimals | 9.6 | 9,6 | The language's own decimal sign (a comma in Russian, Ukrainian, Belarusian, Spanish and Polish; a period in English and Chinese); at most one decimal for sizes. |
 | Grid size | 60×80 | 60×80 | Beads across × down with ×, no spaces. |
-| Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The same size reads in the same unit in a panel and on the Canvas: the Frame panel's Estimated size too (ticket 0992). Only Replace bead? stays in mm, as it sets two Beads' sizes side by side (ticket 0687). The "64×48 mm" in older mockups follows this rule from now on. |
+| Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The same size reads in the same unit in a panel and on the Canvas: the Frame popover's Estimated size too (ticket 0992). Only Replace bead? stays in mm, as it sets two Beads' sizes side by side (ticket 0687). The "64×48 mm" in older mockups follows this rule from now on. |
 | Units | 12 mm · 10 MB | 12 мм · 10 МБ | A no-break space between number and unit. |
 | Weight | ≈ 24 g · 3.9 g | ≈ 24 г · 3,9 г | Grams rounded up to 0.1, trailing .0 dropped, with ≈ where it is an estimate. |
 | Percent | 62% | 62 % | Russian puts a no-break space before %. |

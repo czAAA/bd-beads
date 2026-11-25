@@ -48,7 +48,7 @@ After Row done and Back a row the announcer says where the weaving is, in the co
 
 English follows the audit's proposal (UX-015, UX-017); the other languages are proposals for review with the build.
 
-## The Progress bar's words (ticket 0972)
+## Row progress's words (ticket 0972)
 
 The counter names its step in the announcer's words: `{unit} {current} of {total}` above ("Row 7 of 10", "Pass 3 of 27" on peyote, with "· row 2" after it); the announcer reads the same step with the rulers' row, `{step}, row {line}`. The back step says where it goes.
 

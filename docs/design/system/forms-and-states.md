@@ -21,7 +21,7 @@ How the app asks for input, and what every part shows when it is empty, waiting 
 ## Loading
 
 - Nothing appears for waits under `loading-delay` (300ms).
-- Unknown length: three beads in `accent` that swell in turn; they stand still with reduced motion. Known share: the 4px Progress bar track with `--track-fill`.
+- Unknown length: three beads in `accent` that swell in turn; they stand still with reduced motion. Known share: the 4px track with `--track-fill`.
 - The text says what is happening: "Opening Logo panel · 250×250", "Converting the picture · 62%".
 
 ## Errors and results
@@ -33,5 +33,5 @@ How the app asks for input, and what every part shows when it is empty, waiting 
 ## Open canvas and Frame (v16)
 
 - **New Pattern:** the size is optional. Bead and Technique are preset and changeable later; the Frame fields may stay empty, and then the Pattern opens on an open canvas with no Frame. One field filled makes the other required. Convert image still needs a Frame size.
-- **No Frame is a state, not an error.** Each place that needs the Frame says so in one line and offers Set Frame: the Progress bar, Beads needed, the export prompt. Rotate is disabled with the reason in its name.
+- **No Frame is a state, not an error.** Each place that needs the Frame says so in one line and offers Set Frame: Beads needed, the export prompt. Rotate is disabled with the reason in its name.
 - **The export prompt** is a small popover, not a Modal: it opens under Export ▾ and closes on Escape or a click outside (SaveBox card).

@@ -6,15 +6,14 @@ Devices (CSS px) the layout is checked on: iPhone 16e 390×844, iPhone 17 · 17 
 
 The `bp-*` tokens in `tokens.json` stay for the `bead-min-*` and Ruler step rules; no layout rule is written against them any more.
 
-- The screen belongs to the Pattern and the Progress bar. **No header and no left column**: the canvas starts at the top edge, padded by `env(safe-area-inset-top)`. What the header and the column held lives in the Dock's Project and Menu panels (the open Pattern's name, size, bead and save state, Save Project file and one Export row, Beads needed and Saved Patterns in the Project panel; theme, Name on exports, Keyboard shortcuts when a keyboard is attached, Homepage and the source link in the Menu). Undo, Redo, Rulers and zoom are in the Canvas strip (ticket 425).
+- The screen belongs to the Pattern. **No header and no left column**: the canvas starts at the top edge, padded by `env(safe-area-inset-top)`. What the header and the column held lives in the Dock's Project and Menu panels (the open Pattern's name, size, bead and save state, Save Project file and one Export row, Beads needed and Saved Patterns in the Project panel; theme, Name on exports, Keyboard shortcuts when a keyboard is attached, Homepage and the source link in the Menu). Undo, Redo, Rulers and zoom are in the Canvas strip (ticket 425).
 - A slim Canvas strip stays above the canvas at every width: Rulers, Undo, Redo, zoom out, level, zoom in and Fit, the cluster scrolling sideways on a phone (ticket 425), its cut edge faded and Export kept whole at its right end (ticket 0843).
 - Pinch to zoom and pan; the Canvas strip has the same zoom buttons for a fit or an exact step.
-- The Progress bar is the largest control on the screen: 48px (ticket 411), or 88px at 30rem and under, where Back a row/Row done take a second row -- the switch with Turn row direction beside it, a "1/222" counter, the track, and Back a row/Row done as large text buttons whose label and arrow follow Row direction. It is shown at every width, whether or not Row progress is on, and its switch is the only way to turn Row progress on or off.
+- **No Progress bar in the editor** (retired by ticket 1223). Row progress is each Frame's strip on its Margin sheet, at every width (MarginSheet card, Row progress strip); short of room it shortens its counter, then gives up its track, and Back a row's words, never Row done. The Homepage's Progress bar of sections is the one left (ProgressBar card).
 - **The Tool pill (ToolPill card, ticket 0439) replaces the Dock:** the canvas box fills the screen 12px from each edge and the tools float as a pill over the drawing area, docked to any edge; the Colour sheet becomes a popover beside the pill. The Dock lines below describe the app until that ships.
 - **A slim, icon-only Dock of five buttons** (Tool, Colour, Frame, Pattern, Menu): 48px plus `env(safe-area-inset-bottom)` (at most 4px) in portrait and landscape alike, at most 480px wide and centred, whatever the screen's width. No text labels: each button keeps its name as an accessible name and a Tooltip. With no Pattern open, the New Pattern / Import bar replaces the Dock, with the Menu button at its bottom right.
 - Tool, Colour and Frame sheets are light: no scrim, only as tall as their content, so the Pattern stays visible; tapping the Pattern or the button again closes them. The Frame sheet also holds Rotate, Copy and Paste. The Pattern sheet (name and size, save, export, Replace bead, Beads needed, Saved Patterns, New, Import) and the Menu panel are modal, with a scrim.
 - While a Selection exists, a bar anchored above it offers Copy, Cut, Fill, Frame and Remove selected beads (ticket 415): 28px high (36px on touch), icon-only, always inside the canvas box, flipping below the Selection when there is no room above; Copy arms paste mode and the bar is gone until it is left (ticket 437, ContextBar card).
-- **Frame panel:** while the Frame is being set, the Frame's size, Fit to drawing, ✕ and Done float at the top-centre of the canvas box over the beads, taking no row and never covering the Dock.
 - **Wide screens:** the extra space goes to the Pattern, never to bigger chrome. Type and controls keep their size. The surface is largest at 24″ and up; ticket 83 checks it on a Core i3-class laptop.
 
 ## Smallest bead
@@ -28,7 +27,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Input, not width
 
-- `@media (pointer: coarse)`: touch and Pencil, at any width: every control keeps its drawn size but gets a `touch-target` (44 × 44px) hit area; tool tiles and swatches are both at least 36px (one grid, so they stay the same size), with their hit areas kept apart by the 6px gap, Dock items are 48px tall and keep their `touch-target` hit area. The exception (ticket 0553): Menu, Project and Frame panel rows, and a PanelPicker's menu items wherever the picker sits (the converter's page too, ticket 0836), are `panel-row-touch` (36px) and each whole row is its hit area, since the rows touch; the small buttons on a row (PanelPicker, Stepper halves, pencils) are `picker-height-touch` (32px) with a `touch-target` hit area round the drawn button (every PanelPicker of the New Project form answers across 44px, ticket 0951).
+- `@media (pointer: coarse)`: touch and Pencil, at any width: every control keeps its drawn size but gets a `touch-target` (44 × 44px) hit area; tool tiles and swatches are both at least 36px (one grid, so they stay the same size), with their hit areas kept apart by the 6px gap, Dock items are 48px tall and keep their `touch-target` hit area. The exception (ticket 0553): Menu and Project panel rows, and a PanelPicker's menu items wherever the picker sits (the converter's page too, ticket 0836), are `panel-row-touch` (36px) and each whole row is its hit area, since the rows touch; the small buttons on a row (PanelPicker, Stepper halves, pencils) are `picker-height-touch` (32px) with a `touch-target` hit area round the drawn button (every PanelPicker of the New Project form answers across 44px, ticket 0951).
 - Nothing is hover-only on a coarse pointer: the Remove × on Saved Pattern thumbnails is always visible, tooltips become long-press (whose release presses nothing) and an Info button's note opens on a tap (ticket 0844, InteractionStates card), there is no hover paint preview.
 - Hotkey chips follow the device (ticket 438): shown with a hovering fine pointer or once a real keyboard key is seen, otherwise hidden; the switch in Keyboard shortcuts overrides it. Keyboard shortcuts is Menu › Help's Subpanel on every device (ShortcutsHelp card).
 - A stroke on the drawing surface never scrolls the page: `touch-action: none` on the surface.
@@ -36,8 +35,8 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Screen edges and height
 
-- `viewport-fit=cover`: the canvas pads by `env(safe-area-inset-top)`, the Dock by `env(safe-area-inset-bottom)`, and the canvas by the side insets. The canvas box runs to the bottom edge; the Progress bar along its foot grows by `env(safe-area-inset-bottom)` and keeps its controls above it (ticket 0788).
-- The shell is `position: fixed; inset: 0`, so the mobile address bar never hides the Progress bar or the Dock and no band of page shows under it (`100dvh` can fall short of the screen on iOS).
+- `viewport-fit=cover`: the canvas pads by `env(safe-area-inset-top)`, the Dock by `env(safe-area-inset-bottom)`, and the canvas by the side insets. The canvas box runs to the bottom edge; its foot holds only `env(safe-area-inset-bottom)` (ticket 0788), so nothing of the Frame's sheet sits under the home indicator.
+- The shell is `position: fixed; inset: 0`, so the mobile address bar never hides the canvas box's foot or the Tool pill and no band of page shows under it (`100dvh` can fall short of the screen on iOS).
 - The page never scrolls at any width; only sheets and the Pattern scroll.
 
 ## Type and performance
@@ -53,9 +52,9 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Open canvas and Frame (v16)
 
-The canvas is open at every width: no board, no size to set first, pieces with their own rulers, and one Frame that marks the Pattern (BeadBoard, Frame and Rulers cards). What the layout gives it:
+The canvas is open at every width: no board, no size to set first, pieces with their own rulers, and up to four Frames that mark the Pattern (BeadBoard, Frame and Rulers cards). What the layout gives it:
 
-- **Phone, tablet and desktop:** two fingers move the canvas and pinch zooms; one finger uses the tool. The Canvas strip starts with the Rulers toggle. The Dock's third button is Frame; its sheet holds Set Frame, Fit to drawing, the steppers, Remove Frame, Rotate, Copy and Paste. While the Frame is being set it has four 16px corner handles and the Frame panel floats at the top-centre of the canvas box with its size, Fit to drawing, ✕ and Done. With no Frame the Progress bar reads "Row progress · Set Frame to start" with a Set Frame button. No CanvasHint.
+- **Phone, tablet and desktop:** two fingers move the canvas and pinch zooms; one finger uses the tool. The Canvas strip starts with the Rulers toggle. A Frame's tools are on its Margin sheet and its size in the popover from the sheet's ··· (MarginSheet card); the ways to add a Frame are the Project panel's Frames section (ProjectPanel card). No CanvasHint.
 - **Wheel and keyboard:** the wheel moves the canvas, ⌘ or Ctrl + wheel zooms.
 - **Zoom floor:** 10%, with the Ruler step, for piece rulers and Frame rulers alike. Fit now fits the Frame, or every piece when there is no Frame.
 
@@ -63,7 +62,6 @@ The canvas is open at every width: no board, no size to set first, pieces with t
 
 Unlike the editor, the page changes layout with the width (spec 0645), because it is a form beside a live picture; it is always the canvas box (ADR 0086), never a popup or a sheet:
 
-- **From 1024 px wide in landscape:** the preview and the step side by side, one step at a time; the step scrolls on its own (ConvertImage card).
-- **Under 1024 px, or in portrait** (iPad portrait included): the preview above the step, the step scrolling under it, the Progress bar holding the steps and Back and Next in thumb reach (PhoneForms card).
-- Text wraps inside its step at every supported width and in every language; nothing scrolls sideways. The Text fit check covers the page.
+- **Four layouts**, chosen from the page's own size: Phone, Tablet, Side and Desktop (ConvertImage card, "On a phone and a tablet"). There is no step pane and no Progress bar since ticket 0896: the beads take the page, with a column or a dock holding the result, the settings and Create Project.
+- Text wraps inside its column and sheets at every supported width and in every language; nothing scrolls sideways. The Text fit check covers the page.
 

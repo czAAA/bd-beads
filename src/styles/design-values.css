@@ -65,7 +65,7 @@
   --privacy-measure: 640px; /* SignIn card (ticket 0082): the privacy policy page's column, a comfortable line to read. */
   --convert-sheet-card-max: 360px; /* ConvertImage card (ticket 0910): the tallest that card opens; taller content scrolls inside it. */
   --convert-side-column-width: 320px; /* ConvertImage card (ticket 0910): the dock's column (or a sheet) at the right of a phone on its side. */
-  --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
+  --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): the Homepage's Progress bar of named steps, the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
   --found-hatch-ink: color-mix(in srgb, var(--marker) 70%, transparent); /* ConvertImage card (ticket 0780): the hatch's lines. */
