@@ -99,18 +99,31 @@ function positionsUnder(project: Layered, box: SheetBox, open = false): Rect | u
     bottom: Math.max(...corners.map((c) => c.y)) / mm,
   }
   const seen = weave.visible(area, 1, weave.cellAspect)
-  let [top, bottom, left, right] = [Infinity, -Infinity, Infinity, -Infinity]
-  for (let row = seen.firstRow; row <= seen.lastRow; row += 1) {
+  const inside = (row: number, column: number) => boxHolds(box, tablePointOf(project, { row, column }), open)
+  // The first and last few positions of a row are all that can differ between rows (a stagger is half a bead), so a big
+  // sheet costs the same as a small one.
+  const edges = (row: number): [number, number] | undefined => {
     const { first, last } = seen.columnsOf(row)
-    for (let column = first; column <= last; column += 1) {
-      if (!boxHolds(box, tablePointOf(project, { row, column }), open)) continue
-      top = Math.min(top, row)
-      bottom = Math.max(bottom, row)
-      left = Math.min(left, column)
-      right = Math.max(right, column)
+    let [low, high] = [Infinity, -Infinity]
+    for (let at = 0; at < 3 && first + at <= last; at += 1) {
+      if (inside(row, first + at)) low = Math.min(low, first + at)
+      if (inside(row, last - at)) high = Math.max(high, last - at)
     }
+    return low > high ? undefined : [low, high]
   }
-  return top > bottom ? undefined : { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
+  const rowsHit: number[] = []
+  for (let row = seen.firstRow; row <= seen.lastRow && rowsHit.length < 2; row += 1) if (edges(row)) rowsHit.push(row)
+  const bottoms: number[] = []
+  for (let row = seen.lastRow; row >= seen.firstRow && bottoms.length < 2; row -= 1) if (edges(row)) bottoms.push(row)
+  if (rowsHit.length === 0) return undefined
+  const [top, bottom] = [rowsHit[0]!, bottoms[0]!]
+  let [left, right] = [Infinity, -Infinity]
+  for (const row of [...rowsHit, ...bottoms]) {
+    const [low, high] = edges(row)!
+    left = Math.min(left, low)
+    right = Math.max(right, high)
+  }
+  return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
 /** What a Frame covers of the Canvas: those positions under the Frame are hidden and not counted, those under its margin
