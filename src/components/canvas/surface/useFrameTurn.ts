@@ -27,7 +27,15 @@ export function useFrameTurn(deps: FrameTurnDeps) {
   let playing: { image: HTMLCanvasElement; from: Box; start?: number } | undefined
   let frame: number | undefined
 
+  /** Lets go of the two bitmaps a turn used: the copy of the Frame and the canvas it plays on (about 30 MB each at an iPad's 2×). */
+  function release(): void {
+    if (playing) playing.image.width = playing.image.height = 0
+    const copy = deps.copy.value
+    if (copy && copy.width > 0) copy.width = copy.height = 0
+  }
+
   function stop(): void {
+    release()
     playing = undefined
     turning.value = false
     if (frame !== undefined && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)

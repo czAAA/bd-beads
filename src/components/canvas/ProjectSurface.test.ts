@@ -2677,8 +2677,11 @@ describe('ProjectSurface with a Frame', () => {
       const turned = context.named('rotate').at(-1)!.args[0] as number
       expect(turned).toBeGreaterThan(0)
       expect(turned).toBeLessThan(Math.PI / 2)
+      expect((wrapper.get('[data-testid="project-surface-turn"]').element as HTMLCanvasElement).width).toBeGreaterThan(0)
       await at(1000 + FRAME_TURN_MS)
       expect(turnShown(wrapper)).toBe(false)
+      // The copy's bitmap is let go once the turn has played (ticket 1235).
+      expect((wrapper.get('[data-testid="project-surface-turn"]').element as HTMLCanvasElement).width).toBe(0)
     })
 
     it('jumps on a change that is not a press, such as an Undo', async () => {

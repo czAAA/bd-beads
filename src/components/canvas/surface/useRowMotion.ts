@@ -140,6 +140,11 @@ export function useRowMotion(deps: {
   watch(playing, (now) => {
     if (now.length === 0) copied.value = false
   })
+  // Once the copy has faded out or been taken away its bitmap is let go (about 30 MB at an iPad's 2×).
+  watch([copied, () => copied.value && fadeOpacity.value <= 0], ([has, faded]) => {
+    const fade = deps.fade.value
+    if ((!has || faded) && fade && fade.width > 0) fade.width = fade.height = 0
+  })
   /** How much of the dimmed copy still shows over the restored beads. */
   const fadeOpacity = computed(() => {
     const last = latest.value
