@@ -148,5 +148,10 @@ export function useRowMotion(deps: {
     return 1 - easeOut(Math.min(1, (elapsed - RESTORE_AT) / ROW_MOTION.restore))
   })
 
+  // Once the copy has faded out or been taken away its bitmap is let go (about 30 MB at an iPad's 2×).
+  watch([copied, () => copied.value && fadeOpacity.value <= 0], ([has, faded]) => {
+    const fade = deps.fade.value
+    if ((!has || faded) && fade && fade.width > 0) fade.width = fade.height = 0
+  })
   return { rowMotion, rowMotionOf, patternDone, finishedRestored: computed(() => allDone.value && !holdingDim.value), fadeOpacity }
 }

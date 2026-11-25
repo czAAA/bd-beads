@@ -25,3 +25,22 @@ A carried Piece (`e2e/perf/pieceCarry.spec.ts`, ticket 1150) runs in Safari's en
 The performance check never reuses a preview that is already running, since that could be another worktree's build: where port 4173 is taken, pass a free one, `E2E_PORT=4391 npm run perf`.
 
 A twist and a pan (`e2e/perf/surfaceTwist.spec.ts`, ticket 1187) run in Safari's engine at an iPad's density (1366×1024 at 2×), over a 60×60 Frame on a full 160×160 Canvas: a 60° two-finger twist about the middle and a 360 px two-finger pan, each over 60 touch moves 16 ms apart, printing the frames drawn, the mean and the longest gap between two frames, how many gaps were over 33 ms and where the gesture left the view. It has no budget: it compares a change to the drawing with the build before it, run the same way. Option: `PERF_TECHNIQUES` (default `loom,peyote`); `npm run perf -- surfaceTwist` runs it alone.
+
+Layers (`e2e/perf/layerBaseline.spec.ts`, ticket 1235, spec 1234) run in the same engine and size over a full Canvas with one Frame (today's Project) and with four Frames on loom, peyote, brick and loom, two by two (`PERF_FRAMES`, default `1,4`). Each gesture (Rotate Frame, Rotate canvas, the twist, the pan and a pinch zoom) prints the frames drawn, the mean and longest gap, the gaps over 33 ms and the canvas memory: the backing size (width × height × 4 bytes) of every canvas on the page, at its peak during the gesture and at rest a second after. It has no budget yet; the figures below are what ticket 1239 is held to (measured 2026-11-25 on an M-series Mac, `main` at 2c5d23c3 with the turn and fade copies released):
+
+| Project | Gesture | Frames | Mean gap | Longest | Over 33 ms | Canvas memory peak / at rest |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 Frame | open | | | | | 85 / 85 MB (8 canvases) |
+| 1 Frame | Rotate Frame | 8 | 11.9 ms | 24 ms | 0 | 106 / 85 MB |
+| 1 Frame | Rotate canvas | 5 | 11.4 ms | 17 ms | 0 | 85 / 85 MB |
+| 1 Frame | twist | 78 | 16.7 ms | 35 ms | 1 | 131 / 131 MB |
+| 1 Frame | pan | 76 | 16.6 ms | 20 ms | 0 | 131 / 131 MB |
+| 1 Frame | zoom | 78 | 16.5 ms | 22 ms | 0 | 131 / 131 MB |
+| 4 Frames | open | | | | | 101 / 101 MB (8 canvases) |
+| 4 Frames | Rotate Frame | 7 | 14.0 ms | 26 ms | 0 | 121 / 101 MB |
+| 4 Frames | Rotate canvas | 5 | 16.0 ms | 26 ms | 0 | 101 / 101 MB |
+| 4 Frames | twist | 76 | 16.8 ms | 40 ms | 1 | 146 / 146 MB |
+| 4 Frames | pan | 32 | 44.7 ms | 92 ms | 28 | 157 / 157 MB |
+| 4 Frames | zoom | 32 | 42.2 ms | 57 ms | 30 | 157 / 157 MB |
+
+Before the turn copy was released (same run, same Project) a Rotate Frame left 106 MB (1 Frame) and 121 MB (4 Frames) at rest, 21 and 20 MB more, one canvas more, and the press's longest gap was about 700 ms in both runs (the copy's allocation; 24 and 26 ms after). The memory grows over the run as the draft look's base follows a twist (85 to 131 MB). Run to run the gaps move by a few ms; what stands out is the pan and zoom of four Frames, which draw at about 22 frames a second.

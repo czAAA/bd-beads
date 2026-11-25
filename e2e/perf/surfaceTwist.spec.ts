@@ -1,10 +1,11 @@
-import { test, type Page } from '@playwright/test'
+import { test } from '@playwright/test'
 import type { BeadMap } from '../../src/domain/canvas'
 import { findBuiltInColor } from '../../src/domain/palette'
 import type { Project } from '../../src/domain/project'
 import type { Technique } from '../../src/domain/weave'
 import { withLayers } from '../../src/testUtils/layerFields'
 import { openApp, settle } from '../support/app'
+import { frames, MOVES, twoFingers, watchFrames } from './gestures'
 import { fixtureProject } from '../support/projects'
 
 // A two-finger twist and a two-finger pan over the Canvas and its Frame (ticket 1187: each drawn on its own surface), in
@@ -12,9 +13,6 @@ import { fixtureProject } from '../support/projects'
 // and the longest gap between two frames and how many gaps were over 33 ms. Env: PERF_TECHNIQUES (default loom,peyote).
 
 const TECHNIQUES = (process.env.PERF_TECHNIQUES ?? 'loom,peyote').split(',') as Technique[]
-const MOVES = 60
-/** An iPad reports a touch about this often. */
-const MOVE_EVERY_MS = 16
 
 test.use({ browserName: 'webkit', deviceScaleFactor: 2, viewport: { width: 1366, height: 1024 }, hasTouch: true })
 
@@ -27,57 +25,6 @@ function framedCanvas(technique: Technique): Project {
     for (let column = -50; column < 110; column += 1) (beads[row] ??= {})[column] = (row + column) % 7 === 0 ? RED : GREY
   }
   return { ...withLayers(fixtureProject({ technique, columns: 60, rows: 60 }), { beads }), id: `twist-${technique}` }
-}
-
-interface Watch {
-  stamps: number[]
-  running: boolean
-}
-
-async function watchFrames(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const watch = { stamps: [performance.now()], running: true }
-    ;(window as unknown as { __watch: typeof watch }).__watch = watch
-    const tick = (now: number) => {
-      watch.stamps.push(now)
-      if (watch.running) requestAnimationFrame(tick)
-    }
-    requestAnimationFrame(tick)
-  })
-}
-
-async function frames(page: Page): Promise<{ frames: number; longest: number; mean: number; over33: number }> {
-  return page.evaluate(() => {
-    const watch = (window as unknown as { __watch: Watch }).__watch
-    watch.running = false
-    const stamps = [...watch.stamps, performance.now()]
-    const gaps = stamps.slice(1).map((stamp, index) => stamp - stamps[index]!)
-    return { frames: gaps.length, longest: Math.max(...gaps), mean: gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length, over33: gaps.filter((gap) => gap > 33).length }
-  })
-}
-
-/** Two touches on the surface, moved together: each step gives both fingers' points in client px. */
-async function twoFingers(page: Page, path: (step: number) => [{ x: number; y: number }, { x: number; y: number }]): Promise<void> {
-  const fire = (type: string, id: number, point: { x: number; y: number }) =>
-    page.evaluate(
-      ({ type, id, point }) => {
-        const surface = document.querySelector('[data-testid="project-surface"]')!
-        surface.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1, clientX: point.x, clientY: point.y, bubbles: true, cancelable: true, buttons: type === 'pointerup' ? 0 : 1 }))
-      },
-      { type, id, point },
-    )
-  const [a, b] = path(0)
-  await fire('pointerdown', 1, a)
-  await fire('pointerdown', 2, b)
-  for (let step = 1; step <= MOVES; step += 1) {
-    const [p, q] = path(step)
-    await fire('pointermove', 1, p)
-    await fire('pointermove', 2, q)
-    await page.waitForTimeout(MOVE_EVERY_MS)
-  }
-  const [p, q] = path(MOVES)
-  await fire('pointerup', 1, p)
-  await fire('pointerup', 2, q)
 }
 
 const lines: string[] = []
