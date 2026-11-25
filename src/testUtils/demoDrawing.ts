@@ -17,12 +17,12 @@ export function placeOf(project: Project) {
   return { row, column, rows, columns }
 }
 
-/** The Frame's beads as lines of parts, as a drawing writes them: a line for each column, a part for each bead along.
+/** The Frame's beads as lines of parts, as a drawing writes them: a line for each column, a part for each bead along, by the Frame's own rows and columns.
  * A bead of another color reads `?`, an empty one a space. */
 export function linesOf(project: Project): string[] {
-  const { row, column, rows, columns } = placeOf(project)
+  const { rows, columns } = placeOf(project)
   const part = (color: string | null) => (color ? (Object.keys(COLORS).find((key) => COLORS[key] === color.toLowerCase()) ?? '?') : ' ')
-  return Array.from({ length: columns }, (_, line) => Array.from({ length: rows }, (_, along) => part(beadColorAt(project, row + along, column + line, frameIdIn(project)))).join(''))
+  return Array.from({ length: columns }, (_, line) => Array.from({ length: rows }, (_, along) => part(beadColorAt(project, along, line, frameIdIn(project)))).join(''))
 }
 
 /** A drawing's lines with barbs read as the green they are painted in. */

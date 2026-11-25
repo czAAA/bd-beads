@@ -1137,7 +1137,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pasteAtPointer,
     onRotate: rotateFlow.onRotate,
     selectionInFinishedRows: () => rotateFlow.heldBack.value,
-    selectionOnFrame: () => !!selection.value && !!currentProject() && isFrameLayer(selectionLayer(currentProject()!, selection.value)),
+    selectionOnFrame: () => !!selection.value && !!currentProject() && isFrameLayer(selectionLayer(selection.value)),
     selectionExportable: () => !!selection.value && !!currentProject() && selectionExportable(currentProject()!, selection.value),
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,

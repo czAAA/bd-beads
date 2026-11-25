@@ -67,7 +67,7 @@ describe('selectionExportProject', () => {
 
   it('snaps a Frame Selection on peyote through the Frame\'s own Weave', () => {
     const project = withLayer(withFrame(canvas('peyote', 16, 16), { row: 2, column: 2, rows: 10, columns: 10 }, frameIdIn(canvas('peyote', 16, 16))), FRAME_ID, { beads: withColors({}, [{ row: 5, column: 5, color: RED }]) })
-    const part = selectionExportProject(project, { top: 7, left: 7, rows: 3, columns: 3, layer: FRAME_ID }, 'part')!
+    const part = selectionExportProject(project, { top: 5, left: 5, rows: 3, columns: 3, layer: FRAME_ID }, 'part')!
     const frame = frameOf(part)!
     const weave = heldWeave(project, frameIdIn(project))!
     expect([frame.row - 2, frame.column - 2]).toEqual([snapRow(weave, 5), snapColumn(weave, 5)])

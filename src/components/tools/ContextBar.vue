@@ -120,7 +120,7 @@ const deps = computed(() =>
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
     hasPaintColor: () => props.hasPaintColor,
-    selectionOnFrame: () => !!props.selection && isFrameLayer(selectionLayer(props.project, props.selection)),
+    selectionOnFrame: () => !!props.selection && isFrameLayer(selectionLayer(props.selection)),
     selectionExportable: () => !!props.selection && selectionExportable(props.project, props.selection),
   }),
 )

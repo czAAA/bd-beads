@@ -353,7 +353,7 @@ const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
   if (!project || !current) return undefined
-  const layer = selectionLayer(project, current)
+  const layer = selectionLayer(current)
   const { bead } = beadOfLayer(project, layer)
   const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead, layerWeave(project, layer).technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { columns: current.columns, rows: current.rows, estimate })

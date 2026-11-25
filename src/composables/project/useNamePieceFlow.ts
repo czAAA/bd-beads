@@ -24,7 +24,7 @@ export function useNamePieceFlow(deps: NamePieceFlowDeps) {
     const project = deps.currentProject()
     const selection = deps.selection()
     // Pieces are the Canvas's: a Selection on the Frame names nothing (ADR 0066).
-    return project && selection && selectionLayer(project, selection) === 'canvas' ? pieceInSelection(project, selection) : undefined
+    return project && selection && selectionLayer(selection) === 'canvas' ? pieceInSelection(project, selection) : undefined
   })
 
   const canNamePiece = computed(() => !!target.value)

@@ -2,7 +2,7 @@
 import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
-import { layerAt, onLayer, positionInLayer, positionOnCanvas, shownBeads, type LayerSheet } from './layers'
+import { layerAt, onLayer, shownBeads, type LayerSheet } from './layers'
 import { beadColorAt } from './layerBeads'
 import { createProject } from './createProject'
 import { fillArea } from './fill'
@@ -10,12 +10,20 @@ import { paintCells } from './drawing'
 import type { Project } from './project'
 import { beadsOfLayer, frameOf, withLayer } from './layerRecord'
 import { withFrameSheet } from './frameSheet'
+import { changeFrame } from './changeFrame'
+import { copyLayerSelection, paintLayerSelection } from './selection'
 import { withLayers } from '../testUtils/layerFields'
 import { scaledBead } from '../testUtils/squareBead'
 import { findBead } from './beads'
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'
+
+/** The Project a Frame change made. */
+function changed(result: ReturnType<typeof changeFrame>): Project {
+  if (result.kind !== 'changed') throw new Error(`not changed: ${result.kind}`)
+  return result.project
+}
 
 /** A 4 x 3 Frame at (10, 20) holding blue at its first bead, over a Canvas holding blue under the Frame and one beyond. */
 function layered(): Project {
@@ -36,18 +44,32 @@ describe('layerAt', () => {
     expect(layerAt(withLayers(project, { frame: undefined }), { row: 10, column: 20 })).toBe('canvas')
   })
 
-  it('counts a position in the Frame from its first bead, and back', () => {
+  it('takes a position that names a Frame as that Frame\'s own row and column, wherever the Frame lies', () => {
     const project = layered()
-    expect(positionInLayer(project, FRAME_ID, { row: 11, column: 22 })).toEqual({ row: 1, column: 2 })
-    expect(positionOnCanvas(project, FRAME_ID, { row: 1, column: 2 })).toEqual({ row: 11, column: 22 })
-    expect(positionInLayer(project, 'canvas', { row: 11, column: 22 })).toEqual({ row: 11, column: 22 })
+    expect(layerAt(project, { row: 1, column: 2, layer: FRAME_ID })).toBe(FRAME_ID)
+    expect(layerAt(project, { row: 11, column: 22, layer: 'canvas' })).toBe('canvas')
+  })
+})
+
+describe('a Frame cell is named by its Frame and its own row and column', () => {
+  it('keeps every address whatever the Frame\'s place: moving it changes no cell\'s address', () => {
+    const project = layered()
+    const moved = changed(changeFrame(project, { move: { rows: 7, columns: -5 } }, frameIdIn(project)))
+    expect(frameOf(moved)).toMatchObject({ row: 17, column: 15 })
+    const cell = { row: 0, column: 0, layer: FRAME_ID }
+    expect(beadColorAt(moved, cell.row, cell.column, FRAME_ID)).toBe(BLUE)
+    expect(layerAt(moved, cell)).toBe(FRAME_ID)
+    // A Selection at the same own address copies and fills the same cells before and after the move.
+    const selection = { top: 0, left: 0, rows: 3, columns: 4, layer: FRAME_ID }
+    expect(copyLayerSelection(moved, selection)?.colors).toEqual(copyLayerSelection(project, selection)?.colors)
+    expect(frameOf(paintLayerSelection(moved, selection, RED))!.beads).toEqual(frameOf(paintLayerSelection(project, selection, RED))!.beads)
   })
 })
 
 describe('onLayer', () => {
   it('paints the Frame\'s own beads in its own coordinates and leaves the Canvas as it was', () => {
     const project = layered()
-    const painted = onLayer(project, FRAME_ID, (view, local) => paintCells(view, [local({ row: 11, column: 22 })], RED))
+    const painted = onLayer(project, FRAME_ID, (view) => paintCells(view, [{ row: 1, column: 2 }], RED))
     expect(frameOf(painted)!.beads[1]).toEqual({ 2: RED })
     expect(beadsOfLayer(painted, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
     expect(beadColorAt(painted, 11, 22)).toBe(RED)
@@ -149,13 +171,13 @@ describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   })
 
   it('lets a bead be drawn in the strip and keeps it, as the Canvas\'s', () => {
-    const painted = onLayer(project, 'canvas', (view, local) => paintCells(view, [local({ row: 44, column: 3 })], RED))
+    const painted = onLayer(project, 'canvas', (view) => paintCells(view, [{ row: 44, column: 3 }], RED))
     expect(beadColorAt(painted, 44, 3, 'canvas')).toBe(RED)
     expect(frameOf(painted)!.beads).toBe(frameOf(project)!.beads)
   })
 
   it('draws on the Frame\'s own last rows, which share a position with the strip', () => {
-    const painted = onLayer(project, FRAME_ID, (view, local) => paintCells(view, [local({ row: 41, column: 2 })], RED))
+    const painted = onLayer(project, FRAME_ID, (view) => paintCells(view, [{ row: 41, column: 2 }], RED))
     expect(frameOf(painted)!.beads[41]?.[2]).toBe(RED)
     expect(beadsOfLayer(painted, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
   })

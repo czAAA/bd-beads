@@ -5,7 +5,8 @@ import type { ReducedColors } from './imageColors'
 import { footprintOf } from './footprint'
 import type { GridPosition, FrameRef } from './grid'
 import { MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, NO_COLOR, packedToHex, pixelPackedAt, type PixelData } from './imageConversion'
-import { frameGeometryOf, positionInLayer } from './layers'
+import { frameGeometryOf } from './layers'
+import { cellUnder } from './footprint'
 import { beadsOfLayer, withLayer, frameById } from './layerRecord'
 import { layersAlike } from './layerWeave'
 import { touch, type Grid, type Project } from './project'
@@ -116,7 +117,7 @@ function byLayer(project: Project, changes: readonly BeadChange[], ref: FrameRef
       split.canvas.push(change)
       continue
     }
-    const own = positionInLayer(project, ref, change)
+    const own = cellUnder(project, ref, change)
     if (geometry?.grid && geometry.hasPosition(own)) split.frame.push({ ...own, color: change.color })
   }
   return split

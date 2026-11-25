@@ -256,7 +256,7 @@ describe('ContextBar', () => {
     expect((await rotateOver({ ...selection, layer: 'canvas' })).attributes('aria-disabled')).toBeUndefined()
     expect((await rotateOver({ ...selection, top: 4 })).attributes('aria-disabled')).toBeUndefined()
 
-    const reached = await rotateOver(selection)
+    const reached = await rotateOver({ ...selection, layer: frameIdIn(project) })
     expect(reached.attributes('aria-disabled')).toBe('true')
     expect(reached.element.closest('.app-tooltip')!.querySelector('.app-tooltip__body--disabled')!.textContent).toBe(en.tooltips.rotateInFinishedRows)
   })
@@ -266,7 +266,7 @@ describe('ContextBar', () => {
     try {
       // 200px of canvas: the bar's 28px buttons leave room beside the readout for two and "…".
       const anchor = { box: { left: 0, top: 100, width: 40, height: 40 }, viewport: { width: 200, height: 400 } }
-      const wrapper = mount(ContextBar, { props: { project: moveToRow(project, 1, frameIdIn(project)), selection, anchor, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
+      const wrapper = mount(ContextBar, { props: { project: moveToRow(project, 1, frameIdIn(project)), selection: { ...selection, layer: frameIdIn(project) }, anchor, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
       await nextTick()
       const [bar, readout] = FakeResizeObserver.instances
       bar!.trigger(240, 28)

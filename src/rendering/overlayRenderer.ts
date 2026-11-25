@@ -860,19 +860,17 @@ function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly
 /** Every position, for a layer whose view can't be culled by rows and columns (a Custom frame's). */
 const EVERYWHERE: VisiblePositions = { firstRow: -Infinity, lastRow: Infinity, columnsOf: () => ({ first: -Infinity, last: Infinity }) }
 
-/** The cells of a paste stamp in view on one layer (ticket 0675), counted from `origin`, the layer's first position on
- * the Canvas: read only where the view reaches, so a big block costs what is on screen. `keeps`, where some cells are
- * another layer's, takes Canvas positions. */
-function stampInView(stamp: PasteStamp, view: VisiblePositions, origin: GridPosition, keeps?: (cell: GridPosition) => boolean): PastedCell[] {
+/** The cells of a paste stamp in view on one layer (ticket 0675), in that layer's own positions: read only where the view
+ * reaches, so a big block costs what is on screen. `keeps`, where some cells are another layer's, takes them as they are. */
+function stampInView(stamp: PasteStamp, view: VisiblePositions, keeps?: (cell: GridPosition) => boolean): PastedCell[] {
   const cells: PastedCell[] = []
-  const top = stamp.top - origin.row
-  const left = stamp.left - origin.column
+  const { top, left } = stamp
   for (let row = Math.max(view.firstRow, top); row <= Math.min(view.lastRow, top + stamp.rows - 1); row++) {
     const colors = stamp.colors[row - top]!
     const { first, last } = view.columnsOf(row)
     for (let column = Math.max(first, left); column <= Math.min(last, left + stamp.columns - 1); column++) {
       const color = colors[column - left]
-      if (color && stamp.lands(row + origin.row, column + origin.column) && (!keeps || keeps({ row: row + origin.row, column: column + origin.column }))) cells.push({ row, column, color })
+      if (color && stamp.lands(row, column) && (!keeps || keeps({ row, column }))) cells.push({ row, column, color })
     }
   }
   return cells
@@ -1016,18 +1014,14 @@ function drawLayoutAxes(context: DrawingContext, symmetry: LayoutSymmetry & { ce
   context.restore()
 }
 
-/** Whether a position of the Canvas is on the Frame (ticket 492): the layer it names, or else whether it lies under what
- * the Frame draws (ADR 0066). Given `ref`, on that Frame only; else on any, which the Canvas leaves (ticket 1219). */
+/** Whether a position is on the Frame (ticket 492): the layer it names (by its own row and column), or else, for a Canvas
+ * position, whether it lies under what the Frame draws (ADR 0066). Given `ref`, on that Frame only, a Canvas position
+ * never; else on any, which the Canvas leaves (ticket 1219). */
 function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, covered: Rect | undefined, position: GridPosition, ref?: FrameRef): boolean {
   if (frame === undefined) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
-  return position.layer ? isFrameLayer(position.layer) && (ref === undefined || position.layer === ref) && (!geometry?.grid || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
-}
-
-/** The Frame's positions counted from its own first (ticket 492): a position of the Canvas that lies on it, or the cell
- * as it is. */
-function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
-  return { ...cell, row: cell.row - frame.row, column: cell.column - frame.column }
+  if (position.layer) return isFrameLayer(position.layer) && (ref === undefined || position.layer === ref) && (!geometry?.grid || frameContains({ row: 0, column: 0, rows: frame.rows, columns: frame.columns }, position))
+  return ref === undefined && covered !== undefined && frameContains(covered, position)
 }
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. Transparent wherever
@@ -1062,10 +1056,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
 
   // The Canvas's items: all of them when it is the only layer, else those not on the Frame.
   const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, geometry, covered, cell))
-  const ownLayer: Layer = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : ref
+  const ownLayer: Layer = space.open ? (selection ? selectionLayerOf(selection) : 'canvas') : ref
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasView = () => visibleBeadsInSpace(canvasWeaveOf, space, region, zoom, quarterTurnOf(project))
-  const offFrameStamp = (stamp: PasteStamp) => stampInView(stamp, canvasView(), { row: 0, column: 0 }, frame && ((cell) => !onFrame(frame, geometry, covered, cell)))
+  const offFrameStamp = (stamp: PasteStamp) => (stamp.layer === 'canvas' ? stampInView(stamp, canvasView(), frame && ((cell) => !onFrame(frame, geometry, covered, cell))) : [])
   const canvasCells = preview && space.open ? splitOnce(preview.cells, project, space, 'canvas', offFrame) : []
   const canvasStamp = preview?.stamp && space.open ? offFrameStamp(preview.stamp) : []
 
@@ -1101,17 +1095,16 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
     // The Frame's own px are its Bead's size over the Canvas's (ticket 0665); drawn alone, they are the space's.
     const scale = frame ? frameScale(project, ref) : 1
-    const local = <T extends GridPosition>(cell: T): T => (frame ? inFrameTerms(frame, cell) : cell)
-    const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, covered, cell, ref)).map(local) : [...cells])
-    // A shape keeps its Canvas positions, counted from the layer's first, so its outline is worked out only once.
-    const layerOrigin = frame ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }
-    const sheetSelection = selection && ownLayer === ref ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
+    const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, covered, cell, ref)) : [...cells])
+    // A shape keeps its positions, counted from the layer's first, so its outline is worked out only once.
+    const layerOrigin = { row: 0, column: 0 }
+    const sheetSelection = selection && ownLayer === ref ? selection : undefined
     const sheetView = (): VisiblePositions => {
       if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, quarterTurnOf(project), origin, scale)
       // A Custom frame's cells are named by round and place: only those its rectangle holds can be on it.
-      return covered ? { firstRow: covered.row - layerOrigin.row, lastRow: covered.row + covered.rows - 1 - layerOrigin.row, columnsOf: () => ({ first: covered.column - layerOrigin.column, last: covered.column + covered.columns - 1 - layerOrigin.column }) } : EVERYWHERE
+      return covered ? { firstRow: 0, lastRow: covered.rows - 1, columnsOf: () => ({ first: 0, last: covered.columns - 1 }) } : EVERYWHERE
     }
-    const onSheetStamp = (stamp: PasteStamp) => stampInView(stamp, sheetView(), layerOrigin, frame && ((cell) => onFrame(frame, geometry, covered, cell, ref)))
+    const onSheetStamp = (stamp: PasteStamp) => (frame && stamp.layer !== ref ? [] : stampInView(stamp, sheetView()))
     context.save()
     context.translate(origin.x, origin.y)
     if (scale !== 1) context.scale(scale, scale)

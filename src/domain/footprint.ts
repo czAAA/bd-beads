@@ -1,9 +1,9 @@
-import type { FrameSheet, Rect } from './canvas'
+import { frameContains, type FrameSheet, type Rect } from './canvas'
 import { laidRect } from './frameOrientation'
 import { canvasWeave, placedFrame, sameWeave } from './layerWeave'
 import { describeWeave, positionStep, type Weave } from './weave'
 import { frameIdOf, framesOf, type Layered } from './layerRecord'
-import type { FrameRef } from './grid'
+import type { FrameRef, GridPosition, Layer } from './grid'
 import { liesOnGrid } from './table'
 
 /** A Weave's cell height over its width: what a Bead's cell stretches a row by (ADR 0068, ticket 0724); 1 where the cell is square. */
@@ -33,6 +33,23 @@ export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick
 export function footprintOf(project: Layered, ref: FrameRef): Rect | undefined {
   const frame = placedFrame(project, ref)
   return frame && liesOnGrid(project, ref) ? frameFootprint(canvasWeave(project), frame) : undefined
+}
+
+/** The layer a Canvas position lies on: the Frame that hides it, else the Canvas. What a position that names no layer is
+ * on (a picture laid over the Canvas, the Homepage's tours aiming at a bead). */
+export function layerUnder(project: Layered, position: GridPosition): Layer {
+  const under = framesOf(project).find((frame) => {
+    const covered = footprintOf(project, frameIdOf(frame))
+    return covered && frameContains(covered, position)
+  })
+  return under ? frameIdOf(under) : 'canvas'
+}
+
+/** The cell of a Frame that lies under a Canvas position, named by its own row and column (the one place, with
+ * `footprintOf`, that reads where a Frame lies to find a cell from a Canvas position: a picture laid over the Canvas). */
+export function cellUnder(project: Layered, ref: FrameRef, position: GridPosition): GridPosition {
+  const frame = placedFrame(project, ref)
+  return frame ? { row: position.row - frame.row, column: position.column - frame.column } : position
 }
 
 /** The Canvas positions every Frame of the Project hides (ADR 0066, ticket 1218), in the Project's order: each Frame's

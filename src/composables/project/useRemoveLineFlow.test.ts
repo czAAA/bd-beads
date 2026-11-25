@@ -105,7 +105,7 @@ describe('useRemoveLineFlow', () => {
 describe('Remove line names its Frame (ticket 1218)', () => {
   it('takes the line out of the Frame the Selection is on, and Undo puts back only that', () => {
     const project = twoFrames()
-    const { harness, onRemoveSelectedLine } = setup({ project, selection: { top: 21, left: 20, rows: 1, columns: 4, layer: SECOND } })
+    const { harness, onRemoveSelectedLine } = setup({ project, selection: { top: 1, left: 0, rows: 1, columns: 4, layer: SECOND } })
     onRemoveSelectedLine()
     expect(frameById(harness.project, SECOND)).toMatchObject({ rows: 5, columns: 4 })
     expect(frameById(harness.project, firstOf(project))).toEqual(frameById(project, firstOf(project)))

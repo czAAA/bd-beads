@@ -66,8 +66,8 @@ export function isFrameLayer(layer: Layer | undefined): layer is FrameRef {
 export interface GridPosition {
   row: number
   column: number
-  /** The layer a pointer hit named (ADR 0066): where the Frame draws shorter than the rows it names, a Frame bead and a
-   * Canvas bead share a position. Left out where the position alone says it. */
+  /** The layer a position is of (ADR 0066): a Frame's position is that Frame's own row and column, so it always names the
+   * Frame, and the same numbers on the Canvas are another bead. Left out for the Canvas's. */
   layer?: Layer
 }
 

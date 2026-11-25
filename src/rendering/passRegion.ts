@@ -12,7 +12,7 @@ export function currentPassRegion(project: Layered, surface: SurfaceView, ref: F
   const { current, total } = rowProgressPosition(project, ref)
   const positions = frameRowOrder(project, ref).positionsOf(Math.min(current, total - 1))
   if (positions.length === 0) return undefined
-  const middles = positions.map((position) => surface.beadToPoint({ row: frame.row + position.row, column: frame.column + position.column }, ref))
+  const middles = positions.map((position) => surface.beadToPoint(position, ref))
   const xs = middles.map((point) => point.x)
   const ys = middles.map((point) => point.y)
   // Half a bead round the middles takes the beads in whole; one step more in the way rows run is the row of context.

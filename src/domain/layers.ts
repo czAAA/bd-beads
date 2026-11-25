@@ -2,7 +2,7 @@ import { beadsOver, anyChangedPosition, beadsWithout, colorAt, forEachChangedPos
 import { isFrameLayer, type FrameRef, type GridPosition, type Layer } from './grid'
 
 export type { Layer }
-import { footprintOf } from './footprint'
+import { footprintOf, layerUnder } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
 import { beadsOfLayer, frameById, frameIdOf, framesOf, type Layered, layerOf, withLayer } from './layerRecord'
@@ -28,24 +28,14 @@ export interface LayerSheet {
 }
 
 
-/** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
- * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
- * press, and keeps the answer. */
+/** Which layer a position is on (ADR 0066): the one it names (a Frame's cell by its own row and column), else, for a
+ * Canvas position, the Frame that hides it where one lies over it (`footprintOf`), the Canvas anywhere else. The one place
+ * that decides; a stroke asks once, at its press, and keeps the answer. */
 export function layerAt(project: Layered, position: GridPosition): Layer {
   if (position.layer) {
     return isFrameLayer(position.layer) && frameById(project, position.layer) ? position.layer : 'canvas'
   }
-  const under = framesOf(project).find((frame) => {
-    const covered = footprintOf(project, frameIdOf(frame))
-    return covered && frameContains(covered, position)
-  })
-  return under ? frameIdOf(under) : 'canvas'
-}
-
-/** A Canvas position in a layer's own coordinates: the Frame's are counted from its first row and column. */
-export function positionInLayer(project: Layered, layer: Layer, position: GridPosition): GridPosition {
-  const frame = frameById(project, layer)
-  return frame ? { row: position.row - frame.row, column: position.column - frame.column } : position
+  return layerUnder(project, position)
 }
 
 /** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
@@ -64,12 +54,6 @@ export function shownBeads(project: Layered): BeadMap {
     shown = frameGeometryOf(project, id).grid ? beadsOver(hidden, laidOnCanvas(project, beadsOfLayer(project, id)!, frameById(project, id)!, id)) : hidden
   }
   return shown
-}
-
-/** A position of a layer's own, back on the Canvas. */
-export function positionOnCanvas(project: Layered, layer: Layer, position: GridPosition): GridPosition {
-  const frame = frameById(project, layer)
-  return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
 /** The Frame as its Frame shape reads it, in its own Weave with its Bead's cell. The Project must have a Frame. */
@@ -128,18 +112,18 @@ export interface OnLayerOptions {
   underFrame?: (position: GridPosition) => boolean
 }
 
-/** Runs a command on one layer. The command gets the layer (see `layerSheet`) and `local`, which turns a Canvas position
- * into one of that layer, and gives back the layer's beads, which are put back. The same Project back when they came
+/** Runs a command on one layer. The command gets the layer (see `layerSheet`), works in that layer's own positions (a
+ * Frame cell is named by its Frame and its own row and column), and gives back the layer's beads, which are put back. The same Project back when they came
  * back as they went in, which is a drawing command's "nothing changed". */
-export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap, options: OnLayerOptions = {}): Project {
+export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet) => BeadMap, options: OnLayerOptions = {}): Project {
   if (isFrameLayer(layer)) {
     if (!frameById(project, layer)) {
       return project
     }
-    const beads = command(layerSheet(project, layer), (position) => positionInLayer(project, layer, position))
+    const beads = command(layerSheet(project, layer))
     return beads === beadsOfLayer(project, layer) ? project : touch(withLayer(project, layer, { beads }), {})
   }
-  const made = command(layerSheet(project, 'canvas'), (position) => position)
+  const made = command(layerSheet(project, 'canvas'))
   const before = beadsOfLayer(project, 'canvas')
   if (made === before) {
     return project

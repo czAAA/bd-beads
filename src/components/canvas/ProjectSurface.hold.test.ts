@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { FRAME_ID } from '../../testUtils/frameId'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import { DRAG_SLOP_PX } from '../../domain/dragSlop'
@@ -75,7 +76,7 @@ const ON_HANDLE = { clientX: 13, clientY: 67 }
 
 /** What a completed hold reports: the hairline goes, the press is dropped, then the ring is asked for where it was
  * pressed, on the bead position under it. */
-const OPENED = [['hold', POINT], ['hold'], ['drop-press'], ['open-toolbox', POINT, { row: 3, column: 5 }]]
+const OPENED = [['hold', POINT], ['hold'], ['drop-press'], ['open-toolbox', POINT, { row: 3, column: 5, layer: FRAME_ID }]]
 
 describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => {
   it('in Pen mode a held pen asks for the ring and a held finger never does', async () => {
@@ -120,7 +121,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
   it('starts the tool at the press as today, shows the hairline\'s point at once and asks for nothing until the hold is up', async () => {
     const { wrapper, surface, said } = await mountSurface()
     await surface.trigger('pointerdown', { ...AT, ...PEN, ...DOWN })
-    expect(wrapper.emitted('cell-primary-down')).toEqual([[3, 5]])
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[3, 5, FRAME_ID]])
     expect(said).toEqual([['hold', POINT]])
 
     vi.advanceTimersByTime(CANVAS_HOLD_MS - 1)
@@ -162,7 +163,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
     // The stroke goes on, and resting later in it opens nothing.
     await surface.trigger('pointermove', { ...bead(3, 7), ...PEN, buttons: 1 })
     vi.advanceTimersByTime(CANVAS_HOLD_MS * 10)
-    expect(wrapper.emitted('cells-primary-move')).toEqual([[[{ row: 3, column: 6 }, { row: 3, column: 7 }]]])
+    expect(wrapper.emitted('cells-primary-move')).toEqual([[[{ row: 3, column: 6, layer: FRAME_ID }, { row: 3, column: 7, layer: FRAME_ID }]]])
     expect(said).toEqual([['hold', POINT], ['hold']])
     wrapper.unmount()
   })
@@ -219,7 +220,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
 
     // The next press is a press as any other.
     await surface.trigger('pointerdown', { ...bead(6, 6), ...PEN, ...DOWN })
-    expect(wrapper.emitted('cell-primary-down')?.at(-1)).toEqual([6, 6])
+    expect(wrapper.emitted('cell-primary-down')?.at(-1)).toEqual([6, 6, FRAME_ID])
     wrapper.unmount()
   })
 
@@ -236,7 +237,7 @@ describe('ProjectSurface: a hold opens the Radial toolbox (ticket 1065)', () => 
 describe('ProjectSurface: a hold inside an area opens the Radial toolbox (ticket 1084)', () => {
   /** A completed hold inside the area: the same as anywhere else, on the bead position pressed. */
   const INSIDE_POINT = { x: INSIDE.clientX, y: INSIDE.clientY }
-  const OPENED_INSIDE = [['hold', INSIDE_POINT], ['hold'], ['drop-press'], ['open-toolbox', INSIDE_POINT, { row: 1, column: 2 }]]
+  const OPENED_INSIDE = [['hold', INSIDE_POINT], ['hold'], ['drop-press'], ['open-toolbox', INSIDE_POINT, { row: 1, column: 2, layer: FRAME_ID }]]
   const MIRROR_MODE = { tools: can({ tool: 'select', selects: true, marksArea: true }), mirror: { ...MIRROR_OFF, mode: 'mirror' as const, place: { layer: 'canvas' as const, area: { row: 1, column: 1, rows: 2, columns: 3 } } } }
 
   it.each([
@@ -394,7 +395,7 @@ describe('ProjectSurface: a press with the ring open moves it there (ticket 1147
     await surface.trigger('pointerdown', { ...OTHER, ...PEN, ...DOWN })
     expect(said).toEqual([['close-toolbox'], ['hold', OTHER_POINT]])
     vi.advanceTimersByTime(CANVAS_HOLD_MS)
-    expect(said).toEqual([['close-toolbox'], ['hold', OTHER_POINT], ['hold'], ['drop-press'], ['open-toolbox', OTHER_POINT, { row: 8, column: 12 }]])
+    expect(said).toEqual([['close-toolbox'], ['hold', OTHER_POINT], ['hold'], ['drop-press'], ['open-toolbox', OTHER_POINT, { row: 8, column: 12, layer: FRAME_ID }]])
     await surface.trigger('pointerup', { ...OTHER, ...PEN })
     expect(drawn(wrapper)).toEqual([])
     wrapper.unmount()
@@ -439,7 +440,7 @@ describe('ProjectSurface: a press with the ring open moves it there (ticket 1147
     await click.surface.trigger('pointerdown', { ...OTHER, ...MOUSE, button: 2, buttons: 2 })
     expect(click.said).toEqual([['close-toolbox']])
     await click.surface.trigger('pointerup', { ...OTHER, ...MOUSE, button: 2 })
-    expect(click.said).toEqual([['close-toolbox'], ['open-toolbox', OTHER_POINT, { row: 8, column: 12 }]])
+    expect(click.said).toEqual([['close-toolbox'], ['open-toolbox', OTHER_POINT, { row: 8, column: 12, layer: FRAME_ID }]])
     click.wrapper.unmount()
 
     const drag = await underRing()

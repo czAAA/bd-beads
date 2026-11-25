@@ -103,13 +103,14 @@ export function fitBox(project: Project): FitTarget | undefined {
   return drawn && { box: drawn, margin: FIT_MARGIN_PX }
 }
 
-/** The layer a block is measured in: a Frame's own for that Frame itself (ticket 492), the Canvas's for anything else. */
-function layerOfBox(project: Project, box: Rect): ViewLayer {
+/** The layer a block is measured in, and the block there: a Frame's own for that Frame itself (ticket 492), counted from
+ * its first row and column; the Canvas's for anything else. */
+function boxOnLayer(project: Project, box: Rect): { box: Rect; layer: ViewLayer } {
   const own = framesOf(project).map(frameIdOf).find((ref) => {
     const frame = laidFrame(project, ref)
     return frame && sameFrame(box, frame)
   })
-  return own ?? 'canvas'
+  return own ? { box: { row: 0, column: 0, rows: box.rows, columns: box.columns }, layer: own } : { box, layer: 'canvas' }
 }
 
 /** A move `bringIntoView` made (ticket 0971), so `putBack` can take it back: the scroll it went to, at which zoom, the
@@ -420,7 +421,8 @@ export function useCanvasView(
     if (!project) {
       return
     }
-    scroll.value = surfaceOf(project).scrollToCentre(box, layerOfBox(project, box))
+    const shown = boxOnLayer(project, box)
+    scroll.value = surfaceOf(project).scrollToCentre(shown.box, shown.layer)
     isAtFit.value = false
   }
 

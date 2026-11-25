@@ -99,11 +99,10 @@ export function beadCentre(
   const { technique, rotation } = 'layers' in project ? { technique: canvasOf(project).technique, rotation: quarterTurnOf(project) } : project
   const shift = 'layers' in project ? frameShift(project, zoom) : undefined
   if (shift) {
-    // The Frame's own bead, on its own surface: laid at its row and column, which only address its cells.
+    // The Frame's own bead, on its own surface: named by its own row and column.
     const laid = withLaidTurn(project as Project, undefined, frameIdIn(project as Project))
-    const frame = frameOf(laid)!
     const view = surfaceView({ space: OPEN_SPACE, technique, rotation: shift.rotation, zoom, scroll, frame: placedFrame(laid, frameIdIn(laid)) })
-    const at = view.beadToPoint({ row: row + frame.row, column: column + frame.column }, frameIdIn(laid))
+    const at = view.beadToPoint({ row, column }, frameIdIn(laid))
     return { x: box.x + at.x + shift.x, y: box.y + at.y + shift.y }
   }
   const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })

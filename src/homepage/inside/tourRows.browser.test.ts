@@ -42,9 +42,8 @@ const PUPIL_BEADS = [0, 16, 32].flatMap((eye) => [6, 7, 8].map((along) => ({ lin
 
 /** The catalog code of each of the pupils' middle beads. */
 function pupilCodes(project: Project): (string | undefined)[] {
-  const { row, column } = placeOf(project)
   return PUPIL_BEADS.map(({ line, along }) => {
-    const color = beadColorAt(project, row + along, column + line, frameIdIn(project))
+    const color = beadColorAt(project, along, line, frameIdIn(project))
     return color ? project.paletteCodes?.[color.toLowerCase()]?.code : undefined
   })
 }

@@ -1067,7 +1067,7 @@ describe('ProjectSurface', () => {
         await surface.trigger('pointermove', { clientX: start.x + 30, clientY: start.y + 30, buttons: 0 })
 
         // Where the button went down, not where it lifted, and the bead position under that point.
-        expect(wrapper.emitted('open-toolbox')).toEqual([[{ x: start.x, y: start.y }, { row: 1, column: 2 }]])
+        expect(wrapper.emitted('open-toolbox')).toEqual([[{ x: start.x, y: start.y }, { row: 1, column: 2, layer: FRAME_ID }]])
         expect(wrapper.emitted('pan')).toBeUndefined()
         expect(wrapper.emitted('pressing')).toBeUndefined()
         expect(worked(wrapper)).toEqual([])
@@ -1534,7 +1534,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...centreOf(project, 0, 1), pointerType: 'mouse', buttons: 0 })
       expect(wrapper.emitted('cell-hover')).toBeUndefined()
       await surface.trigger('pointermove', { ...centreOf(project, 0, 2), pointerType: 'pen', buttons: 0 })
-      expect(wrapper.emitted('cell-hover')).toEqual([[0, 2]])
+      expect(wrapper.emitted('cell-hover')).toEqual([[0, 2, FRAME_ID]])
     })
 
     it('draws with every pointer when no input mode is given', async () => {
@@ -1637,8 +1637,8 @@ describe('ProjectSurface', () => {
 
       await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 3, 5), button: 0, buttons: 1 })
 
-      expect(events(wrapper)['cell-hover']).toEqual([[3, 5]])
-      expect(events(wrapper)['cell-primary-down']).toEqual([[3, 5]])
+      expect(events(wrapper)['cell-hover']).toEqual([[3, 5, FRAME_ID]])
+      expect(events(wrapper)['cell-primary-down']).toEqual([[3, 5, FRAME_ID]])
     })
 
     it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0066)', async () => {
@@ -1663,7 +1663,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...centreOf(project, 3, 5), buttons: 0 })
       await surface.trigger('pointerdown', { ...centreOf(project, 3, 5), button: 0, buttons: 1 })
 
-      expect(events(wrapper)['cell-hover']).toEqual([[3, 5]])
+      expect(events(wrapper)['cell-hover']).toEqual([[3, 5, FRAME_ID]])
     })
 
     it('ignores a press with the middle button', async () => {
@@ -1685,7 +1685,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...centreOf(project, 0, 1), buttons: 0 })
       await surface.trigger('pointermove', { ...centreOf(project, 0, 2), buttons: 0 })
 
-      expect(events(wrapper)['cell-hover']).toEqual([[0, 0], [0, 1], [0, 2]])
+      expect(events(wrapper)['cell-hover']).toEqual([[0, 0, FRAME_ID], [0, 1, FRAME_ID], [0, 2, FRAME_ID]])
       expect(events(wrapper)['cell-primary-move']).toBeUndefined()
     })
 
@@ -1715,7 +1715,7 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-hover']).toBeUndefined()
 
       await surface.trigger('pointerdown', { ...centreOf(project, 1, 0), pointerType: 'pen', pointerId: 2, button: 0, buttons: 1 })
-      expect(events(wrapper)['cell-hover']).toEqual([[1, 0]])
+      expect(events(wrapper)['cell-hover']).toEqual([[1, 0, FRAME_ID]])
     })
 
     it('finds a bead anywhere on the Canvas: far from the first bead, and at negative positions', async () => {
@@ -1741,7 +1741,7 @@ describe('ProjectSurface', () => {
 
       expect(events(wrapper)['hover-end']).toHaveLength(1)
       // Back over the same bead after leaving: a fresh hover.
-      expect(events(wrapper)['cell-hover']).toEqual([[0, 0], [0, 0]])
+      expect(events(wrapper)['cell-hover']).toEqual([[0, 0, FRAME_ID], [0, 0, FRAME_ID]])
     })
 
     it('works out the bead at any zoom, on peyote\'s and brick stitch\'s shifted rows', async () => {
@@ -1751,7 +1751,7 @@ describe('ProjectSurface', () => {
 
         await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 5, 7, 2), button: 0, buttons: 1 })
 
-        expect(events(wrapper)['cell-primary-down']).toEqual([[5, 7]])
+        expect(events(wrapper)['cell-primary-down']).toEqual([[5, 7, FRAME_ID]])
       }
     })
 
@@ -1761,7 +1761,7 @@ describe('ProjectSurface', () => {
 
       await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 15), button: 0, buttons: 1 })
 
-      expect(events(wrapper)['cell-primary-down']).toEqual([[2, 15]])
+      expect(events(wrapper)['cell-primary-down']).toEqual([[2, 15, FRAME_ID]])
     })
 
     it('works out the bead of a Canvas twisted off a quarter turn, the picture turned about the middle of the screen (ticket 0672)', async () => {
@@ -1777,7 +1777,7 @@ describe('ProjectSurface', () => {
 
         await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { clientX, clientY, button: 0, buttons: 1 })
 
-        expect(events(wrapper)['cell-primary-down']).toEqual([[row, column]])
+        expect(events(wrapper)['cell-primary-down']).toEqual([[row, column, FRAME_ID]])
         wrapper.unmount()
       }
     })
@@ -2066,7 +2066,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(projectOf(20, 10))
       context.calls.length = 0
 
-      await wrapper.setProps({ previewCells: [{ row: 1, column: 2 }, { row: 1, column: 17 }], previewColor: '#e63746' })
+      await wrapper.setProps({ previewCells: [{ row: 1, column: 2, layer: FRAME_ID }, { row: 1, column: 17, layer: FRAME_ID }], previewColor: '#e63746' })
 
       const faint = context.named('fillRect').filter((call) => call.globalAlpha === 0.6)
       expect(faint.map((call) => call.args)).toEqual([[40.5, 20.5, 19, 19], [340.5, 20.5, 19, 19]])
@@ -2089,7 +2089,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(projectOf(250, 250), 3)
       context.calls.length = 0
 
-      await wrapper.setProps({ previewCells: [{ row: 0, column: 0 }], previewColor: null })
+      await wrapper.setProps({ previewCells: [{ row: 0, column: 0, layer: FRAME_ID }], previewColor: null })
 
       // A neutral outline: filled even-odd in the dark ink, through the transform that scales it by 3 (the rulers
       // then reset it to the viewport's own px, so the transform the outline was drawn through is the one before).
@@ -2098,12 +2098,12 @@ describe('ProjectSurface', () => {
     })
 
     it('the bead the open Radial toolbox was pressed on keeps the neutral outline, whatever is hovered or chosen, until the ring closes (ticket 1076)', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { previewCells: [{ row: 1, column: 2 }], previewColor: '#e63746' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { previewCells: [{ row: 1, column: 2, layer: FRAME_ID }], previewColor: '#e63746' })
       const outlines = () => context.named('fill').filter((call) => call.args[0] === 'evenodd' && call.fillStyle === DEFAULT_THEME.outline)
       const faint = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6)
       context.calls.length = 0
 
-      await wrapper.setProps({ outlinedCell: { row: 3, column: 4 } })
+      await wrapper.setProps({ outlinedCell: { row: 3, column: 4, layer: FRAME_ID } })
       expect(outlines()).toHaveLength(1)
       expect(faint()).toHaveLength(0)
 
@@ -2165,7 +2165,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 2, column: 2 }]])
     expect(wrapper.emitted('selection-release')).toHaveLength(2)
     // Only the press away from the Selection reached the beads.
-    expect(wrapper.emitted('cell-primary-down')).toEqual([[7, 12]])
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[7, 12, FRAME_ID]])
   })
 
   it('leaves the press to the beads when the tool is not Select or Piece, or there is no Selection', async () => {
@@ -2242,7 +2242,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
   })
 
   it('under Piece, takes a press on a bead of the selected Piece as a drag of it, and leaves a press beside it to the tool', async () => {
-    const shape = { ...selection, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
+    const shape = { ...selection, layer: FRAME_ID, cells: [{ row: 1, column: 1 }, { row: 2, column: 2 }] }
     const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'piece', selects: true }), selection: shape })
     const surface = wrapper.find('[data-testid="project-surface"]')
 
@@ -2259,7 +2259,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
 
     expect(wrapper.emitted('selection-press')!.map(([target, , area]) => [target, area])).toEqual([[{ kind: 'inside' }, undefined]])
     expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 2, column: 2 }]])
-    expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 3]])
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 3, FRAME_ID]])
   })
 
   it('carries a Piece straight along a row of peyote, whose columns stand half a bead apart (ticket 1150)', async () => {
@@ -2289,7 +2289,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'select', selects: true, selectsAnywhere: true }), selection: shape })
     await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { button: 0, clientX: 30, clientY: 30, pointerId: 1 })
     expect(wrapper.emitted('selection-press')).toBeUndefined()
-    expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 1]])
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[1, 1, FRAME_ID]])
   })
 
   it('takes a press on the move grip of a Piece\'s shape as a drag too (ticket 1013)', async () => {

@@ -1,7 +1,7 @@
 import type { Rect } from '../domain/canvas'
 import { isFrameLayer, type GridPosition, type Layer } from '../domain/grid'
 import { type Layered, frameById } from '../domain/layerRecord'
-import { frameGeometryOf, layerAt, positionInLayer } from '../domain/layers'
+import { frameGeometryOf } from '../domain/layers'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
 import { pointOnPicture, turnedExtent, type ReferencePlace } from '../domain/referenceImage'
 import { describeWeave, type Weave } from '../domain/weave'
@@ -61,17 +61,17 @@ export function pictureCover(weave: Weave, place: ReferencePlace, height: number
   return { positions, box, listed: true }
 }
 
-/** Where the centre of the bead pressed at a Canvas position lies on the picture, on the layer the press landed on (a
+/** Where the centre of the bead pressed at a position lies on the picture, on the layer the press landed on (a
  * Frame's bead where the Frame draws it, through its Bead's size and shape): what Pick color reads (ticket 1119). None
  * off the picture. */
 export function pressOnPicture(project: Layered, position: GridPosition, layer: Layer | undefined, place: ReferencePlace, height: number): { u: number; v: number } | undefined {
-  const on = layer ?? layerAt(project, position)
+  // A position names its layer (a Frame's by its own row and column); one that names none is the Canvas's.
+  const on = layer ?? 'canvas'
   const frame = frameById(project, on)
   const canvas = canvasWeave(project)
   if (!frame || !isFrameLayer(on)) return pointOnPicture(place, height, centreOf(positionBoxPx(canvas, position.row, position.column)))
-  const local = positionInLayer(project, on, position)
-  const placed = frameGeometryOf(project, on).place(local)
-  const box = placed ? inGridPx(placed.box) : positionBoxPx(frameWeave(project, on), local.row, local.column)
+  const placed = frameGeometryOf(project, on).place(position)
+  const box = placed ? inGridPx(placed.box) : positionBoxPx(frameWeave(project, on), position.row, position.column)
   const origin = frameOriginPx(canvas, frame)
   const scale = frameScale(project, on)
   const centre = centreOf(box)

@@ -3,11 +3,11 @@ import { keepAllowedEdits } from './allowedEdits'
 import { fillArea, isFillRefusal, type FillRefusal } from './fill'
 import { isFrameLayer, type GridPosition, type Layer, type PreviewCell } from './grid'
 import { beadsOfLayer, withLayer } from './layerRecord'
-import { onLayer, positionInLayer, positionOnCanvas } from './layers'
+import { onLayer } from './layers'
 import type { MirrorSetting } from './mirror'
 import type { Project } from './project'
 
-/** A Fill tool press (ticket 25): the Canvas position pressed, the layer it is on and the color it pours. */
+/** A Fill tool press (ticket 25): the position pressed (the layer's own: a Frame cell's own row and column), the layer it is on and the color it pours. */
 export interface FillPress {
   row: number
   column: number
@@ -30,9 +30,8 @@ export function fillPressed(project: Project, { row, column, layer, color }: Fil
   // The Mirror's Canvas Area is a border on the Canvas: the frame's own edge already bounds a Fill there.
   const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
   let refused: FillRefusal | undefined
-  const made = onLayer(project, layer, (sheet, local) => {
-    const at = local({ row, column })
-    const filled = fillArea(sheet, at.row, at.column, color, { onScreen, border, refusedAfter })
+  const made = onLayer(project, layer, (sheet) => {
+    const filled = fillArea(sheet, row, column, color, { onScreen, border, refusedAfter })
     if (!isFillRefusal(filled)) return filled
     refused = filled
     return sheet.beads
@@ -40,7 +39,7 @@ export function fillPressed(project: Project, { row, column, layer, color }: Fil
   return refused ?? made
 }
 
-/** The beads a Fill press would change (ticket 1153), as Canvas positions, those on the Frame named so: exactly what
+/** The beads a Fill press would change (ticket 1153), as the layer's own positions, those on a Frame named so: exactly what
  * the press lands once Edit's rules keep rows marked done, the margin and the Frame's covered beads. None when Fill
  * reach would refuse it or it changes nothing. `region` marks the beads the flood reached, for `inFilledRegion`. */
 export function fillPreview(project: Project, press: FillPress, reach: FillPressReach): { cells: PreviewCell[]; region: Project } {
@@ -53,8 +52,7 @@ export function fillPreview(project: Project, press: FillPress, reach: FillPress
   const after = beadsOfLayer(kept, press.layer) ?? {}
   const cells: PreviewCell[] = []
   forEachChangedPosition(before, after, (row, column) => {
-    const onCanvas = positionOnCanvas(project, press.layer, { row, column })
-    cells.push(isFrameLayer(press.layer) ? { ...onCanvas, layer: press.layer } : onCanvas)
+    cells.push(isFrameLayer(press.layer) ? { row, column, layer: press.layer } : { row, column })
   })
   return { cells, region: kept }
 }
@@ -63,8 +61,7 @@ export function fillPreview(project: Project, press: FillPress, reach: FillPress
  * the flood reached its bead, so any press inside it floods the same beads, or is refused alike, with no new flood. */
 export function inFilledRegion(project: Project, region: Project, layer: Layer, at: GridPosition): boolean {
   if (region === project) return false
-  const local = positionInLayer(project, layer, at)
   const before = beadsOfLayer(project, layer) ?? {}
   const after = beadsOfLayer(region, layer) ?? {}
-  return colorAt(before, local.row, local.column) !== colorAt(after, local.row, local.column)
+  return colorAt(before, at.row, at.column) !== colorAt(after, at.row, at.column)
 }

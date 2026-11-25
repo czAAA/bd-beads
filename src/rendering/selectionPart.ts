@@ -3,7 +3,7 @@ import { withLaidTurn } from '../domain/framePlacement'
 import { withFrameSheet } from '../domain/frameSheet'
 import { frameById } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
-import { selectionExportProject } from '../domain/selectionExport'
+import { framePartArea, selectionExportProject } from '../domain/selectionExport'
 import { selectionLayer, type Selection } from '../domain/selection'
 import { trimmedArea } from './chartPageKey'
 import { displayedCellOf } from './printPages'
@@ -13,14 +13,12 @@ import { displayedCellOf } from './printPages'
  * the Canvas counts from 1 at its top left as seen, having no chart to match. None where a Selection can't be exported. */
 export function selectionPart(project: Project, selection: Selection, partName: string): Project | undefined {
   const part = selectionExportProject(project, selection, partName)
-  const layer = selectionLayer(project, selection)
+  const layer = selectionLayer(selection)
   if (!part || !isFrameLayer(layer)) return part
   const ref = layer
   const whole = withLaidTurn(project, undefined, ref)
-  const first = frameById(whole, ref)!
   const cut = frameById(part, ref)!
-  const row = cut.row - first.row
-  const column = cut.column - first.column
+  const { row, column } = framePartArea(project, selection)!
   const corners = [displayedCellOf(whole, { row, column }, ref), displayedCellOf(whole, { row: row + cut.rows - 1, column: column + cut.columns - 1 }, ref)]
   const origin = { across: Math.min(...corners.map((corner) => corner.across)), down: Math.min(...corners.map((corner) => corner.down)) }
   const chart = trimmedArea(whole, ref)

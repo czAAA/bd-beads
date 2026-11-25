@@ -5,7 +5,7 @@ import { beadCount, colorAt, type FrameSheet, withColors } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { cellOfBead } from './customSelection'
 import { customFrameSize, frameLayoutOf, type FrameShapeId } from './frameShape'
-import { layerSheet, onLayer, positionOnCanvas } from './layers'
+import { layerSheet, onLayer } from './layers'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { canvasDistance, frameWeave } from './layerWeave'
 import { createProject } from './createProject'
@@ -44,11 +44,11 @@ const allPositions = (project: Project) => frameLayoutOf(frameOf(project)!)!.pos
 /** The Selection Select all makes over the Frame. */
 const everything = (project: Project): Selection => selectAllSelection(beadsOfLayer(project, 'canvas'), frameOf(project), frameIdIn(project))!
 
-/** A Selection of the Frame's cells, counted from its first row and column. */
-const ofFrame = (project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top: frameOf(project)!.row + top, left: frameOf(project)!.column + left, rows, columns, layer: FRAME_ID })
+/** A Selection of the Frame's cells, by their own rows and columns. */
+const ofFrame = (_project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top, left, rows, columns, layer: FRAME_ID })
 
 /** The Canvas cell a Paste aims at to land its anchor on a bead of the Frame. */
-const aimedAt = (project: Project, bead: { row: number; column: number }) => ({ ...positionOnCanvas(project, FRAME_ID, cellOfBead(layerSheet(project, FRAME_ID), bead)), layer: FRAME_ID })
+const aimedAt = (project: Project, bead: { row: number; column: number }) => ({ ...cellOfBead(layerSheet(project, FRAME_ID), bead), layer: FRAME_ID })
 
 describe('a Selection over a Custom frame (ticket 0594)', () => {
   it('fills and clears every bead of the shape when it holds the whole Frame, from any panel', () => {
@@ -97,7 +97,7 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
     const project = painted()
     const block = copyLayerSelection(project, everything(project))!
     // Aimed at the Frame's top left corner, Off-shape: the block's beads reach past the shape.
-    const corner = { row: frameOf(project)!.row, column: frameOf(project)!.column, layer: FRAME_ID }
+    const corner = { row: 0, column: 0, layer: FRAME_ID }
     const lost = pasteLostCount(project, block, corner)
     expect(lost.loss).toBe('shape')
     expect(lost.count).toBeGreaterThan(0)
@@ -196,11 +196,10 @@ describe('Row progress on a Custom frame (ticket 0594)', () => {
   it('locks the finished rounds against drawing, and holds the Frame still once a pass is done', () => {
     const project = moveToRow(custom('triangle', 4), 1, frameIdIn(custom('triangle', 4)))
     expect(rowProgressStarted(project, frameIdIn(project))).toBe(true)
-    const frame = frameOf(project)!
-    expect(isInFinishedRow(project, { row: frame.row, column: frame.column + 2, layer: FRAME_ID }, frameIdIn(project))).toBe(true)
-    expect(isInFinishedRow(project, { row: frame.row + 1, column: frame.column + 2, layer: FRAME_ID }, frameIdIn(project))).toBe(false)
+    expect(isInFinishedRow(project, { row: 0, column: 2, layer: FRAME_ID }, frameIdIn(project))).toBe(true)
+    expect(isInFinishedRow(project, { row: 1, column: 2, layer: FRAME_ID }, frameIdIn(project))).toBe(false)
     // A place past the Frame's columns is still a bead of round 3.
-    expect(isInFinishedRow(moveToRow(project, 4, frameIdIn(project)), { row: frame.row + 3, column: frame.column + 11, layer: FRAME_ID }, frameIdIn(project))).toBe(true)
+    expect(isInFinishedRow(moveToRow(project, 4, frameIdIn(project)), { row: 3, column: 11, layer: FRAME_ID }, frameIdIn(project))).toBe(true)
     const painted = paintFrame(project, [{ row: 0, column: 1 }, { row: 2, column: 1 }], RED)
     const kept = keepFinishedRows(project, painted)
     expect(colorAt(frameOf(kept)!.beads, 0, 1)).toBeNull()

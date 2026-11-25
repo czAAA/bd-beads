@@ -26,19 +26,19 @@ describe('currentPassRegion (ticket 0934)', () => {
   it('is the current row\'s beads with the row before and the row after, as the view shows them', () => {
     const project = moveToRow(framed, 5, frameIdIn(framed))
     const surface = surfaceOf(project)
-    expectRegion(currentPassRegion(project, surface, frameIdIn(project)), surface.beadBox({ row: 2 + 4, column: 3, rows: 3, columns: 10 }, FRAME_ID))
+    expectRegion(currentPassRegion(project, surface, frameIdIn(project)), surface.beadBox({ row: 4, column: 0, rows: 3, columns: 10 }, FRAME_ID))
   })
 
   it('is the current column with a column either side while rows run down the columns, turned with the view', () => {
     const project = moveToRow(toggleRowDirection(framed, frameIdIn(framed)), 4, frameIdIn(framed))
     const surface = surfaceOf(project, 90)
-    expectRegion(currentPassRegion(project, surface, frameIdIn(project)), surface.beadBox({ row: 2, column: 3 + 3, rows: 20, columns: 3 }, FRAME_ID))
+    expectRegion(currentPassRegion(project, surface, frameIdIn(project)), surface.beadBox({ row: 0, column: 3, rows: 20, columns: 3 }, FRAME_ID))
   })
 
   it('is the last row once every row is done, and nothing without a Frame', () => {
     const done = moveToRow(framed, 20, frameIdIn(framed))
     const surface = surfaceOf(done)
-    expectRegion(currentPassRegion(done, surface, frameIdIn(done)), surface.beadBox({ row: 2 + 18, column: 3, rows: 3, columns: 10 }, FRAME_ID))
+    expectRegion(currentPassRegion(done, surface, frameIdIn(done)), surface.beadBox({ row: 18, column: 0, rows: 3, columns: 10 }, FRAME_ID))
     expect(currentPassRegion(withLayers(framed, { frame: undefined }), surface, frameIdIn(framed))).toBeUndefined()
   })
 })

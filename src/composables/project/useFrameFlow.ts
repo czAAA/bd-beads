@@ -475,7 +475,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const ref = removing.value ?? firstFrameId(project)
     const frame = frameById(project, ref)
     if (!project || !frame) return
-    const block = copyLayerSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: frameIdOf(frame) })
+    const block = copyLayerSelection(project, { top: 0, left: 0, rows: frame.rows, columns: frame.columns, layer: frameIdOf(frame) })
     if (commit(undefined, 'set', ref) && block) deps.copyToClipboard?.(block)
   }
 

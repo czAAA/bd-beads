@@ -61,9 +61,9 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
     const project = withLayers(peyoteOnLoom(), { ownProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
     expect(rowProgressPosition(project, frameIdIn(project)).total).toBe(11)
     // Row 0 is pass 0, done; row 1 is pass 1 on its even positions and pass 2 on its odd.
-    expect(isInFinishedRow(project, { row: 10, column: 10 }, frameIdIn(project))).toBe(true)
-    expect(isInFinishedRow(project, { row: 11, column: 10 }, frameIdIn(project))).toBe(false)
-    expect(isInCurrentRow(project, { row: 11, column: 10 }, frameIdIn(project))).toBe(true)
+    expect(isInFinishedRow(project, { row: 0, column: 0 }, frameIdIn(project))).toBe(true)
+    expect(isInFinishedRow(project, { row: 1, column: 0 }, frameIdIn(project))).toBe(false)
+    expect(isInCurrentRow(project, { row: 1, column: 0 }, frameIdIn(project))).toBe(true)
   })
 
   it('switches the Canvas without touching the Frame, and the Frame without touching the Canvas', () => {
