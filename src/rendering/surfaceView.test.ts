@@ -6,15 +6,13 @@ import { columnCycle, type Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView as viewOf } from './surfaceView'
-import { seamOf } from './layerDrawings'
-import { tiltedView } from './tiltedView'
 import { customFrameSize, frameGeometry } from '../domain/frameShape'
 
 /** The view, its Frame (when it has one) named `FRAME_ID` and drawn on its own surface, as every Frame is (spec 1234): the
  * way the Canvas is, its first position's corner at `at` (the Canvas place it is laid over, in grid px) unless a drawing is given. */
 const surfaceView = (input: Parameters<typeof viewOf>[0] & { at?: { x: number; y: number } }) => {
   const { at = { x: 0, y: 0 }, ...view } = input
-  const drawing = { rotation: view.rotation, scroll: view.scroll ?? { x: 0, y: 0 }, seam: { a: 1, b: 0, c: 0, d: 1, e: at.x, f: at.y } }
+  const drawing = { rotation: view.rotation, scroll: { x: (view.scroll?.x ?? 0) - at.x, y: (view.scroll?.y ?? 0) - at.y } }
   return viewOf({ ...(view.frame ? { frameLayer: FRAME_ID, frameDrawing: drawing } : {}), ...view })
 }
 
@@ -372,17 +370,15 @@ describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
 describe('the Frame layer by its own transform (ticket 1187)', () => {
   // A 4 × 4 loom Frame over a loom Canvas, its sheet drawn on a surface of its own.
   const frame = { technique: 'loom' as const, rows: 4, columns: 4 }
-  const screen = { width: 400, height: 300 }
   const base = { space: OPEN_SPACE, technique: 'loom' as const, frame, zoom: 1.5, scroll: { x: -40, y: 25 } }
-  const identity = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
 
   it('lies exactly where the Canvas lays the same positions when its surface is drawn as the Canvas is', () => {
     // Its first position's corner on the Canvas position (2, 3), at (60, 40) in grid px.
     for (const rotation of ROTATIONS) {
       const canvas = surfaceView({ ...base, frame: undefined, rotation })
-      // The seam's translation is in displayed space, which is the viewport's plus the scroll.
+      // The Frame's drawing is scrolled by the displayed shift of that position.
       const seam = canvas.gridToPoint(3 * CELL_SIZE_PX, 2 * CELL_SIZE_PX)
-      const own = surfaceView({ ...base, rotation, frameDrawing: { rotation, scroll: base.scroll, seam: { ...identity, e: seam.x + base.scroll.x, f: seam.y + base.scroll.y } } })
+      const own = surfaceView({ ...base, rotation, frameDrawing: { rotation, scroll: { x: -seam.x, y: -seam.y } } })
       for (const bead of [{ row: 0, column: 0 }, { row: 3, column: 3 }, { row: 2, column: 1 }]) {
         const [a, b] = [canvas.beadToPoint({ row: bead.row + 2, column: bead.column + 3 }), own.beadToPoint(bead, FRAME_ID)]
         expect(b.x).toBeCloseTo(a.x, 9)
@@ -392,20 +388,16 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
     }
   })
 
-  describe.each([
-    { name: 'an upright Frame over a Canvas at 37°', canvas: 37, frame: 0 },
-    { name: 'a Frame at 37° over an upright Canvas', canvas: 0, frame: 37 },
-  ])('$name', ({ canvas, frame: frameAngle }) => {
-    const canvasLean = tiltedView(screen, canvas)
-    const frameLean = tiltedView(screen, frameAngle)
-    const view = surfaceView({ ...base, rotation: 0, frameDrawing: { rotation: 0, scroll: { x: 10, y: -30 }, seam: seamOf(frameLean, canvasLean) } })
-    /** A point of the Frame's own drawing, among the Canvas drawing's points. */
-    const fromFrameDrawing = (point: { x: number; y: number }) => canvasLean.toDrawn(frameLean.toScreen(point))
-    const frameOnly = surfaceView({ ...base, rotation: 0, scroll: { x: 10, y: -30 } })
+  // Every layer turns alike (spec 1234): a Frame's drawing differs from the Canvas's by its scroll alone, so a bead lies
+  // where the same drawing, scrolled the same, puts it.
+  describe('a Frame drawn from a scroll of its own', () => {
+    const drawn = { x: 10, y: -30 }
+    const view = surfaceView({ ...base, rotation: 0, frameDrawing: { rotation: 0, scroll: drawn } })
+    const frameOnly = surfaceView({ ...base, rotation: 0, scroll: drawn })
 
     it('finds each Frame bead where its own drawing puts it, and back', () => {
       for (const bead of [{ row: 0, column: 0 }, { row: 3, column: 3 }, { row: 1, column: 2 }]) {
-        const at = fromFrameDrawing(frameOnly.beadToPoint(bead, FRAME_ID))
+        const at = frameOnly.beadToPoint(bead, FRAME_ID)
         const point = view.beadToPoint(bead, FRAME_ID)
         expect(point.x).toBeCloseTo(at.x, 9)
         expect(point.y).toBeCloseTo(at.y, 9)
@@ -425,7 +417,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       expect(view.pointToHit(middle)?.layer).toBe(FRAME_ID)
     })
 
-    it('boxes the Frame round its turned corners and steps it along its own rows', () => {
+    it('boxes the Frame round its corners and steps it along its own rows', () => {
       const box = view.frameBox({ row: 0, column: 0, ...frame })
       for (const corner of [{ row: 0, column: 0 }, { row: 3, column: 3 }]) {
         const at = view.beadToPoint(corner, FRAME_ID)
@@ -436,7 +428,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       }
       const step = view.beadStep(FRAME_ID).column
       expect(Math.hypot(step.x, step.y)).toBeCloseTo(CELL_SIZE_PX * base.zoom, 9)
-      expect(Math.atan2(step.y, step.x) * (180 / Math.PI)).toBeCloseTo(frameAngle - canvas, 6)
+      expect(Math.atan2(step.y, step.x) * (180 / Math.PI)).toBeCloseTo(0, 6)
     })
 
     it('carries a Frame drag by how far the pointer went along its own rows', () => {
@@ -451,7 +443,7 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
       // Its margin sheet two beads round it, in its own drawing's grid px; what it covers is what is drawn under it, so a
       // Canvas position is the Canvas's wherever the Frame does not lie on screen.
       const sheet = { x: -2 * CELL_SIZE_PX, y: -2 * CELL_SIZE_PX, width: 8 * CELL_SIZE_PX, height: 8 * CELL_SIZE_PX }
-      const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 }, seam: seamOf(frameLean, canvasLean), sheet }
+      const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 }, sheet }
       const away = surfaceView({ ...base, rotation: 0, frameDrawing: { ...drawing, scroll: { x: 900, y: 900 } } })
       const off = surfaceView({ ...base, rotation: 0, frameDrawing: drawing })
       const plain = surfaceView({ ...base, rotation: 0 })
@@ -476,14 +468,12 @@ describe('the Frame layer by its own transform (ticket 1187)', () => {
 })
 
 describe('several Frames in one view (ticket 1219)', () => {
-  // The first 4 × 4 loom Frame; a second, peyote, drawn leaning on its own.
+  // The first 4 × 4 loom Frame; a second, peyote, drawn from a scroll of its own.
   const first = { technique: 'loom' as const, rows: 4, columns: 4 }
   const second = { technique: 'peyote' as const, rows: 4, columns: 4 }
   const SECOND = 'second' as FrameRef
-  const screen = { width: 400, height: 300 }
   const base = { space: OPEN_SPACE, technique: 'loom' as const, frame: first, zoom: 1.5, scroll: { x: -40, y: 25 }, rotation: 0 as const }
-  const lean = tiltedView(screen, 20)
-  const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 }, seam: seamOf(lean, tiltedView(screen, 0)) }
+  const drawing = { rotation: 0 as const, scroll: { x: 10, y: -30 } }
   const view = surfaceView({ ...base, others: [{ frame: second, frameLayer: SECOND, frameDrawing: drawing }] })
   const alone = surfaceView({ ...base, frame: second, frameLayer: SECOND, frameDrawing: drawing })
 

@@ -1,3 +1,4 @@
+import { turnCanvasTo, turnTableTo } from '../domain/rotate'
 import { frameIdIn, FRAME_ID } from '../testUtils/frameId'
 import { placedFrame } from '../domain/layerWeave'
 import { describe, expect, it } from 'vitest'
@@ -47,7 +48,7 @@ const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(su
 }
 /** A Frame's own drawing (spec 1234): its own surface, shifted clear of the origin. A gridded Frame's geometry is turned by
  * its quarter turns already, so its surface is at no turn of its own, whatever the Canvas does (`ProjectSurface`). */
-const ownDrawing = (shift = 1000, rotation: Rotation = 0) => ({ rotation, scroll: { x: -shift, y: -shift }, seam: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 } })
+const ownDrawing = (shift = 1000, rotation: Rotation = 0) => ({ rotation, scroll: { x: -shift, y: -shift } })
 const framed = (frame: Rect, look: Look = {}) => layoutOf(project([], frame, look.technique), look)
 
 describe('which boxes carry rulers', () => {
@@ -607,20 +608,31 @@ describe('every ruler counts left to right and top to bottom as seen (ticket 116
 
 describe('frameNumberBands', () => {
   const subject = (frame: Rect) => project([], frame)
+  const bands = (frame: Rect, fontPx = 10) => frameNumberBands(subject(frame), fontPx, frameIdIn(subject(frame)))
+  const turnedBands = (frame: Rect) => {
+    const upright = subject(frame)
+    const id = frameIdIn(upright)
+    return frameNumberBands(turnTableTo(upright, 90), 10, id)
+  }
 
   it('is the widest row number on the left and a column number\'s height on top (ticket 1169)', () => {
-    expect(frameNumberBands(subject({ row: 0, column: 0, rows: 120, columns: 30 }), false, 10, frameIdIn(subject({ row: 0, column: 0, rows: 120, columns: 30 })))).toEqual({ left: 18, top: 10 })
+    expect(bands({ row: 0, column: 0, rows: 120, columns: 30 })).toEqual({ left: 18, top: 10 })
   })
 
-  it('numbers the columns on the left and the rows on top on a Canvas turned a quarter', () => {
-    expect(frameNumberBands(subject({ row: 0, column: 0, rows: 120, columns: 30 }), true, 10, frameIdIn(subject({ row: 0, column: 0, rows: 120, columns: 30 })))).toEqual({ left: 12, top: 10 })
+  it('numbers the columns on the left and the rows on top on a Frame seen turned a quarter', () => {
+    expect(turnedBands({ row: 0, column: 0, rows: 120, columns: 30 })).toEqual({ left: 12, top: 10 })
+  })
+
+  it('does not follow the Canvas turned alone: the Frame\'s own turn is what is seen (spec 1234)', () => {
+    const upright = subject({ row: 0, column: 0, rows: 120, columns: 30 })
+    expect(frameNumberBands(turnCanvasTo(upright, 90), 10, frameIdIn(upright))).toEqual({ left: 18, top: 10 })
   })
 
   it('takes a turned three-digit column number\'s length on top', () => {
-    expect(frameNumberBands(subject({ row: 0, column: 0, rows: 9, columns: 150 }), false, 10, frameIdIn(subject({ row: 0, column: 0, rows: 9, columns: 150 })))).toEqual({ left: 6, top: 18 })
+    expect(bands({ row: 0, column: 0, rows: 9, columns: 150 })).toEqual({ left: 6, top: 18 })
   })
 
   it('is none without a Frame', () => {
-    expect(frameNumberBands(project([]), false, 10, frameIdIn(project([])))).toEqual({ left: 0, top: 0 })
+    expect(frameNumberBands(project([]), 10, frameIdIn(project([])))).toEqual({ left: 0, top: 0 })
   })
 })

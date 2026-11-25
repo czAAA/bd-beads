@@ -1,6 +1,8 @@
 import type { Rect } from '../domain/canvas'
 import { frameShapeOf, turnedGrid } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
+import { nearestQuarterTurn } from '../domain/canvasOrientation'
+import { frameAngleOf } from '../domain/table'
 import { describeWeave, type Weave } from '../domain/weave'
 import type { FrameRef, GridPosition } from '../domain/grid'
 import { canvasWeave, frameScale as frameBeadScale, frameWeave } from '../domain/layerWeave'
@@ -404,12 +406,13 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
 }
 
 /** How thick the Frame's numbers stand on the left and on the top as seen, at `fontPx` (ticket 1169): the slim sheet of
- * an expanded Frame is as wide there as they are. `across` is a Canvas turned a quarter, whose left side then numbers
- * the Frame's columns and its top its rows. None for a Custom frame, which has no rulers. */
-export function frameNumberBands(project: RuledProject, across: boolean, fontPx: number, ref: FrameRef): { left: number; top: number } {
+ * an expanded Frame is as wide there as they are. A Frame seen turned a quarter (its own turn and the Table's, never
+ * the Canvas's, spec 1234) numbers its columns on the left and its rows on top. None for a Custom frame. */
+export function frameNumberBands(project: RuledProject, fontPx: number, ref: FrameRef): { left: number; top: number } {
   const frame = frameById(project, ref)
   if (!frame || frameShapeOf(frame)) return { left: 0, top: 0 }
-  const { rows, columns } = laidRect({ ...frame, cell: frameWeave(project, ref).cell })
+  const { rows, columns } = frame
+  const across = nearestQuarterTurn(frameAngleOf(project, ref)) % 180 !== 0
   const row = labelBox(String(rows), false, fontPx)
   const columnSizes = [labelBox(String(Math.min(columns, TURNED_FROM - 1)), false, fontPx), ...(columns >= TURNED_FROM ? [labelBox(String(columns), true, fontPx)] : [])]
   const column = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }

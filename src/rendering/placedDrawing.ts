@@ -7,18 +7,12 @@ function isIdentity({ a, b, c, d, e, f }: Affine): boolean {
   return a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0
 }
 
-/** Within this of a whole number, a seam's entry is that number: two drawings at one lean carry points by a shift alone,
- * and their beads stay blitted as they are. */
-const NEAR_WHOLE = 1e-9
-
-/** The placement of one drawing's bitmap on another's surface (ticket 1219): `seam` carries the drawing's points to
- * the surface's, the bitmap starting at `from` of the drawing's points, the surface's at `to` of its own, both
- * `pixelRatio` device px to a point. */
-export function placementOf(seam: Affine, pixelRatio: number, from: Scroll, to: Scroll): Affine {
-  const snap = (value: number) => (Math.abs(value - Math.round(value)) < NEAR_WHOLE ? Math.round(value) + 0 : value)
-  const [a, b, c, d] = [snap(seam.a), snap(seam.b), snap(seam.c), snap(seam.d)]
-  const [x, y] = [a * from.x + c * from.y + seam.e - to.x, b * from.x + d * from.y + seam.f - to.y]
-  return { a, b, c, d, e: snap(x * pixelRatio), f: snap(y * pixelRatio) }
+/** The placement of one drawing's bitmap on the surface (ticket 1219): every layer shares the Table turn, so it is a shift
+ * alone, the bitmap starting at `from` of the drawing's points, the surface's at `to` of its own, both `pixelRatio`
+ * device px to a point. */
+export function placementOf(pixelRatio: number, from: Scroll, to: Scroll): Affine {
+  // `|| 0` keeps a zero shift +0, not -0.
+  return { a: 1, b: 0, c: 0, d: 1, e: (from.x - to.x) * pixelRatio || 0, f: (from.y - to.y) * pixelRatio || 0 }
 }
 
 /** Draws through a placement (ticket 1219): every transform the drawing sets is laid after `placement`, from the

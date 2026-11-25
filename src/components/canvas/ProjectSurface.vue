@@ -8,7 +8,7 @@ import { frameById, framesOf, layerOf, orientationOf, quarterTurnOf, withCanvas,
 import { frameAngleOf } from '../../domain/table'
 import { frameCentreOnCanvas, withTableTurned } from '../../domain/framePlacement'
 import { CELL_SIZE_PX } from '../../rendering/cellSize'
-import { nearestQuarterTurn, normalizedOrientation } from '../../domain/canvasOrientation'
+import { nearestQuarterTurn, normalizedOrientation, tiltOf } from '../../domain/canvasOrientation'
 import type { Rotation } from '../../domain/grid'
 import { placedFrame } from '../../domain/layerWeave'
 import { rowProgressOn } from '../../domain/rowProgress'
@@ -31,8 +31,8 @@ import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selec
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { unframedSchemas } from '../../domain/schemaTags'
 import { frameMiddlePx, surfaceView, type Region, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
-import type { TiltedView } from '../../rendering/tiltedView'
-import { canvasDrawing, frameDrawing, seamOf, type LayerDrawing } from '../../rendering/layerDrawings'
+import { tableTurnView, type TableTurnView } from '../../rendering/tableTurnView'
+import { canvasDrawing, frameDrawing, type LayerDrawing } from '../../rendering/layerDrawings'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { cssZoomOf } from '../../composables/ui/cssZoom'
@@ -198,14 +198,14 @@ function measure(): void {
   }
 }
 
-// A layer twisted off a quarter turn (ticket 0672) is drawn at that quarter turn on a larger square turned the rest
-// about the surface's middle (`tiltedView`), so its hit test, rulers and handles keep the quarter turn's own mapping.
-// Every layer is drawn on the one shared surface, which leans as one (ticket 1239).
+// A Table turned off a quarter turn (ticket 0672) is drawn at that quarter turn on a larger square turned the rest
+// about the surface's middle (`tableTurnView`), so its hit test, rulers and handles keep the quarter turn's own mapping.
+// Every layer is drawn on the one shared surface, which turns as one (ticket 1239): layers differ by quarter turns alone.
 const shownOrientation = computed(() => props.orientation ?? orientationOf(props.project))
-/** The Canvas's drawing: its quarter turn, its lean and the scroll it is drawn from. */
-const canvasDrawn = computed(() => canvasDrawing(size.value, shownOrientation.value, props.scroll))
+/** The Canvas's drawing: its quarter turn and the scroll it is drawn from. */
+const tableView = computed(() => tableTurnView(size.value, tiltOf(shownOrientation.value)))
+const canvasDrawn = computed(() => canvasDrawing(tableView.value, shownOrientation.value, props.scroll))
 const quarterTurn = computed(() => canvasDrawn.value.rotation)
-const leaning = computed(() => canvasDrawn.value.leaning)
 /** The Project as a drawing at `rotation` sees it: itself, unless its Canvas is drawn at another quarter turn (a live
  * twist past half way, or the Frame's own surface). */
 const projectAt = (rotation: Rotation): Project => (quarterTurnOf(props.project) === rotation ? props.project : withCanvas(props.project, { orientation: rotation }))
@@ -215,7 +215,7 @@ const shownProject = computed(() => (props.orientation === undefined ? props.pro
 const drawnProject = computed(() => projectAt(quarterTurn.value))
 /** Where the drawing's top-left is: the view's scroll, less how far the larger square reaches past the surface. */
 const drawnScroll = computed(() => canvasDrawn.value.scroll)
-const drawnSize = computed(() => leaning.value.drawn)
+const drawnSize = computed(() => tableView.value.drawn)
 /** The props as a view of the drawing sees them: the Project at its quarter turn and the drawing's scroll. */
 function viewProps(view: { project: Project; zoom: number; scroll: Scroll }): typeof props {
   return new Proxy(props, {
@@ -254,7 +254,7 @@ function frameMiddleIn(ref: FrameRef, view: SurfaceView): Scroll {
   return view.gridToPoint(middle.x, middle.y)
 }
 
-/** A Frame's drawing (ticket 1187): leaning by its own angle on screen, its sheet drawn at its own quarter turn there,
+/** A Frame's drawing (ticket 1187): its sheet drawn at its own quarter turn on the shared square,
  * and pinned where it lies on the Table, so a turn of the Canvas never moves it (ticket 1188). */
 function drawingOf(ref: FrameRef): LayerDrawing {
   const frame = frameById(props.project, ref)
@@ -263,13 +263,12 @@ function drawingOf(ref: FrameRef): LayerDrawing {
   const angle = frameAngleOf(shownProject.value, ref)
   const rotation = normalizedOrientation(nearestQuarterTurn(angle) - 90 * (frame.quarterTurns ?? 0)) as Rotation
   return frameDrawing({
-    screen: size.value,
-    angle,
+    view: tableView.value,
     rotation,
     // Its centre shows where it lies on the table, and its drawing is pinned there.
     pin: () => ({
       displayed: frameMiddleIn(ref, viewAt(rotation, { x: 0, y: 0 }, size.value, undefined, ref)),
-      onScreen: canvas.leaning.toScreen(frameCentreIn(shownProject.value, viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, undefined, ref), ref)),
+      onScreen: tableView.value.toScreen(frameCentreIn(shownProject.value, viewAt(canvas.rotation, canvas.scroll, tableView.value.drawn, undefined, ref), ref)),
     }),
   })
 }
@@ -289,11 +288,11 @@ const otherFrames = computed<OtherFrame[]>(() =>
   framesOf(props.project).filter((frame) => frameIdOf(frame) !== primary.value).map((frame) => {
     const ref = frameIdOf(frame)
     const drawing = drawingOf(ref)
-    return { ref, drawing, project: projectAt(drawing.rotation), view: viewAt(drawing.rotation, drawing.scroll, drawing.leaning.drawn, undefined, ref) }
+    return { ref, drawing, project: projectAt(drawing.rotation), view: viewAt(drawing.rotation, drawing.scroll, tableView.value.drawn, undefined, ref) }
   }),
 )
 /** The view the Frame's own drawing is laid out in: its drawing's points. */
-const frameSurface = computed((): SurfaceView => viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, frameDrawn.value.leaning.drawn))
+const frameSurface = computed((): SurfaceView => viewAt(frameDrawn.value.rotation, frameDrawn.value.scroll, tableView.value.drawn))
 /** The Project as the Frame's own drawing sees it: at that surface's quarter turn, which its margin sheet, rulers and
  * title block are laid out in (ticket 1188). */
 const frameProject = computed(() => projectAt(frameDrawn.value.rotation))
@@ -342,11 +341,10 @@ const surface = computed((): SurfaceView => {
   const others = otherFrames.value.map(({ ref, drawing, project }) => ({
     frame: placedFrame(props.project, ref)!,
     frameLayer: ref,
-    frameDrawing: { rotation: drawing.rotation, scroll: drawing.scroll, seam: seamOf(drawing.leaning, canvas.leaning), sheet: marginSheetPx(project, ref)?.sheet },
+    frameDrawing: { rotation: drawing.rotation, scroll: drawing.scroll, sheet: marginSheetPx(project, ref)?.sheet },
   }))
-  return viewAt(canvas.rotation, canvas.scroll, canvas.leaning.drawn, { rotation: frame.rotation, scroll: frame.scroll, seam: seamOf(frame.leaning, canvas.leaning), sheet }, undefined, others)
+  return viewAt(canvas.rotation, canvas.scroll, tableView.value.drawn, { rotation: frame.rotation, scroll: frame.scroll, sheet }, undefined, others)
 })
-const frameLeaning = computed(() => frameDrawn.value.leaning)
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
  * until it ends (ticket 0674). */
 const pieces = computed<RuledPieces>((previous) =>
@@ -386,14 +384,14 @@ interface HeldDrawing {
   zoom: number
   scroll: Scroll
   size: Size
-  leaning: TiltedView
+  tableView: TableTurnView
   surface: SurfaceView
   rulers: RulerLayout
   /** Every Frame the surface draws over the Canvas, in layer order (tickets 1219, 1239). */
   others?: LaidFrame[]
 }
 /** The shared surface's live drawing: what it draws now, outside a twist. */
-const liveCanvas = (): HeldDrawing => ({ project: drawnProject.value, zoom: props.zoom, scroll: drawnScroll.value, size: drawnSize.value, leaning: leaning.value, surface: surface.value, rulers: rulers.value, others: laidFrames() })
+const liveCanvas = (): HeldDrawing => ({ project: drawnProject.value, zoom: props.zoom, scroll: drawnScroll.value, size: drawnSize.value, tableView: tableView.value, surface: surface.value, rulers: rulers.value, others: laidFrames() })
 /** Each Frame's rulers, laid out in its own drawing's view. */
 const frameRulersOf = computed(() => new Map(everyFrame.value.map(({ ref, project, view }) => [ref, ref === primary.value ? frameRulers.value : rulersIn(view, project, ref)])))
 /** A Frame's margin sheet in the Canvas's grid px (ticket 1239): the box that hides the Canvas beads under it. */
@@ -414,8 +412,7 @@ function laidFrames(): LaidFrame[] {
       ref,
       project,
       scroll: drawing.scroll,
-      size: drawing.leaning.drawn,
-      seam: seamOf(drawing.leaning, leaning.value),
+      size: tableView.value.drawn,
       marks: !!props.rowMarks && rowProgressOn(project, ref),
       theme: canvasBackground.frameThemeOf(ref),
       surface: view,
@@ -463,24 +460,24 @@ const layerSurface = canvasLayer.surface
 /** The primary Frame as the shared surface last drew it: its own drawing's view. */
 const primaryLaid = computed(() => canvasLayer.others.value.find((frame) => frame.ref === primary.value))
 
-/** A surface's box: the screen, or the larger square it fills while it leans, turned about the surface's middle; a held
+/** A surface's box: the screen, or the larger square it fills while the Table is turned, turned about the surface's middle; a held
  * drawing's box as it was made, laid where the view shows it, eased there as the twist settles. */
-function surfaceStyle(holding: HeldDrawing | undefined, live: { surface: SurfaceView; leaning: TiltedView }) {
+function surfaceStyle(holding: HeldDrawing | undefined, live: { surface: SurfaceView; tableView: TableTurnView }) {
   /** The box a drawing was made on, placed where it lies before it is turned. */
-  const box = ({ drawn, offset }: TiltedView) => ({ left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px` })
+  const box = ({ drawn, offset }: TableTurnView) => ({ left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px` })
   if (holding) {
     const { a, b, c, d, e, f } = twistTransform(holding, live)
     return {
-      ...box(holding.leaning),
+      ...box(holding.tableView),
       transformOrigin: '0 0', transform: `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`, willChange: 'transform',
       ...(props.twist === 'settling' ? { transition: 'transform var(--duration-base) var(--ease-out)' } : {}),
     }
   }
-  const { degrees } = live.leaning
+  const { degrees } = live.tableView
   if (degrees === 0) return undefined
-  return { ...box(live.leaning), transform: `rotate(${degrees}deg)` }
+  return { ...box(live.tableView), transform: `rotate(${degrees}deg)` }
 }
-const drawingStyle = computed(() => surfaceStyle(held.value, { surface: surface.value, leaning: leaning.value }))
+const drawingStyle = computed(() => surfaceStyle(held.value, { surface: surface.value, tableView: tableView.value }))
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
 watch(
@@ -491,26 +488,25 @@ watch(
       emit('selection-anchor', undefined)
       return
     }
-    // The Selection bar stands upright over the box the Selection covers on screen, leaning or not.
-    const box = leaning.value.screenBox(surface.value.beadBox(selectionFrame(selected), selectionLayer(selected)))
+    // The Selection bar stands upright over the box the Selection covers on screen, turned or not.
+    const box = tableView.value.screenBox(surface.value.beadBox(selectionFrame(selected), selectionLayer(selected)))
     emit('selection-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
   },
   { immediate: true, flush: 'post' },
 )
 
-/** One Frame as the surface draws it (ticket 1220): the view its own drawing is laid through, how that leans, the Project
+/** One Frame as the surface draws it (ticket 1220): the view its own drawing is laid through, how the Table turns it, the Project
  * as that drawing draws it and its margin sheet in the drawing's grid px. The primary's is the Frame surface's; every
  * other Frame's is its own. */
 interface FrameLook {
   ref: FrameId
   view: SurfaceView
-  leaning: TiltedView
   project: Project
   grid: Region | undefined
 }
 const frameLooks = computed<FrameLook[]>(() => [
-  { ref: primary.value, view: frameSurface.value, leaning: frameLeaning.value, project: frameProject.value, grid: sheetGrid.value },
-  ...otherFrames.value.map(({ ref, view, drawing, project }) => ({ ref: ref as FrameId, view, leaning: drawing.leaning, project, grid: marginSheetPx(project, ref)?.sheet })),
+  { ref: primary.value, view: frameSurface.value, project: frameProject.value, grid: sheetGrid.value },
+  ...otherFrames.value.map(({ ref, view, project }) => ({ ref: ref as FrameId, view, project, grid: marginSheetPx(project, ref)?.sheet })),
 ])
 
 /** A Frame's margin sheet in its view's px. */
@@ -531,13 +527,13 @@ watch(
       emit('mirror-anchor', undefined)
       return
     }
-    const box = place.layer === 'canvas' ? leaning.value.screenBox(surface.value.beadBox(place.area, 'canvas')) : look!.leaning.screenBox(sheetOf(look!) ?? look!.view.frameBox(frame!))
+    const box = place.layer === 'canvas' ? tableView.value.screenBox(surface.value.beadBox(place.area, 'canvas')) : tableView.value.screenBox(sheetOf(look!) ?? look!.view.frameBox(frame!))
     emit('mirror-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
   },
   { immediate: true, flush: 'post' },
 )
 
-/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. */
+/** The Frame's margin sheet in a view's px, the drawing's before the Table turn; none without a Frame. */
 function sheetIn(view: SurfaceView, grid: Region | undefined = sheetGrid.value): { x: number; y: number; width: number; height: number } | undefined {
   if (!grid) return undefined
   const corners = [view.gridToPoint(grid.x, grid.y), view.gridToPoint(grid.x + grid.width, grid.y + grid.height)]
@@ -557,19 +553,19 @@ function anchorOf(look: FrameLook): FrameAnchor | undefined {
   const drawnSheet = sheetOf(look)
   if (!frame || !grid || !drawnSheet || size.value.width === 0) return undefined
   // Scrolled wholly out of view, the sheet has no tools to keep on screen.
-  const seen = look.leaning.screenBox(drawnSheet)
+  const seen = tableView.value.screenBox(drawnSheet)
   const { width, height } = size.value
   if (seen.x + seen.width <= 0 || seen.y + seen.height <= 0 || seen.x >= width || seen.y >= height) return undefined
-  // The sheet's tools are laid out as the Frame's drawing is, before it leans, and lean with it (`tilt`): the margin
-  // sheet's tilt is the Frame's (ticket 1187).
-  const { offset, degrees } = look.leaning
-  const unleaned = ({ x, y, width, height }: { x: number; y: number; width: number; height: number }) => ({ left: x - offset.x, top: y - offset.y, width, height })
+  // The sheet's tools are laid out as the Frame's drawing is, before the Table turn, and turn with it (`tilt`): the margin
+  // sheet's tilt is the Table turn's (ticket 1187).
+  const { offset, degrees } = tableView.value
+  const unturned = ({ x, y, width, height }: { x: number; y: number; width: number; height: number }) => ({ left: x - offset.x, top: y - offset.y, width, height })
   return {
-    box: unleaned(look.view.frameBox(frame)),
-    sheet: unleaned(drawnSheet),
+    box: unturned(look.view.frameBox(frame)),
+    sheet: unturned(drawnSheet),
     band: grid.band * props.zoom,
     viewport: { ...size.value },
-    origin: unleaned(look.view.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')),
+    origin: unturned(look.view.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')),
     ...(degrees === 0 ? {} : { tilt: degrees }),
   }
 }
@@ -592,7 +588,7 @@ const schemaAnchors = computed<SchemaAnchors | undefined>(() => {
   const lift = scale.gap + scale.fontPx + TAG_NUMBER_CLEARANCE
   const schemas = unframedSchemas(props.project, pieces.value.named).map(({ name, anchor, row, column, rows, columns }) => {
     const piece = { row, column, rows, columns }
-    const shown = leaning.value.screenBox(surface.value.beadBox(piece, 'canvas'))
+    const shown = tableView.value.screenBox(surface.value.beadBox(piece, 'canvas'))
     return { name, anchor, piece, box: { left: shown.x - outset, top: shown.y - outset, width: shown.width + 2 * outset, height: shown.height + 2 * outset } }
   })
   return { schemas, viewport: { ...size.value }, lift }
@@ -607,11 +603,11 @@ const pickChipEl = useTemplateRef<HTMLElement>('pickChipBox')
 /** A Frame's own surface, where it is drawn otherwise than the Canvas: its handles are pressed there (tickets 1188,
  * 1220). The Frame surface's is the primary's, none while it is drawn as the Canvas is; every other Frame has its own. */
 function frameViewOf(frame: FrameId) {
-  if (frame === primary.value) return { surface: frameSurface.value, leaning: frameLeaning.value, rotation: frameDrawn.value.rotation }
+  if (frame === primary.value) return { surface: frameSurface.value, rotation: frameDrawn.value.rotation }
   const other = otherFrames.value.find((each) => each.ref === frame)
-  return other && { surface: other.view, leaning: other.drawing.leaning, rotation: other.drawing.rotation }
+  return other && { surface: other.view, rotation: other.drawing.rotation }
 }
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, pickChipEl, size, surface, leaning, frameViewOf, marksShown, refuse: marginCue.refuse })
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, pickChipEl, size, surface, tableView, frameViewOf, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip, opensToolbox } = pointer
 const { t } = useI18n()
 const beadColors = useBeadColorsList()
@@ -651,8 +647,8 @@ const overlayDeps = {
   space, theme, frameTheme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, hotFrame: pointer.hotFrame, hotAreaHandle: pointer.hotAreaHandle, marginOpacity: marginCue.opacity,
   rowMotion: rowMotion.rowMotion, rowMotionOf: rowMotion.rowMotionOf,
-  /** The pointer's marker in a Frame's own drawing (ticket 1220): a leaning Frame's is not the Canvas's. */
-  markerIn: (frame: FrameId, marker: { screen: { x: number; y: number } }) => frameLooks.value.find((look) => look.ref === frame)?.leaning.toDrawn(marker.screen),
+  /** The pointer's marker in a Frame's own drawing (ticket 1220): every layer shares the Table turn. */
+  markerIn: (frame: FrameId, marker: { screen: { x: number; y: number } }) => frameLooks.value.some((look) => look.ref === frame) ? tableView.value.toDrawn(marker.screen) : undefined,
 }
 useSurfaceOverlay({ ...overlayDeps, layer: 'canvas', props: canvasLayer.props, canvas: overlayEl, size: layerSize, surface: layerSurface, rulers: canvasLayer.rulers, others: canvasLayer.others })
 
@@ -682,12 +678,12 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   const layer = layerAt(props.project, position)
   // A Frame's bead is read in that Frame's own drawing (ticket 1220).
   const look = isFrameLayer(layer) ? frameLooks.value.find((each) => each.ref === layer) : undefined
-  const [view, lean] = look ? [look.view, look.leaning] : [surface.value, leaning.value]
+  const view = look ? look.view : surface.value
   // A Canvas position under a Frame is that Frame's cell there, which the Frame's drawing names by its own row and column.
   const own = isFrameLayer(layer) && !position.layer ? cellUnder(props.project, layer, position) : position
   if (!own) return undefined
   // Where the bead is by its layer's geometry, which a Frame turned a quarter lays across (spec 1234); a block's box would not.
-  const shown = lean.toScreen(view.beadToPoint({ row: own.row, column: own.column }, layer))
+  const shown = tableView.value.toScreen(view.beadToPoint({ row: own.row, column: own.column }, layer))
   const zoom = cssZoomOf(rootEl.value)
   return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }
 }
@@ -717,7 +713,7 @@ onBeforeUnmount(() => {
     :data-technique="canvasWeave.technique"
     :data-technique-settings="JSON.stringify(canvasWeave.techniqueSettings ?? {})"
     :data-rotation="quarterTurn"
-    :data-tilt="leaning.degrees || undefined"
+    :data-tilt="tableView.degrees || undefined"
     :data-zoom="zoom"
     :data-scroll-x="scroll.x"
     :data-scroll-y="scroll.y"
@@ -849,7 +845,7 @@ onBeforeUnmount(() => {
   cursor: grabbing;
 }
 
-/* The canvases' box: the surface itself, or, while the Canvas leans off a quarter turn, a larger square turned about
+/* The canvases' box: the surface itself, or, while the Table is turned off a quarter turn, a larger square turned about
  * its middle (ticket 0672). */
 .project-surface__drawing {
   position: absolute;

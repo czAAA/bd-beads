@@ -37,7 +37,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   let expandedRoom: CanvasViewOptions['expanded'] = () => undefined
   const { zoom, scroll, placed, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, putBack, visibleCentre, keptView, canvasOnScreen, isAtFit, orientation, twistPhase, turnCanvas, pinchStep, endTwist, fit, showView } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening, expanded: () => expandedRoom?.(), expandedFrame: () => frameExpand.expandedFrame.value, fitted: (pitch) => frameExpand.fitted(pitch), leaveExpanded: () => (deps.backByHand ? deps.backByHand() : frameExpand.collapse()) })
   /** Expand the Frame (ticket 1169): the Frame fitted to the whole drawing area, the Tool pill set aside. */
-  const frameExpand = useFrameExpand({ currentProject: deps.currentProject, viewport, zoom, scroll, isAtFit, orientation, compact: deps.compact ?? ref(false), covered: () => toolPillCover.value, fit, showView })
+  const frameExpand = useFrameExpand({ currentProject: deps.currentProject, viewport, zoom, scroll, isAtFit, compact: deps.compact ?? ref(false), covered: () => toolPillCover.value, fit, showView })
   expandedRoom = () => (frameExpand.expanded.value ? frameExpand.room : undefined)
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
