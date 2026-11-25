@@ -1,13 +1,16 @@
 import { computed, ref } from 'vue'
-import { rotateFrame } from '../../domain/rotate'
+import { frameMetOnTurn, rotateFrame } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
 import { rotateFrameQuestion, type RotateFrameQuestion, type WovenChoice } from '../../domain/wovenLines'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { EditFn } from '../project/useEdit'
 import { wovenAskPrompt } from '../project/wovenAskPrompt'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
-import { frameById, firstFrameId, NO_FRAME } from '../../domain/layerRecord'
+import { frameById, firstFrameId, framesOf, NO_FRAME } from '../../domain/layerRecord'
 import type { FrameRef } from '../../domain/grid'
+import { fillBlanks } from '../../domain/fillBlanks'
+import { frameLabel } from '../../i18n/frameLabel'
+import type { MessageTone } from '../ui/useToasts'
 
 /** What Rotate Frame needs from the app shell: the Edit path, the open Project, the announcer, the dialog registry and
  * the words its question is put in. */
@@ -19,6 +22,8 @@ export interface RotateFrameFlowDeps {
   /** The language a counted question is worded in. */
   locale: () => Locale
   dialogs?: Dialogs
+  /** Tells the person a turn was refused (spec 1234). */
+  showToast?: (id: string, text: string, tone?: MessageTone) => void
 }
 
 /** Rotate Frame (tickets 471, 0647, 0667, 1016, 1184, ADR 0052, 0079): the Frame a quarter turn on, one Edit; once a
@@ -41,12 +46,26 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     deps.announce(deps.messages().frame.announceFrameRotated)
   }
 
+  /** A refused turn says which Frame it would meet (spec 1234): the same Message a move or resize into a margin gets. */
+  function tellMet(project: Project, frame: FrameRef): void {
+    const met = frameMetOnTurn(project, frame)
+    if (!met || !deps.showToast) return
+    const t = deps.messages()
+    const frames = framesOf(project)
+    const at = frames.findIndex((each) => each.id === met)
+    deps.showToast('frame-meets', fillBlanks(t.frame.meetsFrame, { name: at < 0 ? '' : frameLabel(t, frames[at]!, at) }), 'warning')
+  }
+
   /** Rotate Frame on the Frame named (ticket 1218), the first where none is named (the Frame panel's). Nothing
    * turns where the turn would bring it into another Frame's margin. */
   function onRotateFrame(given?: FrameRef): void {
     const project = deps.currentProject()
     const frame = given ?? firstFrameId(project)
-    if (!project || !frameById(project, frame) || !rotateFrame(project, 'keep', frame)) {
+    if (!project || !frameById(project, frame)) {
+      return
+    }
+    if (!rotateFrame(project, 'keep', frame)) {
+      tellMet(project, frame)
       return
     }
     const asked = rotateFrameQuestion(project, frame)

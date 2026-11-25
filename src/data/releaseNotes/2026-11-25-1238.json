@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-25",
+  "kind": "changed",
+  "line": {
+    "en": "A two-finger twist now turns the whole Table, Canvas and Frames together, Rotate canvas turns only the Canvas, and Rotate Frame says which Frame is in the way when it can't turn",
+    "ru": "Поворот двумя пальцами теперь вращает весь стол: холст и рамки вместе. «Повернуть холст» поворачивает только холст, а «Повернуть рамку» говорит, какая рамка мешает, если не может повернуться",
+    "uk": "Поворот двома пальцями тепер обертає весь стіл: полотно і рамки разом. «Повернути полотно» обертає лише полотно, а «Повернути рамку» каже, яка рамка заважає, якщо не може повернутися",
+    "be": "Паварот двума пальцамі цяпер паварочвае ўвесь стол: палатно і рамкі разам. «Павярнуць палатно» паварочвае толькі палатно, а «Павярнуць рамку» кажа, якая рамка замінае, калі не можа павярнуцца",
+    "zh": "双指旋转现在会转动整张桌面，画布和边框一起转；“旋转画布”只转画布；“旋转边框”无法转动时会说明是哪个边框挡住了",
+    "es": "Girar con dos dedos ahora gira toda la Mesa, Lienzo y Marcos juntos; Girar lienzo gira solo el Lienzo, y Girar marco dice qué Marco estorba cuando no puede girar",
+    "pl": "Obrót dwoma palcami obraca teraz cały Stół, Płótno i Ramki razem; Obróć płótno obraca tylko Płótno, a Obróć ramkę mówi, która Ramka przeszkadza, gdy nie może się obrócić"
+  }
+}

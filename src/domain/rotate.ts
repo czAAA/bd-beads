@@ -180,8 +180,21 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
  * their own rows, the Canvas untouched, its Row direction as seen (spec 1182). With a pass done `woven` answers
  * rotateFrameQuestion (1184). No Frame, or a turn into another Frame's margin (ticket 1218): undefined. */
 export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: FrameRef): Project | undefined {
+  const made = quarterTurned(project, woven, ref)
+  return made && !metOnTurn(project, made, ref) ? made : undefined
+}
+
+/** The Frame Rotate Frame would bring the Frame named into the margin of, none where the turn is clear (spec 1234): what
+ * the Message of a refused turn names. */
+export function frameMetOnTurn(project: Project, ref: FrameRef): FrameRef | undefined {
+  const made = quarterTurned(project, 'keep', ref)
+  return made && metOnTurn(project, made, ref) ? frameMet(made, ref) : undefined
+}
+
+/** The Project with the Frame turned a quarter, met or not; undefined without the Frame. */
+function quarterTurned(project: Project, woven: WovenChoice, ref: FrameRef): Project | undefined {
   const custom = turnedCustomFrame(project, ref)
-  if (custom) return metOnTurn(project, custom, ref) ? undefined : custom
+  if (custom) return custom
   const frame = frameById(project, ref)
   if (!frame) {
     return undefined
@@ -190,8 +203,7 @@ export function rotateFrame(project: Project, woven: WovenChoice = 'keep', ref: 
   const { quarterTurns: _turns, ...upright } = frame
   const turned: FrameSheet & { centre: TablePoint } = { ...upright, ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
   // Its centre stays where it is on the Table, so turns come back to the place it began (spec 1234).
-  const made = touchFrameSheet(project, { ...turned, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
-  return metOnTurn(project, made, ref) ? undefined : made
+  return touchFrameSheet(project, { ...turned, rowProgress: turnedRowProgress(project, 1, woven, ref) }, { frame: ref })
 }
 
 /** Whether a turn brought the Frame into another Frame's margin (spec 1214, ticket 1218): Rotate Frame then does not
