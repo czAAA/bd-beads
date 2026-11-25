@@ -214,7 +214,6 @@ export interface ToolsTranslations {
     rotateInFinishedRows: string
     removeLine: string
     removeLineDisabled: string
-    /** Remove line held back (ticket 1188): the Frame does not lie alike with the Canvas, turned or off its positions. */
     namePiece: string
     namePieceDisabled: string
     clear: string

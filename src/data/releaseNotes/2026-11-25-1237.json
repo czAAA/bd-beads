@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-25",
+  "kind": "changed",
+  "line": {
+    "en": "A Frame now stays exactly where you put it, moves with the pointer instead of jumping between positions, and no longer shifts when the Canvas turns or changes",
+    "ru": "Рамка теперь остаётся там, где вы её поставили, движется за указателем плавно, а не прыжками, и больше не сдвигается, когда холст поворачивается или меняется",
+    "uk": "Рамка тепер лишається там, де ви її поставили, рухається за вказівником плавно, а не стрибками, і більше не зсувається, коли полотно повертається або змінюється",
+    "be": "Рамка цяпер застаецца там, дзе вы яе паставілі, рухаецца за паказальнікам плаўна, а не скачкамі, і больш не зрушваецца, калі палатно паварочваецца або змяняецца",
+    "zh": "边框现在会停在你放下的位置，随指针平滑移动而不是在位置间跳动，画布旋转或变化时也不再移位",
+    "es": "El Marco ahora se queda justo donde lo pones, se mueve con el puntero sin saltar entre posiciones y ya no se desplaza cuando el Lienzo gira o cambia",
+    "pl": "Ramka teraz zostaje dokładnie tam, gdzie ją położysz, porusza się płynnie za wskaźnikiem i nie przesuwa się, gdy płótno się obraca lub zmienia"
+  }
+}
