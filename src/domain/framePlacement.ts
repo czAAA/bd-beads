@@ -50,14 +50,6 @@ export function withFrameCentre(project: Project, centre: TablePoint, ref: Frame
   return withFrameById(project, ref, (held) => ({ ...held, centre: { ...centre } }))
 }
 
-/** The Project with the Frame turned a quarter turn clockwise about its own centre (Rotate Frame, spec 1234). As it is
- * without that Frame.
- * @internal Tests and the visual check turn a Frame by it. */
-export function withFrameQuarterTurned(project: Project, by: 1 | 3, ref: FrameRef): Project {
-  const held = heldFrameById(project, ref)
-  return held ? withFrameById(project, ref, () => ({ ...held, angle: normalizedOrientation(held.angle + 90 * by) })) : project
-}
-
 /** A point of the screen's Table as the Table turn lies it, back on the Table itself. */
 function onTable(project: Layered, point: TablePoint): TablePoint {
   return turnedPoint(point, -tableTurnOf(project))

@@ -1,7 +1,7 @@
-import { beadBounds, colorAt, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet } from './canvas'
-import { isFrameLayer, type FrameRef, type GridPosition, type Layer } from './grid'
-import { beadOfLayer, frameById, heldWeave, weaveOfLayer, weaveOf, type Layered } from './layerRecord'
-import { describeWeave, positionStep, weaveSettings, withCell, type Weave } from './weave'
+import type { FrameSheet } from './canvas'
+import { isFrameLayer, type FrameRef, type Layer } from './grid'
+import { beadOfLayer, frameById, weaveOfLayer, weaveOf, type Layered } from './layerRecord'
+import { describeWeave, weaveSettings, type Weave } from './weave'
 
 export { weaveOf }
 
@@ -55,14 +55,6 @@ export function sameBeadSize(project: Layered, frame: FrameRef): boolean {
   return frameScale(project, frame) === 1 && frameWeave(project, frame).cell?.aspect === canvasWeave(project).cell?.aspect
 }
 
-/** Whether the Frame's positions are the Canvas's one to one (ADR 0066, 0079): woven alike, in a Bead of the same size.
- * False without a Frame.
- * @internal Views ask the placed Frame; tests ask it directly. */
-export function layersAlike(project: Layered, ref: FrameRef): boolean {
-  const frame = heldWeave(project, ref)
-  return !!frame && sameWeave(canvasWeave(project), frame) && sameBeadSize(project, ref)
-}
-
 /** The Frame as it lies on the Canvas (ticket 0665): its sheet, its Weave with its own Bead's cell, and how many times
  * wider its Bead is than the Canvas's. What a view lays the Frame out from; none without a Frame. */
 export type PlacedFrame = FrameSheet & Weave & { scale: number }
@@ -71,50 +63,4 @@ export type PlacedFrame = FrameSheet & Weave & { scale: number }
 export function placedFrame(project: Layered, ref: FrameRef): PlacedFrame | undefined {
   const frame = frameById(project, ref)
   return frame && { ...frame, ...frameWeave(project, ref), scale: frameScale(project, ref) }
-}
-
-/** A distance in the Frame's own rows and columns as the nearest whole Canvas positions through millimetres (tickets
- * 492, 0665); a half rounds away from zero both ways (ticket 0638).
- * @internal Views ask the placed Frame; tests ask it directly. */
-export function canvasDistance(project: Layered, frame: Weave, rows: number, columns: number, ref: FrameRef): GridPosition {
-  const canvas = canvasWeave(project)
-  if (sameWeave(canvas, frame) && sameBeadSize(project, ref)) {
-    return { row: rows, column: columns }
-  }
-  const scale = frameScale(project, ref)
-  const own = positionStep(withCell(weaveOf(frame), frame.cell ?? frameWeave(project, ref).cell))
-  const target = positionStep(canvas)
-  const nearest = (distance: number) => Math.sign(distance) * Math.round(Math.abs(distance)) || 0
-  return { row: nearest((rows * own.down * scale) / target.down), column: nearest((columns * own.across * scale) / target.across) }
-}
-
-/** Beads in the Frame's own rows and columns laid on the Canvas, its first row and column at `corner` (ADR 0079, ticket
- * 0665): each Canvas position takes the bead whose cell holds its middle, read through millimetres.
- * @internal Views ask the placed Frame; tests ask it directly. */
-export function laidOnCanvas(project: Layered, beads: BeadMap, corner: GridPosition, ref: FrameRef): BeadMap {
-  const bounds = beadBounds(beads)
-  if (sameBeadSize(project, ref) || !bounds) {
-    return shiftedBeads(beads, corner.row, corner.column)
-  }
-  const scale = frameScale(project, ref)
-  const canvas = describeWeave(canvasWeave(project))
-  // Its cells read square-cornered, so a middle on a round bead's corner still finds the bead whose cell holds it.
-  const held = frameWeave(project, ref)
-  const frame = describeWeave(withCell(held, { aspect: describeWeave(held).cellAspect, roundness: 0 }))
-  // Everything in Canvas bead widths, from the Canvas's top-left; the Frame's from its corner, `scale` times as wide.
-  const origin = canvas.origin(corner, 1, canvas.cellAspect)
-  const box = frame.blockBox(bounds, scale, scale * frame.cellAspect)
-  const area = { left: origin.x + box.x, right: origin.x + box.x + box.width, top: origin.y + box.y, bottom: origin.y + box.y + box.height }
-  const seen = canvas.visible(area, 1, canvas.cellAspect)
-  const laid: BeadChange[] = []
-  for (let row = seen.firstRow; row <= seen.lastRow; row += 1) {
-    const { first, last } = seen.columnsOf(row)
-    for (let column = first; column <= last; column += 1) {
-      const middle = canvas.center({ row, column }, 1, canvas.cellAspect)
-      const under = frame.positionAt((middle.x - origin.x) / scale, (middle.y - origin.y) / scale, 1, frame.cellAspect)
-      const color = under && colorAt(beads, under.row, under.column)
-      if (color) laid.push({ row, column, color })
-    }
-  }
-  return withColors({}, laid)
 }

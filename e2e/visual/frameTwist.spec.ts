@@ -197,3 +197,51 @@ test('the iPad flow: Frames of other Techniques, a Table turn, then Rotate Frame
   expect(canvasOf(frameTurned).orientation).toBe(canvasOf(canvasTurned).orientation)
   expect(frameById(frameTurned, frameIdIn(twisted))!.quarterTurns ?? 0).toBe(0)
 })
+
+/** Whether any pixel of the screen's clip round `at` is the Canvas's magenta: the screenshot, decoded in the page. */
+async function magentaAt(page: Page, at: Point, half = 18): Promise<boolean> {
+  const png = await page.screenshot({ clip: { x: at.x - half, y: at.y - half, width: 2 * half, height: 2 * half } })
+  return page.evaluate(async (base64) => {
+    const image = new Image()
+    image.src = `data:image/png;base64,${base64}`
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width
+    canvas.height = image.height
+    const context = canvas.getContext('2d')!
+    context.drawImage(image, 0, 0)
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+    // Magenta as the bead's shading leaves it: strong red and blue, little green.
+    for (let pixel = 0; pixel < data.length; pixel += 4) if (data[pixel]! > 140 && data[pixel + 1]! < 100 && data[pixel + 2]! > 140) return true
+    return false
+  }, png.toString('base64'))
+}
+
+test('no Canvas pixel shows inside a Frame while it is panned, zoomed, turned or turned about (spec 1234, ticket 1239)', async ({ page }) => {
+  const second = frameIdOf({ id: 'second' })
+  const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
+  const pair = withFrameSheet(base, onCanvas(base, { row: 1, column: 22, rows: 8, columns: 6, beads: {}, technique: 'peyote' }), { frame: second })
+  // A Canvas of one loud color under everything: anything of it inside a sheet is a layer out of step.
+  const loud = Object.fromEntries(Array.from({ length: 60 }, (_row, row) => [row, Object.fromEntries(Array.from({ length: 80 }, (_column, column) => [column, '#ff00ff']))]))
+  const project = { ...pair, layers: pair.layers.map((layer, index) => (index === 0 ? { ...layer, beads: loud } : layer)) } as unknown as typeof pair
+  await openApp(page, [project])
+  await settle(page)
+  const box = (await page.locator('[data-testid="project-surface"]').boundingBox())!
+  const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  const quiet = async (step: string) => expect(await magentaAt(page, middle), step).toBe(false)
+
+  await quiet('at rest')
+  await twoFingers(page, twist(middle, 0, 200, 0.6))
+  await quiet('after a pinch')
+  // The probe sees the Canvas where it shows: round the Frame once zoomed out.
+  expect(await magentaAt(page, { x: box.x + box.width - 60, y: box.y + box.height - 200 }), 'the Canvas shows round the Frame').toBe(true)
+  await pacedTwoFingers(page, twist(middle, 35, 80))
+  await quiet('after the Table turn')
+  await page.getByTestId('strip-rotate-canvas').click()
+  await settle(page)
+  await quiet('after Rotate canvas')
+  await page.locator(`[data-testid="margin-frame-tools"][data-frame="${second}"]`).click()
+  await page.getByTestId('margin-frame-tools-rotate').click()
+  await settle(page)
+  await quiet('after Rotate Frame')
+})

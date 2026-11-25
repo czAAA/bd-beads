@@ -7,10 +7,11 @@ import { deleteAll } from './drawing'
 import { findBead } from './beads'
 import { landedClear } from './frameLanding'
 import { frameMet, stoppedMoveAt } from './frameSpacing'
-import { withFrameCentre, withFrameQuarterTurned } from './framePlacement'
+import { withFrameCentre } from './framePlacement'
 import { beadCount } from './canvas'
 import { canvasWeave } from './layerWeave'
 import { frameById, frameOf } from './layerRecord'
+import { rotateFrame } from './rotate'
 import { layerAt, shownBeads } from './layers'
 import { piecesOf } from './pieces'
 import { replaceBead } from './projectBead'
@@ -28,7 +29,7 @@ function turnedFrame(): Project {
   const base = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 8, height: 8, unit: 'beads' } })
   const beads = withColors({}, [{ row: 1, column: 1, color: '#111111' }, { row: 30, column: 30, color: '#222222' }])
   const framed = withLayers(base, { beads, frame: { row: 10, column: 10, rows: 6, columns: 4, beads: {}, technique: 'brick' } })
-  return withFrameCentre(withFrameQuarterTurned(framed, 1, frameIdIn(framed)), { x: 37.3, y: 41.9 }, frameIdIn(framed))
+  return withFrameCentre(rotateFrame(framed, undefined, frameIdIn(framed))!, { x: 37.3, y: 41.9 }, frameIdIn(framed))
 }
 
 describe('a Frame stays where it lies on the Table when the Canvas is edited (ticket 1237)', () => {

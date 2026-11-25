@@ -14,19 +14,9 @@ describe("each layer's drawing (ticket 1187)", () => {
     expect(canvasDrawing(screen, 180, { x: 30, y: 40 }).scroll).toEqual({ x: 30, y: 40 })
   })
 
-  it("is the Canvas's very drawing while the Frame lies as the Canvas is drawn, without asking where it is", () => {
-    const canvas = canvasDrawing(screen, 100, { x: 30, y: 40 })
-    const pin = () => {
-      throw new Error('not asked')
-    }
-    // A Frame a quarter round on the Canvas, its Canvas drawn at the Canvas's quarter turn: one drawing.
-    expect(frameDrawing({ screen, angle: 190, rotation: 90, canvas, pin })).toBe(canvas)
-  })
-
   it('leans by its own angle and is scrolled so its centre shows where it is pinned', () => {
-    const canvas = canvasDrawing(screen, 0, { x: 0, y: 0 })
     const pinned = { displayed: { x: 500, y: 260 }, onScreen: { x: 120, y: 90 } }
-    const drawing = frameDrawing({ screen, angle: 37, rotation: 0, canvas, pin: () => pinned })
+    const drawing = frameDrawing({ screen, angle: 37, rotation: 0, pin: () => pinned })
     expect(drawing.leaning.degrees).toBe(37)
     const shown = drawing.leaning.toScreen({ x: pinned.displayed.x - drawing.scroll.x, y: pinned.displayed.y - drawing.scroll.y })
     expect(shown.x).toBeCloseTo(120, 9)

@@ -36,11 +36,9 @@ export interface FramePin {
 }
 
 /** The Frame's drawing (ticket 1187): leaning by its own `angle`, its Canvas drawn at `rotation`, and scrolled so its
- * centre shows where `pin` says. Where that is how the Canvas is drawn, the Canvas's very drawing, unless it is drawn
- * on its `own`: off the Canvas's grid, its place is not the Canvas's positions (ticket 1188). */
-export function frameDrawing({ screen, angle, rotation, canvas, own = false, pin }: { screen: Size; angle: number; rotation: Rotation; canvas: LayerDrawing; own?: boolean; pin: () => FramePin }): LayerDrawing {
+ * centre shows where `pin` says. Every Frame has one, painted into the shared bitmap (ticket 1239). */
+export function frameDrawing({ screen, angle, rotation, pin }: { screen: Size; angle: number; rotation: Rotation; pin: () => FramePin }): LayerDrawing {
   const tilt = tiltOf(angle)
-  if (!own && rotation === canvas.rotation && tilt === canvas.leaning.degrees) return canvas
   const leaning = tiltedView(screen, tilt)
   const { displayed, onScreen } = pin()
   const at = leaning.toDrawn(onScreen)

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-25",
+  "kind": "fixed",
+  "line": {
+    "en": "Nothing of the Canvas shows through a Frame any more while you pan, zoom or turn",
+    "ru": "Холст больше не просвечивает сквозь рамку, когда вы двигаете, масштабируете или поворачиваете",
+    "uk": "Полотно більше не просвічує крізь рамку, коли ви рухаєте, масштабуєте або повертаєте",
+    "be": "Палатно больш не прасвечвае скрозь рамку, калі вы рухаеце, маштабуеце або паварочваеце",
+    "zh": "平移、缩放或旋转时，画布不再从边框下透出来",
+    "es": "Ya no se ve nada del Lienzo a través de un Marco al desplazar, hacer zoom o girar",
+    "pl": "Płótno nie prześwituje już przez Ramkę podczas przesuwania, powiększania ani obracania"
+  }
+}

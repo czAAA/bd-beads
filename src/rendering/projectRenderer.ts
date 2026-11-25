@@ -146,6 +146,13 @@ export interface RenderInput {
   /** Draw a Frame's part over what its surface already holds, clearing only round its sheet (ticket 1219): one of
    * several Frames on one surface, drawn after the first or again on its own. Only with a Frame `layer`, no band. */
   alone?: boolean
+  /** Redraw only this rectangle of the surface, in its device px (ticket 1239): it is cleared and every part of the layer
+   * is drawn into it alone, whatever the layer's own band, so a rectangle of the shared bitmap is redrawn with every layer
+   * under it. */
+  within?: Region
+  /** The boxes in grid px the Frames' opaque sheets cover on the Canvas (ticket 1239): a Canvas bead lying wholly inside
+   * one is not drawn, as nothing shows it. Only the Canvas's own part, in the full look. */
+  covered?: readonly Region[]
   /** Draw one layer of the open Canvas alone (ticket 1187), for the editor's two stacked surfaces: the Canvas's part
    * (its Background, marks and beads, the Frame left out), or the Frame's (its margin sheet, ground and beads, clear
    * round them). Absent, both, as an export draws them. */
@@ -334,6 +341,17 @@ function bandOnSurface(
   return { x: first, y: upper, width: Math.max(0, last - first), height: Math.max(0, lower - upper) }
 }
 
+/** A box of the Canvas's grid px as it lies on the surface, in its device px (ticket 1239). */
+export function canvasBoxOnSurface({ project, space, region, zoom, pixelRatio = 1 }: Pick<RenderInput, 'project' | 'space' | 'region' | 'zoom' | 'pixelRatio'>, box: Region): Region {
+  return onSurface([box.x, box.y, box.x + box.width, box.y + box.height], space.extent, region, zoom, quarterTurnOf(project), pixelRatio)
+}
+
+/** The rectangle of the surface, in its device px, that rows `first` to `last` of the Canvas take (ticket 1239): what a
+ * change on the Canvas redraws, and every layer over it with it. */
+export function canvasRowsOnSurface({ project, space, region, zoom, pixelRatio = 1 }: Pick<RenderInput, 'project' | 'space' | 'region' | 'zoom' | 'pixelRatio'>, rows: { first: number; last: number }): Region {
+  return bandOnSurface(space, region, zoom, quarterTurnOf(project), pixelRatio, rowsCut(canvasWeave(project), rows))
+}
+
 /** The rows `first` to `last` across the grid, in grid px: down to the shift a staggered column hangs below the last
  * row (ticket 0777). */
 function rowsCut(weave: Weave, rows: { first: number; last: number }): { top: number; bottom: number } {
@@ -378,6 +396,8 @@ interface LayerDraw {
   /** Whether empty positions may be tonal tiles (ticket 1001): on the open Canvas in the full look, a reference image
    * shown or not (it lies over them, ticket 1008). Elsewhere they keep the outline and the empty bead. */
   tiles: boolean
+  /** Sheets in grid px that hide the Canvas beads wholly under them (ticket 1239). */
+  covered: readonly Region[]
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -659,6 +679,8 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
       const { first, last } = visible.columnsOf(row)
       eachInView(row, first, last, (column, color) => {
         const { x, y } = description.box({ row, column }, cell.width, cell.height)
+        // Under a Frame's opaque sheet nothing of it shows: not drawn (spec 1234, Drawing).
+        if (draw.covered.some((sheet) => x >= sheet.x && y >= sheet.y && x + cell.width <= sheet.x + sheet.width && y + cell.height <= sheet.y + sheet.height)) return
         drawBead(context, { x, y, size: CELL_SIZE_PX, ...sized, cornerRadius, color, dimmed: false, deviceScale, theme: look })
         const letter = canvasLetters?.[color]
         if (letter) drawBeadLetter(context, { x, y, size: CELL_SIZE_PX, ...sized, color, letter, dimmed: false, theme: look })
@@ -787,8 +809,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // A Frame's own surface holds every Frame (ticket 1219): a band of one, or one drawn alone, is cut to its sheet, so
   // the others stay as they were drawn.
   const sheetCut = isFrameLayer(layer) && space.open && frame ? onSurface(sheetBoxOf(project, ref, margin, input.slimSheet), extent, region, zoom, rotation, pixelRatio) : undefined
-  const cleared = input.alone ? (sheetCut ?? NOTHING) : cut ? (sheetCut ? overlapOf(cut, sheetCut) : cut) : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
-  const clipped = band || strip || input.alone
+  const wanted = input.alone ? (sheetCut ?? NOTHING) : cut ? (sheetCut ? overlapOf(cut, sheetCut) : cut) : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
+  const cleared = input.within ? overlapOf(wanted, input.within) : wanted
+  const clipped = band || strip || input.within
   if (clipped) {
     context.save()
     context.beginPath()
@@ -822,7 +845,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const under = drawn?.over ? undefined : drawn
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]
   const tiles = space.open && !draft
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, canvasLetters, draft, passes: rowPassesOf(project, ref), lit, seeThrough, tiles }
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, canvasLetters, draft, passes: rowPassesOf(project, ref), lit, seeThrough, tiles, covered: input.covered ?? [] }
 
   if (space.open) {
     // The reference image over the Canvas's Background and under every bead (ticket 0790): over its tonal tiles, so
