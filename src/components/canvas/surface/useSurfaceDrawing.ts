@@ -255,28 +255,11 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       const own = bitmapBox(frame.size, draft, drawing.pixelRatio!)
       const region = { x: frame.scroll.x + own.x, y: frame.scroll.y + own.y, width: own.width, height: own.height }
       const placement = placementOf(drawing.pixelRatio!, own, box)
-      // A rectangle of the surface, in the Frame's own device px: layers differ by quarter turns, so the placement is a shift.
-      const within = part === 'all' ? undefined : intoOwn(part, placement)
+      // A rectangle of the surface, in the Frame's own device px: every layer shares the Table turn, so the placement is a shift.
+      const within = part === 'all' ? undefined : { ...part, x: part.x - placement.e, y: part.y - placement.f }
       const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, slimSheet: frame.slim, layer: frame.ref, alone: true, rows: undefined, columns: undefined, covered: undefined, within }
       drawPlaced(context, placement, () => renderProject(context, laid))
     }
-  }
-
-  /** A rectangle of the surface's device px as the box that holds it in a Frame's own device px, the placement undone. */
-  function intoOwn(part: Region, { a, b, c, d, e, f }: Affine): Region {
-    const det = a * d - b * c
-    const corners = [
-      [part.x, part.y],
-      [part.x + part.width, part.y],
-      [part.x, part.y + part.height],
-      [part.x + part.width, part.y + part.height],
-    ].map(([px, py]) => {
-      const [x, y] = [px! - e, py! - f]
-      return { x: (d * x - c * y) / det, y: (-b * x + a * y) / det }
-    })
-    const [left, right] = [Math.min(...corners.map((p) => p.x)), Math.max(...corners.map((p) => p.x))]
-    const [top, bottom] = [Math.min(...corners.map((p) => p.y)), Math.max(...corners.map((p) => p.y))]
-    return { x: left, y: top, width: right - left, height: bottom - top }
   }
 
   /** Whether two boxes share any area. */
