@@ -217,6 +217,35 @@ async function magentaAt(page: Page, at: Point, half = 18): Promise<boolean> {
   }, png.toString('base64'))
 }
 
+/** Two fingers held on the surface through `path`, one step at a time, with `probe` run between the steps while they are
+ * still down (the live view, not the settled one), then lifted. */
+async function probedTwoFingers(page: Page, path: (step: number) => [Point, Point], probe: (step: number) => Promise<void>, steps = 12): Promise<void> {
+  const fire = (type: string, id: number, point: Point) =>
+    page.evaluate(
+      ({ type, id, point }) =>
+        document
+          .querySelector('[data-testid="project-surface"]')!
+          .dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', isPrimary: id === 1, clientX: point.x, clientY: point.y, bubbles: true, cancelable: true, buttons: type === 'pointerup' ? 0 : 1 })),
+      { type, id, point },
+    )
+  const [a, b] = path(0)
+  await fire('pointerdown', 1, a)
+  await fire('pointerdown', 2, b)
+  for (let step = 1; step <= steps; step++) {
+    const [p, q] = path(step / steps)
+    await fire('pointermove', 1, p)
+    await fire('pointermove', 2, q)
+    // A frame or two to draw what the move did, the way the screen would show it.
+    await page.waitForTimeout(50)
+    await probe(step)
+  }
+  const [p, q] = path(1)
+  await fire('pointerup', 1, p)
+  await fire('pointerup', 2, q)
+  await page.waitForTimeout(400)
+  await settle(page)
+}
+
 test('no Canvas pixel shows inside a Frame while it is panned, zoomed, turned or turned about (spec 1234, ticket 1239)', async ({ page }) => {
   const second = frameIdOf({ id: 'second' })
   const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
@@ -229,13 +258,20 @@ test('no Canvas pixel shows inside a Frame while it is panned, zoomed, turned or
   const box = (await page.locator('[data-testid="project-surface"]').boundingBox())!
   const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   const quiet = async (step: string) => expect(await magentaAt(page, middle), step).toBe(false)
+  /** The probe run every other step while two fingers are down: the sheet under the middle shows no Canvas. */
+  const quietWhile = (what: string) => async (step: number) => {
+    if (step % 2 === 0) await quiet(`${what}, step ${step}`)
+  }
 
   await quiet('at rest')
-  await twoFingers(page, twist(middle, 0, 200, 0.6))
+  // The control: the same probe does see the Canvas where it shows, so a quiet probe is not a blind one.
+  await probedTwoFingers(page, (at) => twist(middle, 0, 200, 1 - 0.4 * at)(at, 1), quietWhile('mid-pinch'))
   await quiet('after a pinch')
-  // The probe sees the Canvas where it shows: round the Frame once zoomed out.
   expect(await magentaAt(page, { x: box.x + box.width - 60, y: box.y + box.height - 200 }), 'the Canvas shows round the Frame').toBe(true)
-  await pacedTwoFingers(page, twist(middle, 35, 80))
+  // A pan moves every layer along with the fingers, the Canvas under the sheet with it.
+  await probedTwoFingers(page, (at) => [{ x: middle.x - 40 + at * 120, y: middle.y - at * 60 }, { x: middle.x + 40 + at * 120, y: middle.y - at * 60 }], quietWhile('mid-pan'))
+  await quiet('after a pan')
+  await probedTwoFingers(page, (at) => twist(middle, 35, 80)(at, 1), quietWhile('mid-twist'))
   await quiet('after the Table turn')
   await page.getByTestId('strip-rotate-canvas').click()
   await settle(page)

@@ -4,7 +4,7 @@ import { nearestQuarterTurn, tiltOf } from '../domain/canvasOrientation'
 import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, twistTransform, type View } from './gestureView'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
-import { drawingScrollOf, originTurnedAbout, tableScrollOf, tiltedView } from './tiltedView'
+import { drawingScrollOf, originTurnedAbout, tableScrollOf, tableTurnView } from './tableTurnView'
 
 describe('gestureTransform', () => {
   it('is the identity for an unchanged view', () => {
@@ -112,9 +112,9 @@ describe('twistTransform', () => {
   const screen = { width: 1000, height: 800 }
   /** The drawing of a loom Canvas looked at from `scroll` at `zoom`, turned to `orientation`, as the surface builds it. */
   function drawnAt(orientation: number, zoom = 1, scroll = { x: 0, y: 0 }) {
-    const leaning = tiltedView(screen, tiltOf(orientation))
-    const drawnScroll = { x: scroll.x - leaning.offset.x, y: scroll.y - leaning.offset.y }
-    return { leaning, surface: surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: nearestQuarterTurn(orientation), zoom, scroll: drawnScroll, viewport: leaning.drawn }) }
+    const tableView = tableTurnView(screen, tiltOf(orientation))
+    const drawnScroll = { x: scroll.x - tableView.offset.x, y: scroll.y - tableView.offset.y }
+    return { tableView, surface: surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: nearestQuarterTurn(orientation), zoom, scroll: drawnScroll, viewport: tableView.drawn }) }
   }
   /** Where the drawing's box, laid by the matrix, puts a point drawn at `p`, on the screen. */
   function laid(m: ReturnType<typeof twistTransform>, offset: { x: number; y: number }, p: { x: number; y: number }) {
@@ -139,16 +139,16 @@ describe('twistTransform', () => {
     const to = drawnAt(90, 1, drawingScrollOf(table, screen, { orientation: 90, origin, zoom: 1 }))
     const m = twistTransform(from, to)
     expect([m.a, m.b, m.c, m.d].map((n) => Math.round(n * 1e6) / 1e6)).toEqual([0, 1, -1, 0])
-    expect(laid(m, from.leaning.offset, { x: 500, y: 400 })).toEqual({ x: 500, y: 400 })
+    expect(laid(m, from.tableView.offset, { x: 500, y: 400 })).toEqual({ x: 500, y: 400 })
   })
 
-  it('lays the beads of a drawing made upright where a view zoomed, moved and leaning 30° shows them', () => {
+  it('lays the beads of a drawing made upright where a view zoomed, moved and turned 30° shows them', () => {
     const from = drawnAt(0, 1, { x: 100, y: 60 })
     const to = drawnAt(30, 1.5, { x: -40, y: 220 })
     const m = twistTransform(from, to)
     for (const [x, y] of [[0, 0], [7, 3], [-2, 11]]) {
-      const expected = to.leaning.toScreen(to.surface.gridToPoint(x, y))
-      const got = laid(m, from.leaning.offset, from.surface.gridToPoint(x, y))
+      const expected = to.tableView.toScreen(to.surface.gridToPoint(x, y))
+      const got = laid(m, from.tableView.offset, from.surface.gridToPoint(x, y))
       expect(got.x).toBeCloseTo(expected.x, 6)
       expect(got.y).toBeCloseTo(expected.y, 6)
     }

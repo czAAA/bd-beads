@@ -1,11 +1,11 @@
 import { CELL_SIZE_PX, type Size } from './cellSize'
 import type { Region, Scroll, SurfaceView } from './surfaceView'
-import type { TiltedView } from './tiltedView'
+import type { TableTurnView } from './tableTurnView'
 
-/** A drawing of the Canvas (ticket 0709): how the grid maps onto it, and how it leans on the screen. */
+/** A drawing of the Canvas (ticket 0709): how the grid maps onto it, and how the Table turn lays it on the screen. */
 export interface DrawnView {
   surface: Pick<SurfaceView, 'gridToPoint'>
-  leaning: Pick<TiltedView, 'toScreen' | 'offset'>
+  tableView: Pick<TableTurnView, 'toScreen' | 'offset'>
 }
 
 /** A plane transform as CSS `matrix(a, b, c, d, e, f)` takes it: x' = ax + cy + e, y' = bx + dy + f. */
@@ -23,7 +23,7 @@ export interface Affine {
  * map the grid by a quarter turn, a zoom and a scroll, and the screen turns the second by its lean. */
 export function twistTransform(from: DrawnView, to: DrawnView): Affine {
   const drawn = (x: number, y: number): Scroll => from.surface.gridToPoint(x, y)
-  const shown = (x: number, y: number): Scroll => to.leaning.toScreen(to.surface.gridToPoint(x, y))
+  const shown = (x: number, y: number): Scroll => to.tableView.toScreen(to.surface.gridToPoint(x, y))
   const [p0, p1, p2] = [drawn(0, 0), drawn(1, 0), drawn(0, 1)]
   const [s0, s1, s2] = [shown(0, 0), shown(1, 0), shown(0, 1)]
   // M = B · A⁻¹, A the drawn grid axes, B the shown ones.
@@ -36,8 +36,8 @@ export function twistTransform(from: DrawnView, to: DrawnView): Affine {
   const c = B.a * inverse.c + B.c * inverse.d
   const d = B.b * inverse.c + B.d * inverse.d
   // The drawing's box sits `offset` above and left of the screen, so the screen point is measured from there.
-  const e = s0.x - (a * p0.x + c * p0.y) + from.leaning.offset.x
-  const f = s0.y - (b * p0.x + d * p0.y) + from.leaning.offset.y
+  const e = s0.x - (a * p0.x + c * p0.y) + from.tableView.offset.x
+  const f = s0.y - (b * p0.x + d * p0.y) + from.tableView.offset.y
   return { a, b, c, d, e, f }
 }
 

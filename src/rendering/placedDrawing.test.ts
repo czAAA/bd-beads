@@ -3,11 +3,8 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { drawPlaced, placementOf } from './placedDrawing'
 
 describe('drawing one Frame of several where it lies on their surface (ticket 1219)', () => {
-  it('places a drawing by its seam, from where its bitmap starts to where the surface\'s does, in device px', () => {
-    const shifted = { a: 1, b: 0, c: 0, d: 1, e: 30, f: -10 }
-    expect(placementOf(shifted, 2, { x: 5, y: 0 }, { x: 0, y: 20 })).toEqual({ a: 1, b: 0, c: 0, d: 1, e: 70, f: -60 })
-    // A seam a hair off whole numbers, as two drawings at one lean give, is a shift alone.
-    expect(placementOf({ a: 1 + 1e-12, b: -1e-13, c: 0, d: 1, e: 0, f: 0 }, 1, { x: 0, y: 0 }, { x: 0, y: 0 })).toEqual({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
+  it('places a drawing by a shift, from where its bitmap starts to where the surface\'s does, in device px', () => {
+    expect(placementOf(2, { x: 5, y: 0 }, { x: 0, y: 20 })).toEqual({ a: 1, b: 0, c: 0, d: 1, e: 10, f: -40 })
   })
 
   it('lays every transform the drawing sets after the placement, and leaves the context as it was', () => {

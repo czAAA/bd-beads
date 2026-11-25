@@ -15,7 +15,6 @@ import type { DrawnReference } from '../../../rendering/referenceImage'
 import type { Space } from '../../../rendering/space'
 import type { Region, Scroll, SurfaceView } from '../../../rendering/surfaceView'
 import type { RulerLayout } from '../../../rendering/rulers'
-import type { Affine } from '../../../rendering/gestureView'
 import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
 import { spaceOf } from '../../../rendering/space'
 import { CELL_SIZE_PX, type Size } from '../../../rendering/cellSize'
@@ -93,7 +92,7 @@ function placeCanvas(canvas: HTMLCanvasElement, box: Region): void {
 }
 
 /** One Frame the shared surface draws (tickets 1219, 1239): on a drawing of its own, the Project as that drawing draws it,
- * laid onto the surface's drawing by `seam`, from its points to the surface's. One surface holds the Canvas and every
+ * laid onto the surface by a shift, every layer turning with the Table. One surface holds the Canvas and every
  * Frame, in layer order, so the canvases and their memory do not grow with them. */
 export interface LaidFrame {
   ref: FrameRef
@@ -101,7 +100,6 @@ export interface LaidFrame {
   /** Its drawing's scroll and size, as the Frame surface's own are for the first Frame. */
   scroll: Scroll
   size: Size
-  seam: Affine
   /** Whether its Row progress look is drawn (ticket 474). */
   marks: boolean
   /** Its look on its own Background (ticket 0666). */
@@ -184,7 +182,7 @@ function sameOthers(before: readonly LaidFrame[], after: readonly LaidFrame[]): 
     before.length === after.length &&
     before.every((was, at) => {
       const now = after[at]!
-      return was.ref === now.ref && was.marks === now.marks && was.theme === now.theme && sameFields(was.scroll, now.scroll) && sameFields(was.size, now.size) && sameFields(was.seam, now.seam) && sameFields(was.covered, now.covered) && JSON.stringify(was.slim ?? null) === JSON.stringify(now.slim ?? null) && sameDrawing(was.project, now.project)
+      return was.ref === now.ref && was.marks === now.marks && was.theme === now.theme && sameFields(was.scroll, now.scroll) && sameFields(was.size, now.size) && sameFields(was.covered, now.covered) && JSON.stringify(was.slim ?? null) === JSON.stringify(now.slim ?? null) && sameDrawing(was.project, now.project)
     })
   )
 }
@@ -256,7 +254,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       if (!part) continue
       const own = bitmapBox(frame.size, draft, drawing.pixelRatio!)
       const region = { x: frame.scroll.x + own.x, y: frame.scroll.y + own.y, width: own.width, height: own.height }
-      const placement = placementOf(frame.seam, drawing.pixelRatio!, own, box)
+      const placement = placementOf(drawing.pixelRatio!, own, box)
       // A rectangle of the surface, in the Frame's own device px: layers differ by quarter turns, so the placement is a shift.
       const within = part === 'all' ? undefined : { ...part, x: part.x - placement.e, y: part.y - placement.f }
       const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, slimSheet: frame.slim, layer: frame.ref, alone: true, rows: undefined, columns: undefined, covered: undefined, within }

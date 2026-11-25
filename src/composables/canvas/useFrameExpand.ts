@@ -1,5 +1,4 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { nearestQuarterTurn } from '../../domain/canvasOrientation'
 import type { FrameId } from '../../domain/grid'
 import { firstFrameId, frameById } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
@@ -31,7 +30,6 @@ export interface FrameExpandDeps {
   zoom: Ref<number>
   scroll: Ref<{ x: number; y: number }>
   isAtFit: Ref<boolean>
-  orientation: Ref<number>
   /** Under bp-tablet: the smaller insets and gap (MarginSheet card). */
   compact: Ref<boolean>
   /** What lies over the drawing area's edges (the Tool pill): the sheet fills the room it leaves (ticket 1194). */
@@ -73,9 +71,8 @@ export function useFrameExpand(deps: FrameExpandDeps) {
 
   /** What the slim sheet holds with its numbers at a size, no room to fill. */
   function contentAt(project: Project, fontPx: number): SlimContent {
-    const across = nearestQuarterTurn(deps.orientation.value) % 180 !== 0
     const { row, title, rowWidth } = measures.value
-    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, across, fontPx, expandedFrame.value ?? firstFrameId(project)) }
+    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, fontPx, expandedFrame.value ?? firstFrameId(project)) }
   }
 
   /** The room the slim sheet takes from each side of the drawing area, past the Frame's beads, at a zoom and the bead

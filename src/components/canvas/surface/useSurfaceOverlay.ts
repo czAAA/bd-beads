@@ -13,7 +13,6 @@ import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceV
 import type { Size } from '../../../rendering/cellSize'
 import { AREA_SHEET_OUTSET, type HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas, type LaidFrame } from './useSurfaceDrawing'
-import { drawPlaced, placementOf } from '../../../rendering/placedDrawing'
 import { spaceOf } from '../../../rendering/space'
 import { firstFrameId, framesOf } from '../../../domain/layerRecord'
 import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
@@ -177,7 +176,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
   }
 
   /** The bead-shaped marker over the pointer, when one shows (ticket 353): on the Canvas's overlay at its own point, on
-   * the Frame it is over at its point in that Frame's own drawing, so a leaning Frame's is where the pointer is
+   * the Frame it is over at its point in that Frame's own drawing, so a turned Frame's is where the pointer is
    * (ticket 1220). */
   function pointerOn(frame?: FrameId) {
     const { tools } = props
@@ -249,7 +248,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
           layer: frame.ref,
           over: true,
         }
-        drawPlaced(context, placementOf(frame.seam, pixelRatio, { x: 0, y: 0 }, { x: 0, y: 0 }), () => renderOverlay(context, laid))
+        renderOverlay(context, laid)
       }
     }
   }

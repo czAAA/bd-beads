@@ -2,13 +2,13 @@ import { tiltOf } from '../domain/canvasOrientation'
 import type { Size } from './cellSize'
 import type { Region, Scroll } from './surfaceView'
 
-// A Canvas twisted off a quarter turn (ticket 0672) is drawn at that quarter turn, as ever, on a square as wide as the
+// The Table twisted off a quarter turn (ticket 0672) is drawn at that quarter turn, as ever, on a square as wide as the
 // screen's diagonal, and the square is turned the rest about the screen's middle. So every point, box and bead keeps
 // the quarter turn's own mapping, and only a point crossing between the screen and the drawing is turned here.
 
-/** The screen of a view leaning `degrees` off its quarter turn, and its drawing. */
-export interface TiltedView {
-  /** The lean, under 45° either way, clockwise positive. */
+/** The screen of a Table turned `degrees` off its quarter turn, and the one square every layer is drawn on. */
+export interface TableTurnView {
+  /** The turn off a quarter, under 45° either way, clockwise positive. */
   degrees: number
   /** The drawing's size: the screen's when upright, else a square that still covers the screen once turned. */
   drawn: Size
@@ -36,7 +36,7 @@ function turned({ x, y }: Scroll, degrees: number): Scroll {
 }
 
 /** The screen and drawing of a view `degrees` off its quarter turn (ticket 0672). */
-export function tiltedView(screen: Size, degrees: number): TiltedView {
+export function tableTurnView(screen: Size, degrees: number): TableTurnView {
   const upright = degrees === 0
   const side = Math.ceil(Math.hypot(screen.width, screen.height))
   const drawn = upright ? { ...screen } : { width: side, height: side }
