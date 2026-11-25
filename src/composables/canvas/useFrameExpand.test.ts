@@ -31,7 +31,7 @@ function setup(project: Project) {
   const scope = effectScope()
   const { view, expand } = scope.run(() => {
     const view = useCanvasView(() => current.value, viewport, { covered, expanded: () => room?.(), expandedFrame: () => made?.expandedFrame.value, fitted: (pitch) => fitted(pitch), leaveExpanded: () => leave() })
-    const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, orientation: view.orientation, compact, covered, fit: view.fit, showView: view.showView })
+    const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, compact, covered, fit: view.fit, showView: view.showView })
     made = expand
     room = () => (expand.expanded.value ? expand.room : undefined)
     fitted = expand.fitted

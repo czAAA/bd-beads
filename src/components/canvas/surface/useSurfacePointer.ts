@@ -18,7 +18,7 @@ import { AREA_SHEET_OUTSET, areaPressAt, frameHandleIdAt, framePressAt, handleId
 import type { SheetArea } from '../../../composables/tools/selectionBarPlacement'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import { CELL_SIZE_PX, type Size } from '../../../rendering/cellSize'
-import type { TiltedView } from '../../../rendering/tiltedView'
+import type { TableTurnView } from '../../../rendering/tableTurnView'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
@@ -125,11 +125,11 @@ export interface SurfacePointerDeps {
   size: Ref<Size>
   /** The view of the drawing, at the Canvas's quarter turn: a point is turned onto it from the screen first. */
   surface: Ref<SurfaceView>
-  /** How the drawing leans off its quarter turn on screen (ticket 0672). */
-  leaning: Ref<TiltedView>
-  /** A Frame's own surface where it is drawn otherwise than the Canvas (tickets 1188, 1220): its view, lean and quarter
+  /** How the Table turn lays the drawing off its quarter turn on screen (ticket 0672). */
+  tableView: Ref<TableTurnView>
+  /** A Frame's own surface where it is drawn otherwise than the Canvas (tickets 1188, 1220): its view and quarter
    * turn, which its handles are pressed on. None while it is drawn as the Canvas is. */
-  frameViewOf?: (frame: FrameId) => { surface: SurfaceView; leaning: TiltedView; rotation: Rotation } | undefined
+  frameViewOf?: (frame: FrameId) => { surface: SurfaceView; rotation: Rotation } | undefined
   /** Whether the Row progress look is drawn: a press on a finished row then toggles its dimming (ticket 352). */
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
@@ -167,7 +167,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, leaning, frameViewOf, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, tableView, frameViewOf, marksShown, refuse: refusePress }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -542,9 +542,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     return ownPoint(rootEl.value, event)
   }
 
-  /** The point of the drawing a pointer is at: on screen, turned back by the Canvas's lean (ticket 0672). */
+  /** The point of the drawing a pointer is at: on screen, turned back by the Table turn (ticket 0672). */
   function pointInDrawing(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
-    return leaning.value.toDrawn(pointOnScreen(event))
+    return tableView.value.toDrawn(pointOnScreen(event))
   }
 
   /** Whether the Project has a Frame to press on. */
@@ -619,7 +619,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
    * than the Canvas (ticket 1188), the point turned onto that drawing by its own lean; else on the Canvas's. */
   function frameHandlesAt(event: Pick<PointerEvent, 'clientX' | 'clientY'>, frame: FrameId): { view: SurfaceView; point: { x: number; y: number }; rotation: Rotation } {
     const own = frameViewOf?.(frame)
-    if (own) return { view: own.surface, point: own.leaning.toDrawn(pointOnScreen(event)), rotation: own.rotation }
+    if (own) return { view: own.surface, point: tableView.value.toDrawn(pointOnScreen(event)), rotation: own.rotation }
     return { view: surface.value, point: pointInDrawing(event), rotation: quarterTurnOf(props.project) }
   }
 

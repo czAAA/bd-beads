@@ -17,7 +17,7 @@ import { visibleBeadsInSpace } from '../../rendering/projectRenderer'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Region, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
 import { CELL_SIZE_PX, type Size } from '../../rendering/cellSize'
-import { drawingScrollOf, originTurnedAbout, tableScrollOf, tiltedView } from '../../rendering/tiltedView'
+import { drawingScrollOf, originTurnedAbout, tableScrollOf, tableTurnView } from '../../rendering/tableTurnView'
 
 /** One step of a two-finger gesture (ticket 0709), about `anchor`, a point of the viewport the fingers are at: the
  * zoom their spread asks for, how far their middle moved on screen, and how far they turned since the last step. `turn`
@@ -128,14 +128,14 @@ export interface ShownView {
 
 // Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
 // drawn) whole until moved by hand; a zoom keeps the point under the pointer (or the middle) fixed. A twist turns it
-// live and the Project keeps where it settles (ticket 0672); a point on screen is turned back by the lean first.
+// live and the Project keeps where it settles (ticket 0672); a point on screen is turned back by the Table turn first.
 export function useCanvasView(
   currentProject: () => Project | undefined,
   viewport: Ref<Size>,
   options: CanvasViewOptions = {},
 ) {
   const zoom = ref(1)
-  /** The drawing's scroll: where its quarter turn is looked at from, before the lean. */
+  /** The drawing's scroll: where its quarter turn is looked at from, before the Table turn. */
   const scroll = ref<Scroll>({ x: 0, y: 0 })
   /** Where the Canvas's origin lies on the table (spec 1182, ticket 1185), in grid px at zoom 1 along the screen's
    * axes: a twist swings it round the fingers, so the view's scroll over the table stays. */
@@ -171,8 +171,8 @@ export function useCanvasView(
 
   /** The Canvas's orientation as shown: the twist's while one runs, else the Project's. */
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
-  /** The screen as the drawing leans off its quarter turn. */
-  const leaning = computed(() => tiltedView(viewport.value, tiltOf(orientation.value)))
+  /** The screen as the Table turn lays the drawing off its quarter turn. */
+  const tableView = computed(() => tableTurnView(viewport.value, tiltOf(orientation.value)))
   /** The view's scroll over the table (ticket 1185): pan and zoom move it, a turn of the Canvas never does. */
   const tableScroll = computed(() => tableScrollOf(scroll.value, viewport.value, { orientation: orientation.value, origin: canvasOrigin.value, zoom: zoom.value }))
 
@@ -366,7 +366,7 @@ export function useCanvasView(
   /** Moves the canvas as `panBy` does, the Frame staying expanded: the edge scroll a drag near the edge carries. */
   function carryBy(dx: number, dy: number): void {
     stopGlide()
-    const across = leaning.value.unturned({ x: dx, y: dy })
+    const across = tableView.value.unturned({ x: dx, y: dy })
     scroll.value = { x: scroll.value.x - across.x, y: scroll.value.y - across.y }
     isAtFit.value = false
   }
@@ -460,7 +460,7 @@ export function useCanvasView(
     const project = currentProject()
     const found = project && measured() ? locate(surfaceOf(project)) : undefined
     if (!found) return undefined
-    const { offset, screenBox } = leaning.value
+    const { offset, screenBox } = tableView.value
     const shown = screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y })
     const move = panInto(shown, clear)
     if (Math.abs(move.x) <= slack && Math.abs(move.y) <= slack) return undefined
@@ -482,7 +482,7 @@ export function useCanvasView(
 
   /** The scroll after a pan on screen from `from`: the content follows the pan, so the scroll goes the other way. */
   function scrollAfter(from: Scroll, pan: Scroll): Scroll {
-    const across = leaning.value.unturned(pan)
+    const across = tableView.value.unturned(pan)
     return { x: from.x - across.x, y: from.y - across.y }
   }
 
@@ -502,7 +502,7 @@ export function useCanvasView(
     if (!project || !measured()) {
       return undefined
     }
-    return surfaceOf(project).pointToCell(leaning.value.toView(point), 'canvas')
+    return surfaceOf(project).pointToCell(tableView.value.toView(point), 'canvas')
   }
 
   /** The Canvas position under the middle of the view (ticket 495), or nothing until the area is measured. */
@@ -511,13 +511,13 @@ export function useCanvasView(
   }
 
   /** The Canvas positions on screen (Fill reach, ticket 0715): the block the renderer counts as in view of the drawing
-   * as it stands, its larger square while the Canvas leans; nothing until the area is measured. */
+   * as it stands, its larger square while the Table is turned; nothing until the area is measured. */
   function canvasOnScreen(): Rect | undefined {
     const project = currentProject()
     if (!project || !measured()) {
       return undefined
     }
-    const { offset, drawn } = leaning.value
+    const { offset, drawn } = tableView.value
     const region = { x: scroll.value.x - offset.x, y: scroll.value.y - offset.y, width: drawn.width, height: drawn.height }
     const seen = visibleBeadsInSpace(layerOf(project, 'canvas').weave, OPEN_SPACE, region, zoom.value, nearestQuarterTurn(orientation.value))
     // Offset rows reach half a bead further one way than the next: the block takes both in.
@@ -538,11 +538,11 @@ export function useCanvasView(
       if (options.expanded?.()) pinching = true
       // The spread zooms about where the fingers were before this step's move, which the move then carries along.
       const was = pan ? { x: anchor.x - pan.x, y: anchor.y - pan.y } : anchor
-      at = surfaceOf(currentProject(), at).scrollAfterZoom(leaning.value.toView(was), next)
+      at = surfaceOf(currentProject(), at).scrollAfterZoom(tableView.value.toView(was), next)
       zoom.value = next
     }
     if (pan) {
-      const across = leaning.value.unturned(pan)
+      const across = tableView.value.unturned(pan)
       at = { x: at.x - across.x, y: at.y - across.y }
     }
     if (turn !== undefined) {
@@ -618,7 +618,7 @@ export function useCanvasView(
       return
     }
     stopGlide()
-    const at = anchor ? leaning.value.toView(anchor) : { x: viewport.value.width / 2, y: viewport.value.height / 2 }
+    const at = anchor ? tableView.value.toView(anchor) : { x: viewport.value.width / 2, y: viewport.value.height / 2 }
     // Keeping a point still under a zoom does not depend on what is drawn, so a Project is not needed.
     scroll.value = surfaceOf(currentProject()).scrollAfterZoom(at, next)
     zoom.value = next

@@ -180,12 +180,11 @@ interface Sheet {
   margin: Region | undefined
 }
 
-/** The Frame's own drawing (ticket 1187): the quarter turn and scroll its surface is drawn at, and how a point of that
- * drawing lies among this view's points (its lean against this view's, `seamOf`). */
+/** The Frame's own drawing (ticket 1187): the quarter turn and scroll its surface is drawn at. Every layer shares the
+ * Table turn (spec 1234), so a point of that drawing is a point of this view's. */
 interface FrameDrawing {
   rotation: Rotation
   scroll: Scroll
-  seam: Affine
   /** Its margin sheet in that drawing's grid px (ticket 1188): opaque, taking no press, whatever lies under it. */
   sheet?: Region
 }
@@ -551,15 +550,15 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
 }
 
 /** The Frame layer's own transform (ticket 1187): its px from its first position's corner, through the quarter turn its
- * surface is drawn at, its drawing's scroll and the seam, to a view's displayed space at a zoom. The view is at
+ * surface is drawn at, its drawing's scroll, to a view's displayed space at a zoom. The view is at
  * `zoom` and `scroll`; at another zoom the whole scales about the displayed origin. */
-function frameTransform(sheet: Layer, { rotation, scroll: drawnScroll, seam }: FrameDrawing, zoom: number, scroll: Scroll): (at: number) => Affine {
+function frameTransform(sheet: Layer, { rotation, scroll: drawnScroll }: FrameDrawing, zoom: number, scroll: Scroll): (at: number) => Affine {
   const [a, b, c, d] = gridToRegion(OPEN_EXTENT, { x: 0, y: 0, width: 0, height: 0 }, zoom, rotation)
-  // Own px to the Frame drawing's displayed space, then to its points, through the seam, and back to displayed space.
+  // Own px to the Frame drawing's displayed space, then to its points, and back to displayed space.
   const own: Affine = { a: a * sheet.scale, b: b * sheet.scale, c: c * sheet.scale, d: d * sheet.scale, e: a * sheet.origin.x + c * sheet.origin.y, f: b * sheet.origin.x + d * sheet.origin.y }
   const toPoints: Affine = { a: 1, b: 0, c: 0, d: 1, e: -drawnScroll.x, f: -drawnScroll.y }
   const toDisplayed: Affine = { a: 1, b: 0, c: 0, d: 1, e: scroll.x, f: scroll.y }
-  const atZoom = composed(toDisplayed, composed(seam, composed(toPoints, own)))
+  const atZoom = composed(toDisplayed, composed(toPoints, own))
   return (at) => {
     const by = at / zoom
     return { a: atZoom.a * by, b: atZoom.b * by, c: atZoom.c * by, d: atZoom.d * by, e: atZoom.e * by, f: atZoom.f * by }
