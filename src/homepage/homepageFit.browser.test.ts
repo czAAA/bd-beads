@@ -5,6 +5,7 @@ import { unexplainedFit } from '../testUtils/fitPending'
 import { page } from 'vitest/browser'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import { turnToSection } from '../testUtils/homepageSection'
+import { stripClashes } from '../testUtils/stripClashes'
 import HomePage from './HomePage.vue'
 import { ROW_DONE_PASSES } from './inside/tourScripts'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
@@ -270,17 +271,18 @@ describe("The Homepage's strip at every tier", () => {
           const menu = boxOf(strip, '[data-testid="strip-menu"]')
           const slogan = boxOf(strip, '[data-testid="homepage-slogan"]')
           expect(strip.scrollWidth, 'nothing wider than the strip').toBeLessThanOrEqual(strip.clientWidth + 1)
+          expect(stripClashes(strip), 'nothing over anything else (ticket 1244)').toEqual([])
           const centredOnMenu = (part: DOMRect) => Math.abs(part.top + part.height / 2 - (menu.top + menu.height / 2))
           // On a phone the way in is the phone bar's; Projects library's icon and count stay, on the right (ticket 0827).
-          if (box <= 480 && !projectCount) expect(strip.querySelector('[data-testid="strip-way-in"]'), 'no way in on a phone').toBeNull()
+          if (box <= 480) expect(strip.querySelector('[data-testid="strip-way-in"]'), 'no way in on a phone').toBeNull()
+          if (box <= 480 && !projectCount) expect(strip.querySelector('[data-testid="strip-library"]')).toBeNull()
           else {
-            const wayIn = boxOf(strip, '[data-testid="strip-way-in"]')
-            expect(overlaps(wayIn, slogan), 'the way in clear of the slogan').toBe(false)
-            expect(wayIn.left).toBeGreaterThanOrEqual(strip.getBoundingClientRect().left)
-            expect(wayIn.right).toBeLessThanOrEqual(strip.getBoundingClientRect().right)
+            // Projects library's slot on a phone, the way in's from there up.
+            const wayIn = boxOf(strip, `[data-testid="${box <= 480 ? 'strip-library' : 'strip-way-in'}"]`)
             if (box <= 480) {
               expect(wayIn.left, 'the library on the right').toBeGreaterThanOrEqual(slogan.right)
               expect(centredOnMenu(wayIn), 'on Menu\'s line').toBeLessThanOrEqual(2)
+              expect(strip.querySelector<HTMLElement>('[data-testid="language-switcher"] button')!.tabIndex, 'Language keeps the tools\' Tab stop').toBe(0)
               expect(boxOf(strip, '[data-testid="homepage-saved-projects"]').height).toBeCloseTo(tokenPx(strip, '--phone-library'), 0)
             } else if (box >= 744) expect(centredOnMenu(wayIn), 'beside Menu').toBeLessThanOrEqual(2)
             else expect(wayIn.top, 'a row of its own under Menu').toBeGreaterThanOrEqual(menu.bottom)

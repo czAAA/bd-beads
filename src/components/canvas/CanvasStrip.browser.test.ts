@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import CanvasStrip from './CanvasStrip.vue'
 import { createProject } from '../../domain/createProject'
-import { inShell, mountAt, resizeTo } from '../../testUtils/browserFit'
+import { FIT_LOCALES, FIT_WIDTHS, inShell, mountAt, resizeTo } from '../../testUtils/browserFit'
+import { stripClashes } from '../../testUtils/stripClashes'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 
 // On a phone the strip is wider than the screen (ticket 0843, F-06-02): Export stays whole at its right end, the edge
@@ -100,5 +101,16 @@ describe('CanvasStrip save dot (ticket 1192)', () => {
     const dot = rectOf(root, '[data-testid="strip-project-dot"]')
     expect(Math.abs((dot.left + dot.right) / 2 - icon.right)).toBeLessThanOrEqual(1)
     expect(Math.abs((dot.top + dot.bottom) / 2 - icon.top)).toBeLessThanOrEqual(1)
+  })
+})
+
+describe('CanvasStrip slots (ticket 1244)', () => {
+  const pages = [['the editor', props], ['Convert image', { page: 'convert-image' as const }]] as const
+  it.each(pages.flatMap(([name, pageProps]) => FIT_LOCALES.map((locale) => [name, locale, pageProps] as const)))('draws nothing over anything else on %s in %s', async (_name, locale, pageProps) => {
+    const { root } = await mountAt(inShell(CanvasStrip, pageProps), {}, { locale, width: 320, text: false })
+    for (const width of [...FIT_WIDTHS, 480, 600, 744]) {
+      await resizeTo(width)
+      expect(stripClashes(root.querySelector('[data-testid="canvas-strip"]')!), `${width}px`).toEqual([])
+    }
   })
 })

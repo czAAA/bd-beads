@@ -456,7 +456,7 @@ const savedProjects = controlAction('saved-projects')
             @report-translation="feedback.onOpenFeedback('translation')"
           >
             <!-- On a phone the way in is the phone bar's; the strip keeps Projects library, its icon and count (ticket 0827). -->
-            <template v-if="phone && !isNew" #way-in>
+            <template v-if="phone && !isNew" #library>
               <AppButton
                 variant="box"
                 :action="savedProjects"

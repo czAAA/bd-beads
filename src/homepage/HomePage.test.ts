@@ -743,15 +743,17 @@ describe('HomePage on a phone (ticket 0827)', () => {
 
   it('keeps Projects library in the strip as its icon and count, named with both, opening the library', async () => {
     const wrapper = page(3)
-    const wayIn = wrapper.get('[data-testid="strip-way-in"]')
-    expect(wayIn.findAll('button')).toHaveLength(1)
-    const library = wayIn.get('[data-testid="homepage-saved-projects"]')
+    const slot = wrapper.get('[data-testid="strip-library"]')
+    expect(slot.findAll('button')).toHaveLength(1)
+    const library = slot.get('[data-testid="homepage-saved-projects"]')
     expect(library.text()).toBe('3')
     expect(library.get('[data-icon]').attributes('data-icon')).toBe('library')
     expect(library.attributes('aria-label')).toBe(`${en.projects.heading}, 3`)
     expect(library.classes()).toContain('app-button--box')
     // It is not the way in, so Welcome leaves it shown (ticket 0830).
-    expect(wayIn.classes()).not.toContain('canvas-strip__way-in--away')
+    expect(wrapper.find('[data-testid="strip-way-in"]').exists()).toBe(false)
+    // Its own Tab stop, outside the tools' arrow keys (ticket 1244).
+    expect(library.attributes('tabindex')).toBeUndefined()
     await library.trigger('click')
     expect(wrapper.emitted('openSavedProjects')).toHaveLength(1)
   })
