@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { PAGE_SCOPE, useShellScope } from '../../composables/ui/shellScope'
 import { wouldRaiseKeyboard } from '../../composables/ui/touchKeyboard'
 
 // The design system's Modal (tickets 76, 0646; Modal card): a centered dialog over a scrim, 420 or 560px.
@@ -29,6 +30,10 @@ const emit = defineEmits<{ cancel: [] }>()
 
 const titleId = useId()
 const dialogEl = ref<HTMLElement>()
+const scrimEl = ref<HTMLElement>()
+// The page's modal joins the browser's top layer, last in, so above every popup open there, which no z-index reaches
+// (ticket 1247); a boxed shell's stays in its box, and a browser without popovers keeps the z-index.
+const topLayer = useShellScope() === PAGE_SCOPE && typeof HTMLElement !== 'undefined' && 'showPopover' in HTMLElement.prototype
 let opener: HTMLElement | null = null
 
 useOverlayLayer({
@@ -83,6 +88,8 @@ function onFocusIn(event: FocusEvent) {
 
 onMounted(() => {
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  // Before the focus: a popover not yet shown takes none.
+  if (topLayer) scrimEl.value?.showPopover()
   startControl()?.focus({ preventScroll: true })
   document.addEventListener('focusin', onFocusIn)
 })
@@ -99,7 +106,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-modal-scrim" :data-testid="scrimTestid">
+  <div ref="scrimEl" class="app-modal-scrim" :popover="topLayer ? 'manual' : undefined" :data-testid="scrimTestid">
     <div
       ref="dialogEl"
       class="app-modal"
@@ -138,6 +145,13 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   place-items: center;
+  /* The browser's own popover box, undone: the scrim covers the screen. */
+  width: auto;
+  height: auto;
+  margin: 0;
+  border: 0;
+  overflow: visible;
+  color: inherit;
   padding: var(--space-24);
   background: var(--scrim);
   animation: app-modal-fade var(--duration-base) var(--ease-out);

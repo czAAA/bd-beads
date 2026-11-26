@@ -674,7 +674,7 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   return { x: box.left + shown.x * zoom, y: box.top + shown.y * zoom }
 }
 
-defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen, opensToolbox })
+defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen, opensToolbox, wheel: handlers.onWheel })
 
 onMounted(() => {
   measure()

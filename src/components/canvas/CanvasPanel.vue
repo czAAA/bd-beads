@@ -49,6 +49,7 @@ import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDrawingScrollGuard } from '../../composables/shell/useDrawingScrollGuard'
+import { useTableWheel } from '../../composables/canvas/useTableWheel'
 
 const {
   t,
@@ -396,6 +397,8 @@ watch(surfaceRef, (shown) => (surfaceProbe.value = shown ?? undefined))
 /** Whether a press outside the open ring is the Canvas's press that opens it, so it moves the ring there (ticket 1147). */
 const surfaceOpensToolbox = (event: PointerEvent) => surfaceRef.value?.opensToolbox(event) ?? false
 const surfacePressing = ref(false)
+/** The wheel over the margin sheet, a bar or the Tool pill zooms and moves the Table as over the beads. */
+const onTableWheel = useTableWheel(() => surfaceRef.value)
 
 /** The Canvas's Background (tickets 252, 0666) as the drawing area's fill; the device's last pick with no Project open. */
 const canvasBackground = useCanvasBackground(() => activeProject.value)
@@ -506,6 +509,8 @@ const drawingStyle = computed(() => {
           :style="drawingStyle"
           :inert="!onEditor || undefined"
           data-testid="app-drawing-area"
+          :data-zooms-table="activeProject ? '' : undefined"
+          @wheel="onTableWheel"
         >
           <!-- The save ring (tickets 0796, 1111; SaveReminder card): top-right under Export, after the strip and before
             the drawing in Tab order. -->
@@ -778,7 +783,7 @@ const drawingStyle = computed(() => {
           layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The margin sheet's
           tools ride in it after the bar: the order of ADR 0075 has no place for them.
         -->
-        <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
+        <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer" data-zooms-table @wheel="onTableWheel">
           <!--
             The Selection bar (tickets 168, 415, 0808, 0812; ContextBar card): above a rectangle Selection's Area sheet, its
             move grip handing a press on to the canvas; above a Piece's shape it floats too, clamped inside the canvas box while
