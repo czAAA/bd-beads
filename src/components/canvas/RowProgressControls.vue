@@ -32,9 +32,7 @@ const props = withDefaults(defineProps<{
   rowPress?: RowPress
   /** The counter's short "5/30" in place of "Row 5 of 30" (ticket 1176): the first it gives up. */
   shortCount?: boolean
-  /** Bare, nothing of the sheet is drawn: the strip hangs under the Frame in the popover look. */
-  bare?: boolean
-}>(), { rowHighlight: true, form: 'strip', drop: 0, shortCount: false, bare: false })
+}>(), { rowHighlight: true, form: 'strip', drop: 0, shortCount: false })
 
 const emit = defineEmits<{
   'move-row': [delta: number]
@@ -114,7 +112,7 @@ const woven = computed(() => props.form === 'woven')
 </script>
 
 <template>
-  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--short': shortCount, 'row-progress--bare': bare }]" :data-testid="`${testid}-strip`">
+  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--short': shortCount }]" :data-testid="`${testid}-strip`">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
     <!-- Back a row stays to the last: its words go before it does, leaving its arrow. -->
     <IconButton
@@ -229,24 +227,6 @@ const woven = computed(() => props.form === 'woven')
   border-radius: var(--radius-sm);
 }
 
-/* Bare, the strip keeps its screen size and hangs under the Frame in the popover look, its controls 28px (MarginSheet
- * card, Several Frames). */
-.row-progress--bare {
-  flex: none;
-  height: auto;
-  min-height: var(--margin-tool);
-  padding: var(--space-4);
-  background: var(--overlay-fill);
-  border-color: var(--overlay-line);
-  border-radius: var(--radius-md);
-  box-shadow: var(--elevation-3);
-}
-
-.row-progress--bare :deep(.app-button),
-.row-progress--bare :deep(.icon-btn) {
-  height: var(--margin-tool);
-}
-
 /* The counter: the control type, a chevron after it, `hover-fill` on hover; on the cuff it is text. */
 .row-progress__count {
   flex: none;
@@ -330,15 +310,17 @@ p.row-progress__count {
 .row-progress :deep(.icon-btn) {
   width: var(--margin-tool-compact);
   height: var(--margin-tool-compact);
-  border-radius: var(--radius-md);
+  border-radius: var(--margin-border-radius);
 }
 
 .row-progress :deep(.icon-btn:hover) {
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
+/* Squarish, as the title block over it, not the pill a button is elsewhere (ticket 1245). */
 .row-progress :deep(.app-button) {
   height: var(--margin-done-compact);
+  border-radius: var(--margin-border-radius);
 }
 
 /* The counter and Back a row are quiet buttons: hover-fill, and the control type rather than the button's. */
