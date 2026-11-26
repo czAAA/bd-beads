@@ -45,6 +45,13 @@ describe('usePageZoomLock', () => {
     expect(fire(wrapper.get('canvas').element, wheel({ ctrlKey: true }))).toBe(false)
   })
 
+  it('leaves a gesture over a layer that hands its wheel to the canvas, as over the canvas', () => {
+    wrapper = mountLock()
+    const layer = wrapper.get('[data-testid="header"]').element
+    layer.setAttribute('data-zooms-table', '')
+    expect(fire(layer, gesture('gesturestart'))).toBe(false)
+  })
+
   it('cancels iOS gestures that start outside the canvas, not inside it', () => {
     wrapper = mountLock()
     const header = wrapper.get('[data-testid="header"]').element

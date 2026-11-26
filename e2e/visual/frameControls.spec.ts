@@ -298,3 +298,34 @@ test('a Bead color pressed in the list joins the Palette as the current color, t
   await expect(page.getByTestId('bead-colors')).toBeVisible()
   await context.close()
 })
+
+test('the wheel over the margin sheet\'s legend zooms and moves the Table, as over the beads', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 12 })])
+  const surface = page.getByTestId('project-surface')
+  await setZoom(page, 100)
+  const read = async () => ({ zoom: Number(await surface.getAttribute('data-zoom')), x: await surface.getAttribute('data-scroll-x'), y: await surface.getAttribute('data-scroll-y') })
+
+  const legend = await box(page, 'margin-title')
+  await page.mouse.move(legend.x + legend.width / 2, legend.y + legend.height / 2)
+  const before = await read()
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, -20)
+  await page.keyboard.up('Control')
+  await expect.poll(async () => (await read()).zoom).toBeGreaterThan(before.zoom)
+
+  const zoomed = await read()
+  await page.mouse.wheel(0, 40)
+  await expect.poll(async () => (await read()).y).not.toBe(zoomed.y)
+
+  // The Tool pill floats on the drawing area, the other layer over the Table.
+  const pill = await box(page, 'tool-pill')
+  await page.mouse.move(pill.x + pill.width / 2, pill.y + pill.height / 2)
+  const scrolled = await read()
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, -20)
+  await page.keyboard.up('Control')
+  await expect.poll(async () => (await read()).zoom).toBeGreaterThan(scrolled.zoom)
+  await context.close()
+})

@@ -1,7 +1,8 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 
-/** The canvas's own root (ProjectSurface): the one place a zoom gesture may start and still zoom. */
-const CANVAS_SELECTOR = '[data-testid="project-surface"]'
+/** Where a zoom gesture may start and still zoom: the canvas's own root (ProjectSurface) and the layers over it that
+ * hand their wheel to it (useTableWheel). */
+const CANVAS_SELECTOR = '[data-testid="project-surface"], [data-zooms-table]'
 
 function startsInCanvas(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(CANVAS_SELECTOR) !== null
