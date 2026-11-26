@@ -43,6 +43,12 @@ watch(
   },
   { immediate: true },
 )
+
+/** The question comes up with the popover gone (StackingOrder card, ticket 1247). */
+function onResetProgress() {
+  menu.value?.close()
+  emit('reset-progress')
+}
 </script>
 
 <template>
@@ -67,7 +73,7 @@ watch(
       @step="(edge, step) => emit('step', edge, step)"
       @resize="(columns, rows) => emit('resize', columns, rows)"
       @set-settings="emit('set-settings', $event)"
-      @reset-progress="emit('reset-progress')"
+      @reset-progress="onResetProgress"
       @settle="emit('settle')"
     />
   </MenuButton>
