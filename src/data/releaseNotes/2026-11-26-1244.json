@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "fixed",
+  "line": {
+    "en": "On a phone, the Homepage’s Projects library button no longer covers Language",
+    "ru": "На телефоне кнопка библиотеки проектов на главной странице больше не закрывает выбор языка",
+    "uk": "На телефоні кнопка бібліотеки проєктів на головній сторінці більше не закриває вибір мови",
+    "be": "На тэлефоне кнопка бібліятэкі праектаў на галоўнай старонцы больш не закрывае выбар мовы",
+    "zh": "在手机上，首页的项目库按钮不再遮住语言选择",
+    "es": "En el teléfono, el botón de la biblioteca de proyectos de la página de inicio ya no tapa el idioma",
+    "pl": "Na telefonie przycisk biblioteki projektów na stronie głównej nie zasłania już wyboru języka"
+  }
+}

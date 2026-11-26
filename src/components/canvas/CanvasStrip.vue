@@ -287,6 +287,11 @@ function onControlsKeydown(event: KeyboardEvent) {
         <span v-if="cut === 'start' || cut === 'both'" class="canvas-strip__more canvas-strip__more--start" aria-hidden="true" data-testid="strip-more-start" @click="scrollBy(-1)"><AppIcon name="chevron-left" :size="12" /></span>
         <span v-if="cut === 'end' || cut === 'both'" class="canvas-strip__more canvas-strip__more--end" aria-hidden="true" data-testid="strip-more-end" @click="scrollBy(1)"><AppIcon name="chevron-left" :size="12" /></span>
       </div>
+      <!-- A phone Homepage's Projects library (tickets 0827, 1244): a control of the cluster, so it stands beside
+           Language, never on it. -->
+      <div v-if="$slots.library" class="canvas-strip__library" data-testid="strip-library">
+        <slot name="library" />
+      </div>
       <!-- Language: the Menu's picker again, pinned beside Export so it is always in sight; on every page but the demo. -->
       <PanelPicker
         v-if="!demo"
@@ -318,12 +323,14 @@ function onControlsKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped>
-/* Three slots (ticket 543): panels left, the Brand centred, the tools and zoom right. */
+/* Three slots (ticket 543): panels left, the Brand centred, the tools and zoom right. Each is placed by an area name,
+ * set once on it; a width changes only the strip's template, so no two can be given one place (ticket 1244). */
 .canvas-strip {
   position: relative;
   display: grid;
   flex: none;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: 'start center end';
   align-items: center;
   gap: var(--space-8);
   box-sizing: border-box;
@@ -347,6 +354,7 @@ function onControlsKeydown(event: KeyboardEvent) {
 }
 
 .canvas-strip__panels {
+  grid-area: start;
   display: flex;
   align-items: center;
   justify-self: start;
@@ -356,6 +364,7 @@ function onControlsKeydown(event: KeyboardEvent) {
 }
 
 .canvas-strip__panel-buttons {
+  grid-area: start;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -370,6 +379,8 @@ function onControlsKeydown(event: KeyboardEvent) {
 
 /* The Homepage's way into the editor (ticket 0822; Homepage card): `sm` buttons 8px apart, beside Menu. */
 .canvas-strip__way-in {
+  grid-area: way;
+  justify-self: center;
   display: flex;
   align-items: center;
   gap: var(--space-8);
@@ -445,6 +456,7 @@ function onControlsKeydown(event: KeyboardEvent) {
 /* The right slot holds the tools, the zoom and Export as one cluster. On a phone, too narrow for it, everything before
  * Export scrolls sideways and Export stays whole at the end (ticket 0843). */
 .canvas-strip__controls {
+  grid-area: end;
   display: flex;
   align-items: center;
   justify-self: end;
@@ -559,6 +571,7 @@ function onControlsKeydown(event: KeyboardEvent) {
 }
 
 .canvas-strip__center {
+  grid-area: center;
   display: flex;
   align-items: center;
   gap: var(--space-8);
@@ -609,6 +622,7 @@ a.canvas-strip__brand:focus-visible {
 @container shell (max-width: 743px) {
   .canvas-strip:not(.canvas-strip--homepage) {
     grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'start end';
   }
 
   .canvas-strip:not(.canvas-strip--homepage) .canvas-strip__center {
@@ -633,28 +647,16 @@ a.canvas-strip__brand:focus-visible {
     display: contents;
   }
 
-  .canvas-strip--homepage .canvas-strip__panel-buttons {
-    grid-area: 1 / 1;
-    justify-self: start;
-  }
-
-  .canvas-strip--homepage .canvas-strip__center {
-    grid-area: 1 / 2;
-  }
-
-  .canvas-strip--homepage .canvas-strip__controls {
-    grid-area: 1 / 3;
-  }
-
-  .canvas-strip--homepage .canvas-strip__way-in {
-    grid-area: 2 / 1 / 3 / -1;
-    justify-self: center;
+  .canvas-strip--homepage:has(.canvas-strip__way-in) {
+    grid-template-areas:
+      'start center end'
+      'way way way';
   }
 }
 
-/* A phone's Homepage strip has no zoom (Homepage card): the slogan takes its room. The way in is the phone bar's; what
- * the slot holds, Projects library's icon and count, stands on the right, 36px tall (ticket 0827). The slogan stays
- * centred while there is room and moves over where the narrowest phones have none. */
+/* A phone's Homepage strip has no zoom (Homepage card): the slogan takes its room. The way in is the phone bar's;
+ * Projects library's icon and count stand on the right, 36px tall (ticket 0827). The slogan stays centred while there
+ * is room and moves over where the narrowest phones have none. */
 @container shell (max-width: 480px) {
   .canvas-strip--homepage {
     grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
@@ -664,16 +666,32 @@ a.canvas-strip__brand:focus-visible {
   .canvas-strip--homepage .canvas-strip__zoom {
     display: none;
   }
+}
 
-  .canvas-strip--homepage .canvas-strip__way-in {
-    grid-area: 1 / 3;
-    justify-self: end;
+/* Where a phone is too narrow for them all, the slogan's side gives way, never a control (ticket 1244): first the
+ * strip's spacing, then the X1 mark before the slogan. */
+@container shell (max-width: 380px) {
+  .canvas-strip--homepage {
+    gap: var(--space-4);
+    padding-left: var(--space-8);
   }
+}
 
-  .canvas-strip--homepage .canvas-strip__way-in :deep(.app-button) {
-    height: var(--phone-library);
-    padding: 0 var(--space-10);
+@container shell (max-width: 340px) {
+  .canvas-strip--homepage:has(.canvas-strip__library) .canvas-strip__mark {
+    display: none;
   }
+}
+
+.canvas-strip__library {
+  display: flex;
+  flex: none;
+  margin-inline-end: var(--space-6);
+}
+
+.canvas-strip__library :deep(.app-button) {
+  height: var(--phone-library);
+  padding: 0 var(--space-10);
 }
 
 /* Language: the code alone ("EN"), as wide as an icon button at least, so the cluster still fits a tablet; the globe
