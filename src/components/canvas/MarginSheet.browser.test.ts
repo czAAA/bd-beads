@@ -30,6 +30,9 @@ const rows = ref(11)
 /** Brick stitch gives the title block a Drop cell (ticket 0698). */
 const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
+const expanded = ref(false)
+/** The least width the expanded sheet last asked the canvas for. */
+const slimRowWidth = ref(0)
 /** The Frame's name: empty, its tab invites one (ticket 0803). */
 const frameName = ref('Sun band')
 /** How many of the Palette's colors the Frame's first row is painted in, at most. */
@@ -70,7 +73,7 @@ const Host = defineComponent({
     // Bare, the Move bar stands above the sheet's top edge (ticket 0682): the host leaves it room.
     return () =>
       h('div', { style: { position: 'relative', margin: '48px 16px 16px', height: `${anchorAt(zoom.value, columns.value).sheet.height}px` }, 'data-testid': 'under-sheet' }, [
-        h(MarginSheet, { ...ownProject(projectOf(columns.value)), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, onMovePress: () => movePresses.value++ }),
+        h(MarginSheet, { ...ownProject(projectOf(columns.value)), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, expanded: expanded.value, onMovePress: () => movePresses.value++, onSlim: (measures: { rowWidth: number }) => (slimRowWidth.value = measures.rowWidth) }),
       ])
   },
 })
@@ -322,6 +325,48 @@ describe('the bare margin sheet, under a 31px band (tickets 0682, 0698, 0851)', 
         expect(movePresses.value, name).toBe(1)
       }
     }
+  })
+})
+
+describe('Row progress\'s strip inside the margin (ticket 1245)', () => {
+  for (const locale of FIT_LOCALES) {
+    it(`is wholly on the sheet or not drawn, at every zoom and width, in ${locale}`, async () => {
+      zoom.value = 1
+      columns.value = 40
+      turns.value = 0
+      const { root } = await mountAt(Host, {}, { locale, width: 1280 })
+      const found: string[] = []
+      for (const across of [40, 8, 5, 3, 1]) {
+        columns.value = across
+        for (let percent = 10; percent <= 150; percent += 5) {
+          zoom.value = percent / 100
+          await settled(root)
+          const sheet = root.querySelector<HTMLElement>('[data-testid="margin-sheet"]')!.getBoundingClientRect()
+          for (const part of root.querySelectorAll<HTMLElement>('[data-testid="margin-progress-strip"], [data-testid="margin-progress-strip"] button'))
+            if (!inside(part.getBoundingClientRect(), sheet)) found.push(`${across} columns at ${percent}%: ${part.dataset.testid}`)
+          if (formOf(root) === 'bare' && root.querySelector('[data-testid="margin-progress-next"]')) found.push(`${across} columns at ${percent}%: a bare sheet shows Row done`)
+          // A wide Frame's drawn sheet always has the room.
+          if (across === 40 && formOf(root) !== 'bare') expect(root.querySelector('[data-testid="margin-progress-next"]'), `${percent}%`).not.toBeNull()
+        }
+      }
+      expect(found).toEqual([])
+    })
+  }
+})
+
+describe('Row progress\'s strip on a narrow expanded sheet (ticket 1245)', () => {
+  it('stays, and asks for a sheet no narrower than its shortest form', async () => {
+    zoom.value = 0.5
+    columns.value = 1
+    expanded.value = true
+    onTestFinished(() => {
+      expanded.value = false
+    })
+    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
+    await settled(root)
+    const buttons = [...root.querySelectorAll('[data-testid="margin-progress-strip"] button')].map((button) => button.getBoundingClientRect())
+    expect(buttons.length).toBeGreaterThan(0)
+    expect(slimRowWidth.value).toBeGreaterThanOrEqual(buttons.at(-1)!.right - buttons[0]!.left)
   })
 })
 

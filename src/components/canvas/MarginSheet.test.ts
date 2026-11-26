@@ -361,10 +361,10 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--bare')
     expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
-    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Expand the Frame', 'Move Frame', 'Frame tools', undefined, undefined, undefined])
-    // Row progress hangs under the Frame at its own size, the sheet's foot not drawn (1223).
+    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Expand the Frame', 'Move Frame', 'Frame tools'])
+    // Row progress is not drawn either, as nothing of the sheet is (ticket 1245).
     expect(wrapper.find('[data-testid="margin-foot"]').exists()).toBe(false)
-    expect(control(wrapper, 'margin-bare-strip').find('[data-testid="margin-progress-next"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(false)
     // Nothing of the sheet is drawn, so not its Edit Frame outline either.
     expect(control(wrapper, 'margin-sheet').classes()).not.toContain('margin-sheet--editing')
     await control(wrapper, 'frame-move-handle').trigger('pointerdown')

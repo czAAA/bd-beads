@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "fixed",
+  "line": {
+    "en": "Zoomed far out, Row done no longer sticks out of a Frame’s margin: it hides until there is room, and its buttons are squarer",
+    "ru": "При сильном отдалении кнопка «Ряд готов» больше не выступает за поле рамки: она скрывается, пока не хватает места, а кнопки стали квадратнее",
+    "uk": "За сильного віддалення кнопка «Ряд готовий» більше не виступає за поле рамки: вона ховається, доки не вистачає місця, а кнопки стали квадратнішими",
+    "be": "Пры моцным аддаленні кнопка «Рад гатовы» больш не выступае за поле рамкі: яна хаваецца, пакуль не хапае месца, а кнопкі сталі больш квадратнымі",
+    "zh": "缩得很小时，“行已完成”不再超出边框的页边：空间不足时会隐藏，按钮也改得更方正",
+    "es": "Con el zoom muy alejado, Fila terminada ya no sobresale del margen del marco: se oculta hasta que haya sitio, y sus botones son más cuadrados",
+    "pl": "Przy dużym oddaleniu przycisk „Rząd gotowy” nie wystaje już poza margines ramki: chowa się, dopóki brakuje miejsca, a przyciski są bardziej kwadratowe"
+  }
+}
