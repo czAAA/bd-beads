@@ -282,6 +282,7 @@ describe("The Homepage's strip at every tier", () => {
             if (box <= 480) {
               expect(wayIn.left, 'the library on the right').toBeGreaterThanOrEqual(slogan.right)
               expect(centredOnMenu(wayIn), 'on Menu\'s line').toBeLessThanOrEqual(2)
+              expect(strip.querySelector<HTMLElement>('[data-testid="language-switcher"] button')!.tabIndex, 'Language keeps the tools\' Tab stop').toBe(0)
               expect(boxOf(strip, '[data-testid="homepage-saved-projects"]').height).toBeCloseTo(tokenPx(strip, '--phone-library'), 0)
             } else if (box >= 744) expect(centredOnMenu(wayIn), 'beside Menu').toBeLessThanOrEqual(2)
             else expect(wayIn.top, 'a row of its own under Menu').toBeGreaterThanOrEqual(menu.bottom)

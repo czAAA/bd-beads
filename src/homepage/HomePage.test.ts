@@ -752,9 +752,8 @@ describe('HomePage on a phone (ticket 0827)', () => {
     expect(library.classes()).toContain('app-button--box')
     // It is not the way in, so Welcome leaves it shown (ticket 0830).
     expect(wrapper.find('[data-testid="strip-way-in"]').exists()).toBe(false)
-    // Its own Tab stop, and Language keeps the cluster's (ticket 1244).
+    // Its own Tab stop, outside the tools' arrow keys (ticket 1244).
     expect(library.attributes('tabindex')).toBeUndefined()
-    expect(wrapper.get('[data-testid="language-switcher"] button').attributes('tabindex')).toBe('0')
     await library.trigger('click')
     expect(wrapper.emitted('openSavedProjects')).toHaveLength(1)
   })
