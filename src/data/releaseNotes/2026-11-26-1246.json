@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "fixed",
+  "line": {
+    "en": "Scrolling and zooming over a Frame's legend and tools now moves and zooms the whole table",
+    "ru": "Прокрутка и масштабирование над легендой и инструментами рамки теперь двигают и масштабируют весь стол",
+    "uk": "Прокручування та масштабування над легендою й інструментами рамки тепер рухають і масштабують увесь стіл",
+    "be": "Пракрутка і маштабаванне над легендай і інструментамі рамкі цяпер рухаюць і маштабуюць увесь стол",
+    "zh": "在边框的图例和工具上滚动或缩放，现在会移动和缩放整个桌面",
+    "es": "Desplazar y hacer zoom sobre la leyenda y las herramientas de un marco ahora mueve y amplía toda la mesa",
+    "pl": "Przewijanie i powiększanie nad legendą i narzędziami ramki przesuwa i powiększa teraz cały stół"
+  }
+}
