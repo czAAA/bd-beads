@@ -2,26 +2,28 @@
 import { lastEditedFrameId, soloFrame } from '../../domain/layerRecord'
 import { onMounted, ref, watch } from 'vue'
 import { withLaidTurn } from '../../domain/framePlacement'
+import type { FrameId } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { thumbnailPixels } from '../../rendering/projectThumbnail'
 
 // A Project's round thumbnail (ticket 147; SavedProjects card): the whole Project on the board color, drawn at twice
 // its size for sharp screens, by its Frame's own turn (ticket 1186). Redrawn only when the Project is replaced, at most
 // once a frame while a stroke lands.
-const props = defineProps<{ project: Project }>()
+/** `frame`: the one Frame to picture (a row of the Project panel's Frames, ticket 1250); the Last edited one without. */
+const props = defineProps<{ project: Project; frame?: FrameId }>()
 
 /** Pixels on the longer side: the largest thumbnail, the library row's 44px (ticket 0982), at twice the density. */
 const DRAWN_SIZE = 88
 
 const canvasEl = ref<HTMLCanvasElement>()
-let frame = 0
+let pending = 0
 
 function draw() {
-  frame = 0
+  pending = 0
   const context = canvasEl.value?.getContext('2d')
   if (!canvasEl.value || !context) return
-  // Of one Frame (spec 1214): the Last edited Frame (ticket 1222).
-  const shown = lastEditedFrameId(props.project)
+  // Of one Frame (spec 1214): the one given, else the Last edited Frame (ticket 1222).
+  const shown = props.frame ?? lastEditedFrameId(props.project)
   const image = thumbnailPixels(withLaidTurn(soloFrame(props.project, shown), undefined, shown), DRAWN_SIZE, shown)
   canvasEl.value.width = image.width
   canvasEl.value.height = image.height
@@ -33,7 +35,7 @@ watch(
   () => props.project,
   () => {
     if (typeof requestAnimationFrame !== 'function') draw()
-    else if (!frame) frame = requestAnimationFrame(draw)
+    else if (!pending) pending = requestAnimationFrame(draw)
   },
 )
 </script>

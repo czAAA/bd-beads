@@ -199,6 +199,7 @@ The Frames in the Project panel, the ··· Frame popover and the Margin color p
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 | --- | --- | --- | --- | --- | --- | --- |
+| frames (section label, ticket 1250) | рамки | рамки | рамкі | 边框 | marcos | ramki |
 | add a frame (section label) | добавить рамку | додати рамку | дадаць рамку | 添加边框 | añadir un marco | dodaj ramkę |
 | A Project holds up to {count} Frames. (why the add ways are disabled) | В проекте не больше {count} рамок. | У проєкті не більше {count} рамок. | У праекце не больш за {count} рамак. | 一个项目最多有 {count} 个边框。 | Un proyecto admite hasta {count} marcos. | Projekt może mieć do {count} ramek. |
 | Show this Frame | Показать рамку | Показати рамку | Паказаць рамку | 显示此边框 | Mostrar este marco | Pokaż tę ramkę |

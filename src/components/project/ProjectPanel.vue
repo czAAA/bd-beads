@@ -155,6 +155,13 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
   color: var(--ink);
 }
 
+/* The Canvas section follows the Frames' wrapper, so it draws the rule between sections itself. */
+.project-frames + :deep(.panel-section) {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line-soft);
+}
+
 /* The rows under no title, set off from the sections above as a section is (PanelSection). */
 .project-panel__rows {
   margin-top: var(--space-4);

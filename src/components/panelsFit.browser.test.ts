@@ -89,10 +89,10 @@ function popoverOf(shown: Project, extra: Record<string, unknown> = {}): [Compon
   const deps = controlDeps({ activeProject: () => shown, frame: () => frame })
   return [inPanel(FramePopover, { project: shown, frame, items, deps, ...extra }, framePopover), {}]
 }
-/** Two Frames in the Project panel, the second unfolded (they fold once there are two). */
+/** Two Frames in the Project panel, "frames" unfolded (it folds once there are two). */
 const twoFramed = twoFrames()
-const unfoldSecond = (root: HTMLElement): void => {
-  root.querySelectorAll<HTMLElement>('[data-testid="project-frame"] .panel-section__header')[1]?.click()
+const unfoldFrames = (root: HTMLElement): void => {
+  root.querySelector<HTMLElement>('[data-testid="project-frames-list"] .panel-section__header')?.click()
 }
 
 const CASES: FitCase[] = [
@@ -117,7 +117,7 @@ const CASES: FitCase[] = [
   ['FramePopover (rows done)', ...popoverOf(moveToRow(painted, 1, frameIdIn(painted)))],
   ['FramePopover (turned)', ...popoverOf(rotateFrame(painted, undefined, frameIdIn(painted))!)],
   ['FramePopover (Fringe earring)', ...popoverOf(earring)],
-  ['ProjectPanel (two Frames)', ProjectPanel, { project: twoFramed, saveFailed: false, unsaved: false }, unfoldSecond],
+  ['ProjectPanel (two Frames)', ProjectPanel, { project: twoFramed, saveFailed: false, unsaved: false }, unfoldFrames],
   ['ExportPanel', inPanel(ExportPanel, { project: painted }, smallPanel), {}],
   ['ExportPanel (exporting)', inPanel(ExportPanel, { project: framed, exporting: 'pdf' }, smallPanel), {}],
   ['ExportPanel (two Frames)', inPanel(ExportPanel, { project: twoFramed }, smallPanel), {}],

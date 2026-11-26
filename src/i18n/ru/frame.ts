@@ -110,6 +110,7 @@ export const frame: FrameTranslations = {
     addFrameButton: 'Добавить рамку',
     defaultName: 'Рамка {n}',
     meetsFrame: 'Слишком близко к «{name}». Рамки и их поля не могут соприкасаться.',
+    framesHeading: 'рамки',
     addFrameHeading: 'добавить рамку',
     framesFull: { one: 'В проекте не больше {count} рамки.', few: 'В проекте не больше {count} рамок.', many: 'В проекте не больше {count} рамок.', other: 'В проекте не больше {count} рамки.' },
     showFrame: 'Показать рамку',

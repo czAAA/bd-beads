@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "changed",
+  "line": {
+    "en": "The Project panel keeps the Frames in one section, each with its picture and buttons to show, export and remove it",
+    "ru": "Рамки в панели проекта собраны в один раздел: у каждой есть картинка и кнопки, чтобы показать, экспортировать или убрать её",
+    "uk": "Рамки в панелі проєкту зібрані в один розділ: кожна має картинку та кнопки, щоб показати, експортувати або прибрати її",
+    "be": "Рамкі ў панэлі праекта сабраны ў адзін раздзел: у кожнай ёсць выява і кнопкі, каб паказаць, экспартаваць або прыбраць яе",
+    "pl": "Panel projektu zbiera ramki w jednej sekcji, każda ma obrazek oraz przyciski do pokazania, eksportu i usunięcia",
+    "es": "El panel del proyecto reúne los marcos en una sección, cada uno con su imagen y botones para mostrarlo, exportarlo y quitarlo",
+    "zh": "项目面板将边框归入一个分区，每个边框都带有缩略图以及显示、导出和移除按钮"
+  }
+}

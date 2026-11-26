@@ -110,6 +110,7 @@ export const frame: FrameTranslations = {
     addFrameButton: 'Añadir marco',
     defaultName: 'Marco {n}',
     meetsFrame: 'Demasiado cerca de {name}. Los marcos y sus márgenes no pueden tocarse.',
+    framesHeading: 'marcos',
     addFrameHeading: 'añadir un marco',
     framesFull: { one: 'Un proyecto admite hasta {count} marco.', many: 'Un proyecto admite hasta {count} marcos.', other: 'Un proyecto admite hasta {count} marcos.' },
     showFrame: 'Mostrar este marco',

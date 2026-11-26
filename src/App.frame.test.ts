@@ -216,7 +216,7 @@ describe('A Frame from the Project panel (ticket 1222)', () => {
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(wrapper.get('[data-testid="project-frame"] .panel-section__label').text()).toBe('Frame 1')
+    expect(wrapper.get('[data-testid="project-frame"] .panel-list-row__name').text()).toBe('Frame 1')
   })
 
   it('selects a frame from the panel: Select becomes the tool and the next drag becomes the Frame on release, Escape cancels (ticket 568)', async () => {

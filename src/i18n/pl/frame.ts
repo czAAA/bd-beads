@@ -110,6 +110,7 @@ export const frame: FrameTranslations = {
     addFrameButton: 'Dodaj ramkę',
     defaultName: 'Ramka {n}',
     meetsFrame: 'Za blisko: {name}. Ramki i ich marginesy nie mogą się stykać.',
+    framesHeading: 'ramki',
     addFrameHeading: 'dodaj ramkę',
     framesFull: { one: 'Projekt może mieć do {count} ramki.', few: 'Projekt może mieć do {count} ramek.', many: 'Projekt może mieć do {count} ramek.', other: 'Projekt może mieć do {count} ramki.' },
     showFrame: 'Pokaż tę ramkę',
