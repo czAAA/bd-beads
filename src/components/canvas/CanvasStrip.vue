@@ -142,7 +142,8 @@ const centerEl = ref<HTMLElement>()
 const controlsEl = ref<HTMLElement>()
 const panelsRoving = useRovingFocus(panelsEl, { axis: () => 'horizontal', managesTabIndex: true })
 const centerRoving = useRovingFocus(centerEl, { selector: 'a[href]', axis: () => 'horizontal', managesTabIndex: true })
-const controlsRoving = useRovingFocus(controlsEl, { selector: 'button:not([role="menuitemradio"]), a[href]', axis: () => 'horizontal', managesTabIndex: true })
+// A phone's Projects library stands among the right-hand tools but keeps its own Tab stop, as the way in it is part of.
+const controlsRoving = useRovingFocus(controlsEl, { selector: 'button:not([role="menuitemradio"], .canvas-strip__library button), a[href]', axis: () => 'horizontal', managesTabIndex: true })
 /** The right slot's scrolling row (ticket 0843): which of its edges cut a control, so that edge fades. */
 const scrollerEl = ref<HTMLElement>()
 const cut = useScrollCut(scrollerEl)

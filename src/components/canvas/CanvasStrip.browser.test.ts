@@ -106,8 +106,8 @@ describe('CanvasStrip save dot (ticket 1192)', () => {
 
 describe('CanvasStrip slots (ticket 1244)', () => {
   const pages = [['the editor', props], ['Convert image', { page: 'convert-image' as const }]] as const
-  it.each(pages.flatMap(([name, with_]) => FIT_LOCALES.map((locale) => [name, locale, with_] as const)))('draws nothing over anything else on %s in %s', async (_name, locale, with_) => {
-    const { root } = await mountAt(inShell(CanvasStrip, with_), {}, { locale, width: 320, text: false })
+  it.each(pages.flatMap(([name, pageProps]) => FIT_LOCALES.map((locale) => [name, locale, pageProps] as const)))('draws nothing over anything else on %s in %s', async (_name, locale, pageProps) => {
+    const { root } = await mountAt(inShell(CanvasStrip, pageProps), {}, { locale, width: 320, text: false })
     for (const width of [...FIT_WIDTHS, 480, 600, 744]) {
       await resizeTo(width)
       expect(stripClashes(root.querySelector('[data-testid="canvas-strip"]')!), `${width}px`).toEqual([])

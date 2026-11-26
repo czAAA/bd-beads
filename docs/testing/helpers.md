@@ -20,6 +20,7 @@ Part of the testing docs; the rules every test follows are in [`docs/testing.md`
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
 - `storageWrites.ts`: count localStorage writes, or make one fail.
 - `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.
+- `stripClashes.ts`: `stripClashes(strip)` names every pair of the Canvas strip's parts drawn over each other and every part outside the strip, a control in the scrolling row counted only as far as the row shows it; `[]` is a pass (ticket 1244).
 - `rotated.ts`: a ready-made rotated Project.
 - `squareBead.ts`: `squareBead(bead)` is the Bead with a square, unrounded cell, for a test of what a Bead's width alone decides (reading one Bead's beads through millimetres in another), where a real outline would leave a gap at every corner (ticket 0724).
 - `convertPicture.ts`: `flatColorsPicture` for the Convert image wizard to read, `pictureSet` to wait until it has (ticket 0654).
