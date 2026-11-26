@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect } from '../../domain/canvas'
-import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, type FrameId, type FrameRef, type GridPosition } from '../../domain/grid'
+import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, type FrameId, type FrameRef, type GridPosition, type Rotation } from '../../domain/grid'
 import { frameIdOf, framesOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
 import { coversOf } from '../../domain/sheets'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
@@ -10,6 +10,7 @@ import type { KeptView } from '../../domain/keptView'
 import type { OpeningView } from '../../domain/openingAddress'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
+import { frameCentreIn, frameMiddleIn, frameRotation } from '../../rendering/framePin'
 import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
 import { easeStandard } from '../../rendering/rowMotion'
 import { shortestPan } from '../../rendering/shortestPan'
@@ -188,9 +189,19 @@ export function useCanvasView(
 
   /** The Canvas as the view stands, or from another scroll or in a part of the viewport; with no Project, an empty one
    * in the default Technique. */
-  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value, atZoom: number = zoom.value, ref: FrameRef = firstFrameId(project)): SurfaceView {
+  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value, atZoom: number = zoom.value, ref: FrameRef = firstFrameId(project), rotation: Rotation = nearestQuarterTurn(orientation.value)): SurfaceView {
     const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
-    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project, ref), frameLayer: ref, rotation: nearestQuarterTurn(orientation.value), zoom: atZoom, scroll: at, viewport: area })
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project, ref), frameLayer: ref, rotation, zoom: atZoom, scroll: at, viewport: area })
+  }
+
+  /** The view a Frame's rows are found in (ticket 1243): its own drawing, its centre where the Frame lies on the
+   * Canvas as it stands, as the surface pins it. */
+  function frameViewOf(project: Project, ref: FrameRef): SurfaceView {
+    const canvas = surfaceOf(project, scroll.value, viewport.value, zoom.value, ref)
+    const own = (at: Scroll) => surfaceOf(project, at, viewport.value, zoom.value, ref, frameRotation(project, ref))
+    const centre = frameCentreIn(project, canvas, ref)
+    const middle = frameMiddleIn(project, own({ x: 0, y: 0 }), ref)
+    return own({ x: middle.x - centre.x, y: middle.y - centre.y })
   }
 
   /** The part of the viewport a fit uses (ticket 0850): all of it less what lies over its edges (and `also`, what else
@@ -453,12 +464,12 @@ export function useCanvasView(
     glide = requestAnimationFrame(step)
   }
 
-  /** Pans the shortest way that brings a part of the drawing into the room the Tool pill (and `clear`, the Frame panel,
-   * ticket 0971) leaves, zoom untouched (ticket 0934), gliding or a jump. One in the room, or missing it by `slack` at most
-   * (px, as `clear`), or none, moves nothing and the view keeps following the fit. Returns the move, for `putBack`. */
-  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false, clear = NO_INSETS, slack = 0 }: { jump?: boolean; clear?: Insets; slack?: number } = {}): ViewMove | undefined {
+  /** Pans the shortest way that brings what `locate` finds (in `frame`'s view when named) into the room the Tool pill
+   * and `clear` (the Frame panel, ticket 0971) leave, zoom untouched (ticket 0934), gliding or a jump. In the room, or
+   * out by `slack` px at most, or nothing found: no move, the view still following the fit. Returns it, for `putBack`. */
+  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false, clear = NO_INSETS, slack = 0, frame }: { jump?: boolean; clear?: Insets; slack?: number; frame?: FrameRef } = {}): ViewMove | undefined {
     const project = currentProject()
-    const found = project && measured() ? locate(surfaceOf(project)) : undefined
+    const found = project && measured() ? locate(frame ? frameViewOf(project, frame) : surfaceOf(project)) : undefined
     if (!found) return undefined
     const { offset, screenBox } = tableView.value
     const shown = screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y })

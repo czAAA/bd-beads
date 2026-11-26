@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { gridBox, openApp, savedProject, setZoom, settle } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { withFrameSheet } from '../../src/domain/frameSheet'
-import { beadsOfLayer, frameIdOf, withFrameFields } from '../../src/domain/layerRecord'
+import { beadsOfLayer, frameIdOf, framesOf, withFrameFields } from '../../src/domain/layerRecord'
 import { onCanvas } from '../../src/testUtils/onCanvas'
 import type { Project } from '../../src/domain/project'
 
@@ -81,3 +81,30 @@ test('painting on a Frame makes it the Last edited Frame, kept with the Project'
   await page.mouse.click(at.x, at.y)
   await expect.poll(async () => (await savedProject(page)).lastEditedFrame).toBe(SECOND)
 })
+
+// Ticket 1243: a row already in view stays put, wherever its Frame lies on the Table and whichever was edited last.
+for (const [name, frame] of [['a second Frame', SECOND], ['a lone moved Frame', undefined]] as const) {
+  test(`Row done on the sheet of ${name} leaves the view where it is (ticket 1243)`, async ({ page }) => {
+    const base = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
+    const target = frame ?? frameIdOf(framesOf(base)[0]!)
+    const far = withFrameSheet(base, onCanvas(base, { row: 1, column: 120, rows: 8, columns: 6, beads: {}, technique: 'loom' }), { frame: target })
+    await openApp(page, [far])
+    await setZoom(page, 100)
+    await settle(page)
+    const sheet = sheetOf(page, target)
+    const canvas = (await page.getByTestId('app-canvas').boundingBox())!
+    await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2)
+    // The lone Frame opens in view; the second one is far off, and its sheet is drawn only once it is near.
+    await expect(async () => {
+      const box = (await sheet.count()) ? await sheet.boundingBox() : null
+      if (!box || box.x + box.width > canvas.x + canvas.width) await page.mouse.wheel(200, 0)
+      await expect(sheet).toBeInViewport({ ratio: 1, timeout: 100 })
+    }).toPass()
+    await settle(page)
+    const before = await sheet.boundingBox()
+    await sheet.getByTestId('margin-progress-next').click()
+    await expect(sheet.getByTestId('margin-progress-previous')).toBeEnabled()
+    await settle(page)
+    expect(await sheet.boundingBox()).toEqual(before)
+  })
+}

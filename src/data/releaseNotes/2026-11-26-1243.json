@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "fixed",
+  "line": {
+    "en": "Row done no longer jumps the view away from a row that is already on screen",
+    "ru": "Кнопка отметки ряда больше не уводит вид от ряда, который уже на экране",
+    "uk": "Кнопка позначення ряду більше не відводить вигляд від ряду, який уже на екрані",
+    "be": "Кнопка адзнакі рада больш не адводзіць выгляд ад рада, які ўжо на экране",
+    "pl": "Oznaczenie rzędu nie przesuwa już widoku od rzędu, który jest na ekranie",
+    "es": "Marcar una fila ya no aleja la vista de una fila que está en pantalla",
+    "zh": "标记行完成后，视图不再从屏幕上已可见的行跳开"
+  }
+}

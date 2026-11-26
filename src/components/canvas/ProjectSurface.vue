@@ -5,10 +5,8 @@ import { cellUnder } from '../../domain/sheets'
 import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameById, framesOf, layerOf, orientationOf, quarterTurnOf, withCanvas, firstFrameId, frameIdOf } from '../../domain/layerRecord'
-import { frameAngleOf } from '../../domain/table'
-import { frameCentreOnCanvas, withTableTurned } from '../../domain/framePlacement'
-import { CELL_SIZE_PX } from '../../rendering/cellSize'
-import { nearestQuarterTurn, normalizedOrientation, tiltOf } from '../../domain/canvasOrientation'
+import { withTableTurned } from '../../domain/framePlacement'
+import { tiltOf } from '../../domain/canvasOrientation'
 import type { Rotation } from '../../domain/grid'
 import { placedFrame } from '../../domain/layerWeave'
 import { rowProgressOn } from '../../domain/rowProgress'
@@ -30,7 +28,8 @@ import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { unframedSchemas } from '../../domain/schemaTags'
-import { frameMiddlePx, surfaceView, type Region, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
+import { frameCentreIn, frameMiddleIn, frameRotation } from '../../rendering/framePin'
+import { surfaceView, type Region, type Scroll, type SurfaceView, type SurfaceViewInput } from '../../rendering/surfaceView'
 import { tableTurnView, type TableTurnView } from '../../rendering/tableTurnView'
 import { canvasDrawing, frameDrawing, type LayerDrawing } from '../../rendering/layerDrawings'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
@@ -242,32 +241,19 @@ function viewAt(rotation: Rotation, scroll: Scroll, viewport: Size, frameDrawn?:
   return surfaceView({ space: space.value, technique: weave.technique, techniqueSettings: weave.techniqueSettings, cell: weave.cell, frame: placedFrame(props.project, ref), frameLayer: ref, rotation, zoom: props.zoom, scroll, viewport, frameDrawing: frameDrawn, others })
 }
 
-/** A Project's Frame centre in a view of its Canvas: where the view draws the Frame's middle (spec 1234). */
-function frameCentreIn(project: Project, view: SurfaceView, ref: FrameRef): Scroll {
-  const centre = frameCentreOnCanvas(project, ref)!
-  return view.gridToPoint(centre.x * CELL_SIZE_PX, centre.y * CELL_SIZE_PX)
-}
-
-/** Where a Frame's middle is in its own drawing, which holds the Frame from its first position's corner (spec 1234). */
-function frameMiddleIn(ref: FrameRef, view: SurfaceView): Scroll {
-  const middle = frameMiddlePx(placedFrame(props.project, ref)!, canvasWeave.value.cell)
-  return view.gridToPoint(middle.x, middle.y)
-}
-
 /** A Frame's drawing (ticket 1187): its sheet drawn at its own quarter turn on the shared square,
  * and pinned where it lies on the Table, so a turn of the Canvas never moves it (ticket 1188). */
 function drawingOf(ref: FrameRef): LayerDrawing {
   const frame = frameById(props.project, ref)
   const canvas = canvasDrawn.value
   if (!frame) return canvas
-  const angle = frameAngleOf(shownProject.value, ref)
-  const rotation = normalizedOrientation(nearestQuarterTurn(angle) - 90 * (frame.quarterTurns ?? 0)) as Rotation
+  const rotation = frameRotation(shownProject.value, ref)
   return frameDrawing({
     view: tableView.value,
     rotation,
     // Its centre shows where it lies on the table, and its drawing is pinned there.
     pin: () => ({
-      displayed: frameMiddleIn(ref, viewAt(rotation, { x: 0, y: 0 }, size.value, undefined, ref)),
+      displayed: frameMiddleIn(props.project, viewAt(rotation, { x: 0, y: 0 }, size.value, undefined, ref), ref),
       onScreen: tableView.value.toScreen(frameCentreIn(shownProject.value, viewAt(canvas.rotation, canvas.scroll, tableView.value.drawn, undefined, ref), ref)),
     }),
   })

@@ -120,6 +120,8 @@ describe('useRowOps', () => {
     expect(announce).toHaveBeenLastCalledWith(en.rowProgress.patternDone)
     expect(announce).toHaveBeenCalledTimes(4)
     expect(showRow).toHaveBeenCalledTimes(4)
+    // The Frame whose pointer moved is the one to show (ticket 1243).
+    expect(showRow).toHaveBeenLastCalledWith({ frame: frameIdIn(framed) })
 
     // A move that goes nowhere says nothing and pans nothing.
     at(0).onMoveRow(-1)
