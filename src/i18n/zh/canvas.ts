@@ -87,6 +87,7 @@ export const canvas: CanvasTranslations = {
     announcePass: '{step}，第 {line} 行',
     announceColumnPass: '{step}，第 {line} 列',
     showRowMarks: '显示行标记',
+    settingsButton: '行进度设置',
   },
   removeLine: {
     rowTitle: '删除这一行？',

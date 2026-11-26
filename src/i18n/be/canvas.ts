@@ -87,6 +87,7 @@ export const canvas: CanvasTranslations = {
     announcePass: '{step}, рад {line}',
     announceColumnPass: '{step}, слупок {line}',
     showRowMarks: 'Паказваць адзнакі радоў',
+    settingsButton: 'Налады ходу радоў',
   },
   removeLine: {
     rowTitle: 'Выдаліць рад?',

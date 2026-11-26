@@ -87,6 +87,7 @@ export const ICON_NAMES = [
   'save',
   'select',
   'select-all',
+  'settings',
   'share',
   'sidebar',
   'sign-out',

@@ -32,7 +32,7 @@ describe('App row progress', () => {
   it('turns the row direction from the Progress bar\'s list, and the canvas overlay follows the steps down the columns (ticket 0973)', async () => {
     const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
 
-    await wrapper.find('[data-testid="margin-progress-compact-position"]').trigger('click')
+    await wrapper.find('[data-testid="margin-progress-settings"]').trigger('click')
     await wrapper.find('[data-testid="margin-progress-direction-right"]').trigger('click')
     await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
     await wrapper.find('[data-testid="margin-progress-next"]').trigger('click')
@@ -44,7 +44,7 @@ describe('App row progress', () => {
     localStorage.setItem('openbeads:row-highlight', 'off')
     const wrapper = await mountWithProject(15, 30)
     // Show row marks, in Turn row direction's list (ticket 0973).
-    await wrapper.get('[data-testid="margin-progress-compact-position"]').trigger('click')
+    await wrapper.get('[data-testid="margin-progress-settings"]').trigger('click')
     const highlight = () => wrapper.get('[data-testid="margin-progress-row-marks"]').attributes('aria-checked')
     const rowMarks = () => wrapper.findComponent(ProjectSurface).props('rowMarks')
 

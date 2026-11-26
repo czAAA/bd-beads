@@ -87,6 +87,7 @@ export const canvas: CanvasTranslations = {
     announcePass: '{step}, fila {line}',
     announceColumnPass: '{step}, columna {line}',
     showRowMarks: 'Mostrar marcas de fila',
+    settingsButton: 'Ajustes del progreso por filas',
   },
   removeLine: {
     rowTitle: '¿Quitar la fila?',

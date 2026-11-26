@@ -292,7 +292,7 @@ const CASES: FitCase[] = [
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
   ['MarginSheet (bare)', marginSheetHost(0.25), {}],
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
-  // The counter's list: the four ways, Show row marks and Reset progress (tickets 0973, 1223).
+  // The settings list: the four ways, Show row marks and Reset progress (tickets 0973, 1223).
   ['The counter\'s list', RowListHost, {}],
   ['The counter\'s list of a Custom frame', RowListHost, { turns: false }],
   [

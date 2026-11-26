@@ -115,6 +115,8 @@ export interface CanvasTranslations {
     announceColumnPass: string
     /** Turn row direction's list (ticket 0973): its Switch that shows and hides the ring and the number pill, Row highlight. */
     showRowMarks: string
+    /** The Row progress strip's settings button and its list's name (ticket 1251). */
+    settingsButton: string
   }
   /** Remove row/column's question where it touches finished rows (ticket 0647), worded for rows or columns as the rows
    * run: `{number}` is the line's number the way the rows run, `{backTo}` the row Row progress shows after. */

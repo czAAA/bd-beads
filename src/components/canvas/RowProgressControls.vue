@@ -14,15 +14,15 @@ import ProgressTrack from './ProgressTrack.vue'
 import RowDirectionPopover from './RowDirectionPopover.vue'
 
 // Row progress's strip (MarginSheet card, "Several Frames"; tickets 1176, 1223): the one Row progress, on each Frame's
-// margin sheet and, as `woven`, under the Homepage cuff, which has nothing to turn or reset. Back a row, the counter as a
-// button with its list (the four ways, Show row marks, Reset progress), the track and Row done.
+// margin sheet and, as `woven`, under the Homepage cuff, which has nothing to turn or reset. The settings button with its
+// list (the four ways, Show row marks, Reset progress; ticket 1251), Back a row, the counter, the track and Row done.
 const props = withDefaults(defineProps<{
   project: Project
   /** The Frame whose Row progress this is: its own pointer, counter and direction. */
   frame: FrameId
   /** Whether the Canvas draws the Row progress look (ticket 474): the Switch is on while it does. */
   rowHighlight?: boolean
-  /** `woven` is the Homepage cuff's (ticket 1157): the counter is text, nothing to press, and the keys stay the page's. */
+  /** `woven` is the Homepage cuff's (ticket 1157): no settings button, and the keys stay the page's. */
   form?: 'strip' | 'woven'
   /** What a strip too narrow for the whole of it gives up: 1 the track, 2 Back a row's words too, 3 Row done's. */
   drop?: 0 | 1 | 2 | 3
@@ -38,7 +38,7 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
-  /** A way chosen from the counter's list (ticket 0973). */
+  /** A way chosen from the settings list (ticket 0973). */
   'set-row-direction': [way: SeenWay]
   'toggle-row-highlight': []
 }>()
@@ -93,30 +93,43 @@ const arrowTurn = computed(() => seenWayOf(props.project, props.frame))
 const turns = computed(() => frameRowOrder(props.project, props.frame).turns)
 const canReset = computed(() => rowProgressStarted(props.project, props.frame))
 
-/** The counter's list (ticket 0973, 1223): its press opens it and turns nothing. */
+/** The settings list (tickets 0973, 1251): its button's press opens it and turns nothing. */
 const listOpen = ref(false)
-const counterEl = ref<HTMLElement>()
+const settingsEl = ref<HTMLElement>()
 function toggleList(event: MouseEvent) {
-  counterEl.value = event.currentTarget as HTMLElement
+  settingsEl.value = event.currentTarget as HTMLElement
   listOpen.value = !listOpen.value
 }
 
-type Item = 'back' | 'counter' | 'track' | 'divider' | 'done'
-const ITEMS: readonly Item[] = ['back', 'divider', 'counter', 'track', 'divider', 'done']
+type Item = 'settings' | 'back' | 'counter' | 'track' | 'divider' | 'done'
+const ITEMS: readonly Item[] = ['settings', 'back', 'divider', 'counter', 'track', 'divider', 'done']
+const woven = computed(() => props.form === 'woven')
 /** What each drop leaves out: the track, with the divider that set it off. */
 const items = computed(() => {
-  const left = ITEMS.filter((item) => !(item === 'track' && props.drop >= 1))
+  const left = ITEMS.filter((item) => !(item === 'track' && props.drop >= 1) && !(item === 'settings' && woven.value))
   return left.filter((item, index) => item !== 'divider' || left[index + 1] !== 'divider')
 })
-const woven = computed(() => props.form === 'woven')
 </script>
 
 <template>
   <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--short': shortCount }]" :data-testid="`${testid}-strip`">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
+    <!-- The strip's one settings button (ticket 1251): its list holds the ways, Show row marks and Reset progress. -->
+    <IconButton
+      v-if="item === 'settings'"
+      variant="plain"
+      :label="t.rowProgress.settingsButton"
+      icon="settings"
+      class="row-progress__settings"
+      tooltip
+      :expanded="listOpen"
+      aria-haspopup="dialog"
+      :data-testid="`${testid}-settings`"
+      @click="toggleList($event)"
+    />
     <!-- Back a row stays to the last: its words go before it does, leaving its arrow. -->
     <IconButton
-      v-if="item === 'back' && drop >= 2"
+      v-else-if="item === 'back' && drop >= 2"
       variant="plain"
       :action="actions.notDone"
       :label="notDoneLabel"
@@ -142,16 +155,11 @@ const woven = computed(() => props.form === 'woven')
     >
       {{ notDoneLabel }}
     </AppButton>
-    <!-- The counter is the strip's one settings button (1221 option 4B): its list holds the ways, Show row marks and
-      Reset progress; once every pass is done it reads Pattern done. -->
-    <component
-      :is="woven ? 'p' : AppButton"
+    <!-- The counter is text; once every pass is done it reads Pattern done. -->
+    <p
       v-else-if="item === 'counter'"
       class="row-progress__count"
-      v-bind="woven ? {} : { variant: 'text', size: 'sm', trailingIcon: 'chevron-down', expanded: listOpen, 'aria-haspopup': 'dialog' }"
-      :aria-label="allDone && shortCount ? t.rowProgress.patternDone : undefined"
       :data-testid="`${testid}-compact-position`"
-      @click="woven ? undefined : toggleList($event)"
     >
       <AppIcon v-if="allDone" name="check" />
       <span v-if="allDone" class="row-progress__done-words">{{ t.rowProgress.patternDone }}</span>
@@ -161,7 +169,7 @@ const woven = computed(() => props.form === 'woven')
           class="row-progress__line"
         >&nbsp;{{ count.line }}</span>
       </template>
-    </component>
+    </p>
     <ProgressTrack
       v-else-if="item === 'track'"
       class="row-progress__track row-progress__track--margin row-progress__track--strip"
@@ -196,8 +204,8 @@ const woven = computed(() => props.form === 'woven')
     </AppButton>
   </template>
   <RowDirectionPopover
-    v-if="listOpen && counterEl"
-    :anchor="counterEl"
+    v-if="listOpen && settingsEl"
+    :anchor="settingsEl"
     :current="arrowTurn"
     :turns="turns"
     :row-highlight="rowHighlight"
@@ -227,17 +235,15 @@ const woven = computed(() => props.form === 'woven')
   border-radius: var(--radius-sm);
 }
 
-/* The counter: the control type, a chevron after it, `hover-fill` on hover; on the cuff it is text. */
+/* The counter: text in the control type. */
 .row-progress__count {
+  position: relative;
   flex: none;
   margin: 0;
   padding-inline: var(--space-4);
   font: var(--type-control);
   color: var(--ink);
   white-space: nowrap;
-}
-
-p.row-progress__count {
   display: inline-flex;
   align-items: center;
   gap: var(--space-4);
@@ -248,8 +254,16 @@ p.row-progress__count {
   display: none;
 }
 
-/* Short of room, Pattern done is its check alone, the button keeping its name. */
-.row-progress--short .row-progress__done-words,
+/* Short of room, Pattern done is its check alone, its words still read out. */
+.row-progress--short .row-progress__done-words {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .row-progress--short .row-progress__count-step,
 .row-progress--short .row-progress__line {
   display: none;
@@ -260,6 +274,7 @@ p.row-progress__count {
 }
 
 /* Back a row and Row done keep to the strip's ends; the track fills what is left, never under 64 (ticket 1176). */
+.row-progress__settings,
 .row-progress__back,
 .row-progress__done {
   flex: none;
@@ -313,7 +328,9 @@ p.row-progress__count {
   border-radius: var(--margin-border-radius);
 }
 
-.row-progress :deep(.icon-btn:hover) {
+.row-progress :deep(.icon-btn:hover),
+.row-progress :deep(.icon-btn[aria-expanded='true']) {
+  color: var(--ink);
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
@@ -323,7 +340,7 @@ p.row-progress__count {
   border-radius: var(--margin-border-radius);
 }
 
-/* The counter and Back a row are quiet buttons: hover-fill, and the control type rather than the button's. */
+/* Back a row is a quiet button: hover-fill, and the control type rather than the button's. */
 .row-progress :deep(.app-button--text) {
   font: var(--type-control);
 }

@@ -10,7 +10,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 
-// The counter's list (MarginSheet card, tickets 0973, 1223): the four ways in words, the current one checked, so its
+// The Row progress settings list (MarginSheet card, tickets 0973, 1223, 1251): the four ways in words, the current one checked, so its
 // press turns nothing; choosing one turns the rows and closes it. A Custom frame has no ways. Under them Show row marks,
 // Row highlight's Switch named by its words, and Reset progress. Escape or a press outside closes it and nothing changes.
 const props = defineProps<{
@@ -96,7 +96,7 @@ onMounted(async () => {
     popover="manual"
     :style="anchored.style.value"
     role="dialog"
-    :aria-label="t.rowProgress.directionButton"
+    :aria-label="t.rowProgress.settingsButton"
     :data-testid="`${testid}-direction-list`"
   >
     <span v-if="turns" class="row-direction__title" aria-hidden="true">{{ t.rowProgress.directionButton }}</span>

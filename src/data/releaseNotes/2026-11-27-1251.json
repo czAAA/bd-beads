@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-27",
+  "kind": "changed",
+  "line": {
+    "en": "Row progress settings (direction, Show row marks, Reset progress) are behind a settings button at the start of each strip; the current row is raised as a whole, empty positions too, and rows marked done stay raised",
+    "ru": "Настройки прогресса рядов (направление, «Показывать отметки рядов», «Сбросить прогресс») открываются кнопкой настроек в начале полосы; текущий ряд приподнят целиком, вместе с пустыми местами, а готовые ряды остаются приподнятыми",
+    "uk": "Налаштування прогресу рядів (напрямок, «Показувати позначки рядів», «Скинути прогрес») відкриваються кнопкою налаштувань на початку смуги; поточний ряд піднятий повністю, разом із порожніми місцями, а готові ряди лишаються піднятими",
+    "be": "Налады ходу радоў (кірунак, «Паказваць адзнакі радоў», «Скінуць прагрэс») адкрываюцца кнопкай налад у пачатку паласы; бягучы рад прыпадняты цалкам, разам з пустымі месцамі, а гатовыя рады застаюцца прыпаднятымі",
+    "zh": "行进度设置（方向、显示行标记、重置进度）现在位于进度条开头的设置按钮中；当前行整行抬起（包括空位），已完成的行保持抬起",
+    "es": "Los ajustes del progreso por filas (dirección, Mostrar marcas de fila, Reiniciar progreso) están en un botón de ajustes al inicio de cada franja; la fila actual se eleva entera, también sus posiciones vacías, y las filas terminadas siguen elevadas",
+    "pl": "Ustawienia postępu rzędów (kierunek, Pokazuj oznaczenia rzędów, Zresetuj postęp) są pod przyciskiem ustawień na początku paska; bieżący rząd jest uniesiony w całości, także puste miejsca, a gotowe rzędy pozostają uniesione"
+  }
+}

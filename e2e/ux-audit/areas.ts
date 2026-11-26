@@ -295,19 +295,19 @@ const beadIt: AreaWalk = {
       await settle(page)
     })
     await walk.step('progress-highlight-toggled', async () => {
-      // Show row marks, in the counter's list (tickets 0973, 1223).
-      await page.getByTestId('margin-progress-compact-position').click()
+      // Show row marks, in the settings list (tickets 0973, 1251).
+      await page.getByTestId('margin-progress-settings').click()
       await page.getByTestId('margin-progress-row-marks').click()
       await escape(page)
       await settle(page)
     })
     await walk.step('progress-direction-switched', async () => {
-      await page.getByTestId('margin-progress-compact-position').click()
+      await page.getByTestId('margin-progress-settings').click()
       await page.getByTestId('margin-progress-direction-right').click()
       await settle(page)
     })
     await walk.step('progress-reset-asked', async () => {
-      await page.getByTestId('margin-progress-compact-position').click()
+      await page.getByTestId('margin-progress-settings').click()
       await page.getByTestId('margin-progress-reset').click()
       await page.getByTestId('reset-progress-modal').waitFor()
     })

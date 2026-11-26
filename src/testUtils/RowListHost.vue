@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import RowDirectionPopover from '../components/canvas/RowDirectionPopover.vue'
 
-// The Row progress counter's list open on its button, with no strip beside it, for the text fit cases (ticket 1223): the
+// The Row progress settings list open on its button, with no strip beside it, for the text fit cases (ticket 1223): the
 // strip's own Tooltips would be closed by the press that opens the list.
 withDefaults(defineProps<{ turns?: boolean }>(), { turns: true })
 const anchor = ref<HTMLElement>()
