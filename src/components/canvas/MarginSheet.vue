@@ -236,6 +236,15 @@ const progressSize = useElementSize(progressEl)
 const tabWidth = ref(0)
 /** Whether the title block is shown in some form: Name and size on the margin is on (MarginSheet card). */
 const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
+/** The least form's width as last laid out, for the expanded sheet to be no narrower. */
+const leastStripWidth = ref(0)
+/** What the strip reads: Row done or Column done, the counter, the language (ticket 0851). */
+const stripLabels = computed(() => {
+  const { current, total } = rowProgressPosition(props.project, own.value)
+  return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded])
+})
+// A width learnt for other words is forgotten, as the fitting's are.
+watch(stripLabels, () => (leastStripWidth.value = 0))
 const progressFitting = useFittingForm({
   forms: () => (frame.value && form.value !== 'bare' ? STRIP_FITS : []),
   // The strip has the sheet's whole width; on one line it leaves the title block its tab, the name uncut.
@@ -246,11 +255,7 @@ const progressFitting = useFittingForm({
     return width
   },
   observed: () => [progressEl.value?.firstElementChild],
-  // What it reads: Row done or Column done, the counter, the language (ticket 0851).
-  labels: () => {
-    const { current, total } = rowProgressPosition(props.project, own.value)
-    return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded])
-  },
+  labels: () => stripLabels.value,
 })
 /** The strip's form: the least of them where none fits (expanded, the sheet widens to it). */
 const progressFit = computed<StripFit>(() => progressFitting.value ?? STRIP_FITS.at(-1)!)
@@ -258,8 +263,6 @@ const progressFit = computed<StripFit>(() => progressFitting.value ?? STRIP_FITS
  * margin (ticket 1245). Expanded it stays: the sheet widens to it. */
 const progressForm = computed(() => (frame.value && (props.expanded || progressFitting.value) ? progressFit.value : undefined))
 const fitProps = computed(() => STRIP_FIT_PROPS[progressFit.value])
-/** The least form's width as last laid out, for the expanded sheet to be no narrower. */
-const leastStripWidth = ref(0)
 
 const titleEl = ref<HTMLElement>()
 const titleBlock = ref<InstanceType<typeof MarginTitleBlock>>()

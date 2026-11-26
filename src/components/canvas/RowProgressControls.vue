@@ -112,7 +112,7 @@ const woven = computed(() => props.form === 'woven')
 </script>
 
 <template>
-  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--short': shortCount}]" :data-testid="`${testid}-strip`">
+  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--short': shortCount }]" :data-testid="`${testid}-strip`">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
     <!-- Back a row stays to the last: its words go before it does, leaving its arrow. -->
     <IconButton
@@ -310,7 +310,7 @@ p.row-progress__count {
 .row-progress :deep(.icon-btn) {
   width: var(--margin-tool-compact);
   height: var(--margin-tool-compact);
-  border-radius: var(--radius-md);
+  border-radius: var(--margin-border-radius);
 }
 
 .row-progress :deep(.icon-btn:hover) {
