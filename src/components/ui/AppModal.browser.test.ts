@@ -1,5 +1,5 @@
 import { defineComponent, h } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
@@ -52,5 +52,25 @@ describe('AppModal with a long name', () => {
     const mounted = await mountAt(question, {}, { locale: 'en', width: 1280 })
     const dialog = mounted.root.querySelector<HTMLElement>('.app-modal')!
     expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth)
+  })
+})
+
+describe('AppModal over an open popup', () => {
+  it('covers a popover already in the top layer, and takes focus', async () => {
+    const over = defineComponent({
+      setup: () => () => h(AppModal, { title: 'Question' }, { actions: () => h('button', { type: 'button', 'data-autofocus': '' }, 'No') }),
+    })
+    const popup = Object.assign(document.createElement('div'), { popover: 'manual' })
+    popup.style.cssText = 'position: fixed; inset: 0; margin: 0; width: auto; height: auto'
+    document.body.append(popup)
+    popup.showPopover()
+    onTestFinished(() => popup.remove())
+    const mounted = await mountAt(over, {}, { locale: 'en', width: 1280 })
+    await settleForMeasuring()
+    const scrim = mounted.root.querySelector<HTMLElement>('.app-modal-scrim')!
+    expect(scrim.contains(document.elementFromPoint(2, 2))).toBe(true)
+    expect(scrim.getBoundingClientRect().width).toBe(innerWidth)
+    expect(scrim.getBoundingClientRect().height).toBe(innerHeight)
+    expect(document.activeElement?.textContent).toBe('No')
   })
 })

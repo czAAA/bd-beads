@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "fixed",
+  "line": {
+    "en": "A question such as Reset progress is no longer hidden under an open popup",
+    "ru": "Вопрос, например о сбросе прогресса, больше не прячется под открытым всплывающим окном",
+    "uk": "Запитання, наприклад про скидання прогресу, більше не ховається під відкритим спливним вікном",
+    "be": "Пытанне, напрыклад пра скід прагрэсу, больш не хаваецца пад адкрытым усплывальным акном",
+    "zh": "“重置进度”等确认框不再被打开的弹出窗口遮住",
+    "es": "Una pregunta como la de restablecer el progreso ya no queda oculta bajo una ventana emergente abierta",
+    "pl": "Pytanie, na przykład o zresetowanie postępu, nie chowa się już pod otwartym okienkiem"
+  }
+}

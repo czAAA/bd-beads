@@ -6,6 +6,7 @@ Which layer sits above which: the twelve `zIndex` tokens, from the canvas overla
 - A scrim sits one below its layer (39, 49, 79). Toasts are above sheets so a result is never hidden, and below modals.
 - **The save ring and its label (tickets 0796, 0922, 1111):** the ring sits at the drawing area's top-right under Export; it and its open label are at `z-chrome`, over the beads, the Frame, the margin sheet and the rulers; under the Selection bar, the strip's panels, toasts and dialogs (SaveReminder card).
 - One modal at a time; a confirmation opened from a sheet stacks above it and returns focus to it. Nothing inside the canvas box goes above `z-canvas-overlay`.
+- **A modal is above every popup (ticket 1247):** the page's modal and its scrim open in the browser's top layer, after any popover already there, so no Menu, popover or Tooltip left open covers it. A popover whose own button asks a question closes first (the Frame settings popover's Reset progress). A boxed shell's modal stays inside its box, at `z-modal`.
 
 Hand-written from the Phase C sign-off.
 
