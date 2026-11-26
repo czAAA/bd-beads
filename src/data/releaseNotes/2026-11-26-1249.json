@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-26",
+  "kind": "fixed",
+  "line": {
+    "en": "Row done and Back a row no longer move the view",
+    "ru": "Кнопки «Ряд готов» и «Назад на ряд» больше не сдвигают вид",
+    "uk": "Кнопки «Ряд готовий» і «Назад на ряд» більше не зсувають вигляд",
+    "be": "Кнопкі «Рад гатовы» і «Назад на рад» больш не зрушваюць від",
+    "zh": "“行已完成”和“退回一行”不再移动视图",
+    "es": "Fila terminada y Atrás una fila ya no mueven la vista",
+    "pl": "Rząd gotowy i Rząd wstecz nie przesuwają już widoku"
+  }
+}
