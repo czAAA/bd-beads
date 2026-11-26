@@ -272,13 +272,18 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     if (!ownSteps) return surface.gridDirection(normal[0], normal[1], place.layer)
     return { x: normal[0] * ownSteps.column.x + normal[1] * ownSteps.row.x, y: normal[0] * ownSteps.column.y + normal[1] * ownSteps.row.y }
   }
+  // The Frame's rectangle as shown, whose line a turned grid's numbers hang from.
+  const shownBox = ownSteps && surface.beadBox(box, box.layer)
   const outward = (gridX: number, gridY: number, normal: [number, number], bead: GridPosition) => {
     const { x: nx, y: ny } = directionOf(normal)
-    if (ownSteps) {
-      // On the edge of the bead nearest the side, half its depth along the normal from its middle.
+    if (shownBox) {
+      // Level with the bead's middle, out on the box's side: one straight line however the beads are staggered
+      // (ticket 1248).
       const middleOf = surface.beadToPoint(bead, place.layer)
-      const half = (ownSteps.perGridPx * (normal[0] !== 0 ? beadAcross : rowDown)) / 2
-      return { x: middleOf.x + nx * half, y: middleOf.y + ny * half, nx, ny }
+      const edgeX = nx > 0 ? shownBox.x + shownBox.width : shownBox.x
+      const edgeY = ny > 0 ? shownBox.y + shownBox.height : shownBox.y
+      const out = Math.abs(nx) > Math.abs(ny) ? (edgeX - middleOf.x) / nx : (edgeY - middleOf.y) / ny
+      return { x: middleOf.x + nx * out, y: middleOf.y + ny * out, nx, ny }
     }
     const { x, y } = surface.gridToPoint(place.origin.x + gridX * size, place.origin.y + gridY * size, place.layer)
     return { x, y, nx, ny }
