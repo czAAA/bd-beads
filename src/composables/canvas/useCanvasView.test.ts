@@ -3,11 +3,15 @@ import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
-import { orientationOf } from '../../domain/layerRecord'
-import { rotateCanvas, turnCanvasTo, turnTableTo } from '../../domain/rotate'
+import { withFrameSheet } from '../../domain/frameSheet'
+import { frameIdIn } from '../../testUtils/frameId'
+import { onCanvas } from '../../testUtils/onCanvas'
+import { frameById, orientationOf } from '../../domain/layerRecord'
+import { rotateCanvas, rotateFrame, turnCanvasTo, turnTableTo } from '../../domain/rotate'
 import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
 import { FIT_MARGIN_PX, fitBox, LARGEST_FIT_BEAD_PX, useCanvasView, type CanvasViewOptions } from './useCanvasView'
 import { MAX_ZOOM } from '../../domain/grid'
+import { coversOf } from '../../domain/sheets'
 import { NO_INSETS } from '../../domain/toolPill'
 import { surfaceView, type SurfaceView } from '../../rendering/surfaceView'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -694,5 +698,45 @@ describe('useCanvasView', () => {
       expect(orientationOf(current.value)).toBe(120)
       expect(view.isAtFit.value).toBe(true)
     })
+  })
+})
+
+describe('bringIntoView in a Frame (ticket 1243)', () => {
+  it('finds a Frame\'s beads where the Frame lies on the Canvas, not at the origin', () => {
+    const base = projectOf(6, 4)
+    const moved = withFrameSheet(base, onCanvas(base, { row: 2, column: 100, rows: 4, columns: 6, beads: {}, technique: 'loom' }), { frame: frameIdIn(base) })
+    const { view } = setup(moved)
+    let found: { x: number; y: number } | undefined
+    view.bringIntoView((surface) => {
+      found = surface.beadToPoint({ row: 0, column: 0 }, frameIdIn(base))
+      return undefined
+    }, { frame: frameIdIn(base) })
+    const there = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: view.zoom.value, scroll: view.scroll.value }).beadToPoint({ row: 2, column: 100 })
+    expect(found!.x).toBeCloseTo(there.x, 6)
+    expect(found!.y).toBeCloseTo(there.y, 6)
+  })
+
+  it.each([['a turned Frame', 1, 0], ['a turned Canvas', 0, 90], ['both turned', 1, 90]] as const)('finds the beads of %s inside the Frame\'s place', (_, turns, orientation) => {
+    const base = projectOf(6, 4)
+    const ref = frameIdIn(base)
+    let project = withFrameSheet(base, onCanvas(base, { row: 2, column: 100, rows: 4, columns: 6, beads: {}, technique: 'loom' }), { frame: ref })
+    if (turns) project = rotateFrame(project, 'keep', ref)!
+    if (orientation) project = turnCanvasTo(project, orientation)
+    const { view } = setup(project)
+    const { rows, columns } = frameById(project, ref)!
+    const found: { x: number; y: number }[] = []
+    view.bringIntoView((surface) => {
+      for (const row of [0, rows - 1]) for (const column of [0, columns - 1]) found.push(surface.beadToPoint({ row, column }, ref))
+      return undefined
+    }, { frame: ref })
+    const box = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: orientation, zoom: view.zoom.value, scroll: view.scroll.value }).beadBox(coversOf(project)[0]!.frame)
+    // Half a bead of slack: a cover counts the Canvas positions whose middles the Frame holds.
+    const slack = 10 * view.zoom.value
+    for (const { x, y } of found) {
+      expect(x).toBeGreaterThan(box.x - slack)
+      expect(x).toBeLessThan(box.x + box.width + slack)
+      expect(y).toBeGreaterThan(box.y - slack)
+      expect(y).toBeLessThan(box.y + box.height + slack)
+    }
   })
 })

@@ -20,8 +20,8 @@ export interface RowOpsDeps {
   dialogs?: Dialogs
   /** The announcer: each move of the row pointer is said in the counter's words (ticket 0934). */
   announce?: (text: string) => void
-  /** Pans the Canvas the shortest way that brings the current row into view (ticket 0934). */
-  showRow?: () => void
+  /** Pans the Canvas the shortest way that brings a Frame's current row into view (ticket 0934). */
+  showRow?: (how: { frame: FrameRef }) => void
 }
 
 /** A press of Row done or Row not done that moved the pointer (ticket 0730): what the Pattern's motion plays from.
@@ -102,7 +102,7 @@ export function useRowOps(deps: RowOpsDeps) {
     if (pressed) rowPress.value = { id: ++presses, frame, done: to > from, from, to, patternDone: to === total }
     else stopRowMotion()
     deps.replaceProject(moved)
-    deps.showRow?.()
+    deps.showRow?.({ frame })
     deps.announce?.(rowProgressAnnouncement(deps.messages().rowProgress, moved, frame))
   }
 
