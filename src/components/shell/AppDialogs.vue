@@ -193,6 +193,7 @@ const importMessage = computed(() => {
   <ConfirmModal
     v-if="open === 'rotate-frame' && rotateFramePrompt"
     data-testid="rotate-frame-modal"
+    single-row
     :title="rotateFramePrompt.title"
     :message="rotateFramePrompt.message"
     :confirm-label="rotateFramePrompt.keep"
@@ -207,6 +208,7 @@ const importMessage = computed(() => {
   <ConfirmModal
     v-if="open === 'technique-change' && techniqueChangePrompt"
     data-testid="technique-change-modal"
+    single-row
     :title="techniqueChangePrompt.title"
     :message="techniqueChangePrompt.message"
     :confirm-label="techniqueChangePrompt.keep"

@@ -4,6 +4,7 @@ import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import AppModal from './AppModal.vue'
+import ConfirmModal from './ConfirmModal.vue'
 
 // A Modal is never taller than the screen, so its buttons can always be reached (ticket 0654): an iPad in landscape, with
 // Safari's toolbars, is short.
@@ -51,6 +52,25 @@ describe('AppModal with a long name', () => {
     })
     const mounted = await mountAt(question, {}, { locale: 'en', width: 1280 })
     const dialog = mounted.root.querySelector<HTMLElement>('.app-modal')!
+    expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth)
+  })
+})
+
+describe('ConfirmModal with a single row', () => {
+  it('stands its three buttons in one row, the long message wrapping to them, and wraps them only on a narrow screen', async () => {
+    const question = defineComponent({
+      setup: () => () =>
+        h(ConfirmModal, { title: 'Turn the Frame?', message: 'A long message. '.repeat(12), cancelLabel: 'Cancel', extraLabel: 'Rotate and reset progress', confirmLabel: 'Rotate and keep progress', singleRow: true }),
+    })
+    const mounted = await mountAt(question, {}, { locale: 'en', width: 1024 })
+    const dialog = mounted.root.querySelector<HTMLElement>('.app-modal')!
+    const rows = () => new Set([...dialog.querySelectorAll('button')].map((button) => Math.round(button.getBoundingClientRect().top))).size
+    expect(rows()).toBe(1)
+    expect(dialog.offsetWidth).toBeLessThan(700)
+
+    await page.viewport(390, 700)
+    await settleForMeasuring()
+    expect(rows()).toBeGreaterThan(1)
     expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth)
   })
 })

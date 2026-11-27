@@ -3,6 +3,7 @@
 A centered dialog for confirmations (Delete all?, Replace bead?). Keyboard shortcuts is no Modal: it is a Menu Subpanel (ShortcutsHelp card, ticket 1159). (Derived in DESIGN.md.)
 
 - Width 420 (confirm) to 560 (panels), `canvas` fill in light / `panel` in dark (plus a 1px `line-strong` border), radius-lg, `elevation-3`, padding 24.
+- **One row (ticket 1254):** Turn the Frame? and Change to {Technique}? widen past 420 as far as their three buttons need to stand in one row (ConfirmDialogs card); the title and body wrap to that width.
 - **Scrim:** `rgba(0,0,0,.32)` light, `rgba(0,0,0,.6)` dark.
 - **Title:** `title` role (16/24 600), its lines balanced. **Body:** `body` role. In both, a word longer than the line, such as a Project name with no spaces in Delete “{name}”? or Open “{name}”?, breaks where it has to (`overflow-wrap: anywhere` in the title, `break-word` in the body, which leaves its controls' widths as they are), so nothing runs out of the dialog sideways (ticket 0988).
 - **Actions:** right-aligned, 8 apart. Confirm is primary, or danger-filled (`danger`, white text) for destructive actions; cancel is secondary.

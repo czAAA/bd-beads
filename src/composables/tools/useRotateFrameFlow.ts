@@ -93,7 +93,8 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     const asked = question.value
     if (!asked) return undefined
     const t = deps.messages()
-    return wovenAskPrompt(t, deps.locale(), asked, t.frame.wovenAsk.rotateTitle, t.frame.wovenAsk.startOverWay)
+    const words = t.frame.wovenAsk
+    return { ...wovenAskPrompt(t, deps.locale(), asked, words.rotateTitle, words.rotateReset), keep: words.rotateKeep }
   })
 
   return {

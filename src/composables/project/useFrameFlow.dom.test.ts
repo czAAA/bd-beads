@@ -540,7 +540,7 @@ describe('useFrameFlow', () => {
       expect(deps.dialogs.open.value).toBe('technique-change')
       expect(techniqueChangePrompt.value).toEqual({
         title: 'Change to Brick stitch?',
-        message: '2 rows are marked done, woven top to bottom. This can be undone.',
+        message: '2 rows already done, woven top to bottom.',
         startOver: 'Start over for Brick stitch',
         keep: 'Keep the 2 rows',
       })

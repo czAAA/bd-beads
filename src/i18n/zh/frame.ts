@@ -120,12 +120,13 @@ export const frame: FrameTranslations = {
       rotateTitle: '旋转边框？',
       techniqueTitle: '改为{technique}？',
       rowsDone: {
-        other: '已有 {count} 行标记为完成，编织方向{way}。此操作可以撤销。',
+        other: '已完成 {count} 行，编织方向{way}。',
       },
       columnsDone: {
-        other: '已有 {count} 列标记为完成，编织方向{way}。此操作可以撤销。',
+        other: '已完成 {count} 列，编织方向{way}。',
       },
-      startOverWay: '{way}重新开始',
+      rotateReset: '旋转并重置进度',
+      rotateKeep: '旋转并保留进度',
       startOverTechnique: '按{technique}重新开始',
       keepRows: { other: '保留这 {count} 行' },
       keepColumns: { other: '保留这 {count} 列' },

@@ -86,9 +86,9 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(deps.dialogs.open.value).toBe('rotate-frame')
     expect(rotateFramePrompt.value).toEqual({
       title: 'Turn the Frame?',
-      message: '1 row is marked done, woven top to bottom. This can be undone.',
-      startOver: 'Start over top to bottom',
-      keep: 'Keep the 1 row',
+      message: '1 row already done, woven top to bottom.',
+      startOver: 'Rotate and reset progress',
+      keep: 'Rotate and keep progress',
     })
     expect(harness.project).toBe(woven)
 
