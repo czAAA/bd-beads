@@ -238,10 +238,12 @@ const tabWidth = ref(0)
 const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
 /** The least form's width as last laid out, for the expanded sheet to be no narrower. */
 const leastStripWidth = ref(0)
+/** The compact and folded sheets' strip has round buttons (ticket 1256), by pointer. */
+const compactStrip = computed(() => (props.expanded || form.value === 'full' ? undefined : touch.value ? 'touch' : 'mouse'))
 /** What the strip reads: Row done or Column done, the counter, the language (ticket 0851). */
 const stripLabels = computed(() => {
   const { current, total } = rowProgressPosition(props.project, own.value)
-  return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded])
+  return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded, compactStrip.value])
 })
 // A width learnt for other words is forgotten, as the fitting's are.
 watch(stripLabels, () => (leastStripWidth.value = 0))
@@ -656,6 +658,7 @@ const popoverHandlers = {
           :row-highlight="rowHighlight"
           :row-press="rowPress"
           v-bind="fitProps"
+          :compact="compactStrip"
           testid="margin-progress"
           @move-row="emit('move-row', $event)"
           @reset-progress="emit('reset-progress')"
@@ -812,10 +815,15 @@ const popoverHandlers = {
   padding-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2);
 }
 
-/* So do Row progress's Back a row, counter and Row done on the strip: 44px hit areas that never overlap. */
-.margin-sheet__foot--touch :deep(.row-progress > .app-button-wrap + *),
-.margin-sheet__foot--touch :deep(.row-progress > * + .app-button-wrap) {
+/* So do the full strip's buttons: 44px hit areas that never overlap, two icons side by side standing twice as far apart.
+ * The compact strip's areas are as wide as drawn (ticket 1256). */
+.margin-sheet__foot--touch :deep(.row-progress:not(.row-progress--compact) > :is(.app-button-wrap, .icon-btn-wrap) + *),
+.margin-sheet__foot--touch :deep(.row-progress:not(.row-progress--compact) > * + :is(.app-button-wrap, .icon-btn-wrap)) {
   margin-inline-start: calc((var(--touch-target) - var(--margin-done-compact)) / 2 - var(--space-4));
+}
+
+.margin-sheet__foot--touch :deep(.row-progress:not(.row-progress--compact) > .icon-btn-wrap + .icon-btn-wrap) {
+  margin-inline-start: calc(var(--touch-target) - var(--margin-tool-compact) - var(--space-4));
 }
 
 /* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not

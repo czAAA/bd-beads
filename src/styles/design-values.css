@@ -98,7 +98,7 @@
   --filter-badge: 18px; /* BeadColors card: the count badge on the narrow layout's Filters button. */
   --bead-list-height-wide: 24rem; /* BeadColors card: the rows' tallest before they scroll while the list is wide. */
   --palette-swatch-min: 27px; /* PaletteSwatches card: the narrowest swatch in the wide colour popover. */
-  --palette-popover-width: 23rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24): the colour popover once a code is named in its head, "Red · TOHO code 341". */
+  --palette-popover-width: 23rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24): the colour popover once a code was named with its catalog in its head (shorter since ticket 1261). */
   --add-color-popover-width: 35.5rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24): the Add another color popover beside the Palette. */
   --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
@@ -373,6 +373,7 @@
   --margin-strip: 26px; /* MarginSheet card: Row progress's strip under the title block, across the sheet (ticket 1176). */
   --margin-done: 26px; /* MarginSheet card: Row done on the paper, the bar's primary button at 26px. */
   --margin-track: 64px; /* MarginSheet card: the Row progress track on the paper. */
+  --margin-track-height: 8px; /* MarginSheet card: the Row progress groove's height on the paper (ticket 1256). */
   --frame-popover-width: 25rem; /* MarginSheet card: the ··· Frame popover (approved 2026-11-24, ticket 1221; built by 1222; 25rem since ticket 1257). */
   --frame-popover-tile: calc(var(--panel-row) * 2); /* MarginSheet card, Calmer sheet: a Frame popover tool tile's least height (ticket 1257). */
   --margin-pencil: 18px; /* MarginSheet card: a title block pencil (a 12px icon). */
