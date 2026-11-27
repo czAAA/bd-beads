@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 import { openApp } from '../support/app'
 import { pieceProject } from '../support/projects'
 
-// A piece in a round Bead (ticket 1010, BeadBoard card): each bead is its pill and its light, and the
-// Canvas shows between the beads. Night and Studio, three Techniques; a Frame.
+// A piece in a round Bead (tickets 1010, 1252, BeadBoard card): each bead is its body and its light, touching its
+// neighbours, the ground showing between their corners. Night and Studio, three Techniques; a Frame.
 
 /** A heart, two single beads beside it, and a pair. */
 const PICTURE = ['.#.#.......', '#####..o...', '#####......', '.###....yy.', '..#........'] as const

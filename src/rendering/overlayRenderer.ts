@@ -20,7 +20,7 @@ import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import { rulersOf, type RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView, type ViewLayer } from './surfaceView'
-import { BEAD_GAP_PX } from './beadLook'
+import { BEAD_GAP_PX, bodyCorner, drawsTouching } from './beadLook'
 import { joinedTouching } from './touchingCells'
 import { canvasLook } from './projectRenderer'
 import { lookSideOf } from './pieceGround'
@@ -231,6 +231,23 @@ function cornerOf(weave: Weave, by: number): number {
   return beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX + by
 }
 
+/** The corner of what is laid round or over a bead of the Weave, `by` px outside its box, as `theme` draws the bead
+ * (a touching round one is not the pill its cell's corner says, ticket 1252). */
+function drawnCornerOf(weave: Weave, by: number, theme: ProjectTheme): number {
+  const box = boxesOf(weave)(0, 0)
+  return bodyCorner(cornerOf(weave, by), box.width + by * 2, box.height + by * 2, theme)
+}
+
+/** The theme whose bead shapes a layer drawn at `deviceScale` shows: the flat one's in the draft look. */
+function shapesOf(theme: ProjectTheme, deviceScale: number): ProjectTheme {
+  return drawsDraft(deviceScale) ? flatLook(theme) : theme
+}
+
+/** `drawnCornerOf` for a bead lying at its panel's angle, which carries its own corner. */
+function turnedCornerOf(bead: PassCell, theme: ProjectTheme): number {
+  return bodyCorner(bead.turned!.radius, bead.width, bead.height, theme)
+}
+
 /** A pass bead drawn `by` px larger on every side, its corner `by` px rounder where it carries its own (ticket 1032). */
 function raisedBy<Cell extends PassCell>(bead: Cell, by: number): Cell {
   if (by === 0) return bead
@@ -337,9 +354,10 @@ function deviceX(m: DOMMatrix2DInit, bead: PassCell, x: number, y: number): numb
 function drawRaisedShadow(context: DrawingContext, beads: readonly PassCell[], weave: Weave, deviceScale: number, theme: ProjectTheme): void {
   // The screen's full look is told by its own-color rim.
   if (!beads.length || !theme.ownColorRim || drawsDraft(deviceScale)) return
-  const inset = BEAD_GAP_PX / 2
+  const box = boxesOf(weave)(0, 0)
+  const inset = drawsTouching(cornerOf(weave, 0), box.width, theme) ? 0 : BEAD_GAP_PX / 2
   const body = (bead: PassCell) => raisedBy(bead, RAISE_PX - inset)
-  const corner = cornerOf(weave, RAISE_PX - inset)
+  const corner = drawnCornerOf(weave, RAISE_PX - inset, theme)
   const upright = joinedTouching(beads.filter((bead) => !bead.turned)).map((cell) => body(cell))
   const turned = beads.filter((bead) => bead.turned).map(body)
   const shapes = [...upright, ...turned]
@@ -354,7 +372,8 @@ function drawRaisedShadow(context: DrawingContext, beads: readonly PassCell[], w
   context.beginPath()
   for (const shape of upright) roundedRect(context, shape.x + dx, shape.y + dy, shape.width, shape.height, corner)
   for (const shape of turned) {
-    const { centre, radius } = shape.turned!
+    const { centre } = shape.turned!
+    const radius = turnedCornerOf(shape, theme)
     const moved = { ...shape, turned: { ...shape.turned!, centre: { x: centre.x + dx, y: centre.y + dy } } }
     inPlace(context, moved, () => roundedRect(context, shape.x, shape.y, shape.width, shape.height, radius))
   }
@@ -394,9 +413,9 @@ function drawDoneShadow(context: DrawingContext, shapes: readonly PassCell[], we
   context.moveTo(-OUTSIDE_PX, -OUTSIDE_PX)
   for (const [x, y] of [[1, -1], [1, 1], [-1, 1]] as const) context.lineTo(x * OUTSIDE_PX, y * OUTSIDE_PX)
   context.closePath()
-  const corner = cornerOf(weave, 0)
+  const corner = drawnCornerOf(weave, 0, theme)
   for (const shape of shapes) {
-    inPlace(context, shape, () => roundedRect(context, shape.x, shape.y, shape.width, shape.height, shape.turned?.radius ?? corner))
+    inPlace(context, shape, () => roundedRect(context, shape.x, shape.y, shape.width, shape.height, shape.turned ? turnedCornerOf(shape, theme) : corner))
   }
   context.clip('evenodd')
   drawRaisedShadow(context, shapes, weave, deviceScale, theme)
@@ -405,8 +424,8 @@ function drawDoneShadow(context: DrawingContext, shapes: readonly PassCell[], we
 
 /** The glint (ticket 0730, BeadBoard card): each bead of a pass just finished washed in white, one after another in
  * the Row direction, `elapsed` ms after the press; opacity only. */
-function drawGlint(context: DrawingContext, beads: readonly PassBead[], weave: Weave, elapsed: number): void {
-  const corner = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
+function drawGlint(context: DrawingContext, beads: readonly PassBead[], weave: Weave, elapsed: number, theme: ProjectTheme): void {
+  const corner = drawnCornerOf(weave, 0, theme)
   context.save()
   context.fillStyle = GLINT_COLOR
   beads.forEach((bead, index) => {
@@ -415,7 +434,7 @@ function drawGlint(context: DrawingContext, beads: readonly PassBead[], weave: W
     context.globalAlpha = wash
     inPlace(context, bead, () => {
       context.beginPath()
-      roundedRect(context, bead.x, bead.y, bead.width, bead.height, bead.turned?.radius ?? corner)
+      roundedRect(context, bead.x, bead.y, bead.width, bead.height, bead.turned ? turnedCornerOf(bead, theme) : corner)
       context.fill()
     })
   })
@@ -448,7 +467,9 @@ function ringPath(context: DrawingContext, bead: PassCell, line: RingLine, radiu
 // MARKER_RING_PX of `marker` on its edge and MARKER_CASE_PX of `canvas` inside it. Touching beads' `marker` lines fall
 // on the same px; no line joins them otherwise: each line is one path and one stroke.
 function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], weave: Weave, theme: ProjectTheme): void {
-  const corner = cornerOf(weave, RAISE_PX)
+  const corner = drawnCornerOf(weave, RAISE_PX, theme)
+  // An empty position keeps its tile's corner, and so does its ring.
+  const emptyCorner = cornerOf(weave, RAISE_PX)
   const lines = ringLines(theme)
   const beads = inPass.map((bead) => raisedBy(bead, RAISE_PX))
   const upright = beads.filter(({ turned }) => !turned)
@@ -457,7 +478,7 @@ function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], wea
       context.strokeStyle = line.color
       context.lineWidth = line.width
       context.beginPath()
-      for (const bead of upright) ringPath(context, bead, line, corner)
+      for (const bead of upright) ringPath(context, bead, line, bead.color === null ? emptyCorner : corner)
       context.stroke()
     }
   }
@@ -468,7 +489,7 @@ function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], wea
         context.strokeStyle = line.color
         context.lineWidth = line.width
         context.beginPath()
-        ringPath(context, bead, line, bead.turned!.radius)
+        ringPath(context, bead, line, bead.color === null ? bead.turned!.radius : turnedCornerOf(bead, theme))
         context.stroke()
       }
     })
@@ -491,8 +512,7 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 // pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape.
 function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea, emptied?: string): void {
   const { technique } = weave
-  const inset = BEAD_GAP_PX / 2
-  const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
+  const corner = beadRoundness(technique, weave.cell) * CELL_SIZE_PX
   const boxOf = boxesOf(weave)
 
   for (const cell of cells) {
@@ -500,12 +520,16 @@ function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells:
       continue
     }
     const box = boxOf(cell.row, cell.column)
-    const x = box.x + inset
-    const y = box.y + inset
-    const width = box.width - BEAD_GAP_PX
-    const height = box.height - BEAD_GAP_PX
-    drawPreviewBead(context, { x, y, width, height, radius: roundness }, previewColorOf(cell, preview, emptied), theme, inArea(cell))
+    drawPreviewBead(context, previewRect(box, corner, theme), previewColorOf(cell, preview, emptied), theme, inArea(cell))
   }
+}
+
+/** The part of a bead's box the hover preview covers, the bead's own shape: the whole box of a touching round bead,
+ * else a gap in from it. */
+function previewRect(box: { x: number; y: number; width: number; height: number }, cornerRadius: number, theme: ProjectTheme): BeadRect {
+  if (drawsTouching(cornerRadius, box.width, theme)) return { ...box, radius: bodyCorner(cornerRadius, box.width, box.height, theme) }
+  const inset = BEAD_GAP_PX / 2
+  return { x: box.x + inset, y: box.y + inset, width: box.width - BEAD_GAP_PX, height: box.height - BEAD_GAP_PX, radius: Math.max(0, cornerRadius - inset) }
 }
 
 /** One bead of the hover preview: its color faintly, or the neutral outline with none; inside the Mirror's Area a
@@ -626,7 +650,7 @@ function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, rou
       continue
     }
     const box = inGridPx(place.box)
-    const bead = { x: -box.width / 2 + BEAD_GAP_PX / 2, y: -box.height / 2 + BEAD_GAP_PX / 2, width: box.width - BEAD_GAP_PX, height: box.height - BEAD_GAP_PX, radius: Math.max(0, roundness * box.width - BEAD_GAP_PX / 2) }
+    const bead = previewRect({ x: -box.width / 2, y: -box.height / 2, width: box.width, height: box.height }, roundness * box.width, theme)
     context.save()
     context.translate(box.x + box.width / 2, box.y + box.height / 2)
     context.rotate(place.angle)
@@ -685,7 +709,7 @@ function drawPointer(context: DrawingContext, technique: Technique, cell: BeadCe
   const size = Math.max(0, CELL_SIZE_PX * zoom * POINTER_SCALE - POINTER_TRIM_PX)
   const x = pointer.x - size / 2
   const y = pointer.y - size / 2
-  const radius = Math.max(0, beadRoundness(technique, cell) * size)
+  const radius = bodyCorner(Math.max(0, beadRoundness(technique, cell) * size), size, size, theme)
 
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   if (pointer.color) {
@@ -1140,8 +1164,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // over that, and the marker lifted above its row.
   if (ofCanvas) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 }, theme)
-    if (preview && canvasCells.length) drawPreviewInView(context, canvasWeaveOf, space, canvasCells, preview, theme, zoom * pixelRatio, inCanvasArea, canvasView, emptiedColorOf(theme, 'canvas', zoom * pixelRatio))
-    if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio, inCanvasArea)
+    if (preview && canvasCells.length) drawPreviewInView(context, canvasWeaveOf, space, canvasCells, preview, shapesOf(theme, zoom * pixelRatio), zoom * pixelRatio, inCanvasArea, canvasView, emptiedColorOf(theme, 'canvas', zoom * pixelRatio))
+    if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, shapesOf(theme, zoom * pixelRatio), zoom * pixelRatio, inCanvasArea)
     if (canvasArea) {
       drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme.mirror, canvasView, { row: 0, column: 0 }, theme)
       drawMirrorAxes(context, canvasWeaveOf, canvasArea, mirror!, zoom, theme)
@@ -1176,7 +1200,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       const finished = beadsInPass(project, sheetSpace, geometry!, pass, ref).filter(isPainted)
       if (elapsed >= glintMs(finished.length)) continue
       if (elapsed < ROW_MOTION.dimDelay) drawLiftedBeads(context, finished, sheetWeave, zoom * scale, pixelRatio, theme, letters, 0)
-      drawGlint(context, finished, sheetWeave, elapsed)
+      drawGlint(context, finished, sheetWeave, elapsed, shapesOf(theme, zoom * scale * pixelRatio))
     }
     if (showRows) {
       // The pass raised over its neighbours on its one shadow (ticket 1032); its rings come after the Selection.
@@ -1195,14 +1219,14 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const inFrameArea = wholeFrame ? ALL_IN_AREA : NOWHERE
     if (preview && sheetCells.length + sheetStamp.length > 0) {
       const emptied = emptiedColorOf(frameTheme, ref, zoom * scale * pixelRatio)
-      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme, inFrameArea, emptied)
+      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, shapesOf(theme, zoom * scale * pixelRatio), inFrameArea, emptied)
       else {
-        if (sheetCells.length) drawPreviewInView(context, sheetWeave, sheetSpace, sheetCells, preview, theme, zoom * scale * pixelRatio, inFrameArea, sheetView, emptied)
-        if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * scale * pixelRatio, inFrameArea)
+        if (sheetCells.length) drawPreviewInView(context, sheetWeave, sheetSpace, sheetCells, preview, shapesOf(theme, zoom * scale * pixelRatio), zoom * scale * pixelRatio, inFrameArea, sheetView, emptied)
+        if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, shapesOf(theme, zoom * scale * pixelRatio), zoom * scale * pixelRatio, inFrameArea)
       }
     }
     if (inPass.length > 0) {
-      drawBeadRings(context, inPass, sheetWeave, theme)
+      drawBeadRings(context, inPass, sheetWeave, shapesOf(theme, zoom * scale * pixelRatio))
     }
     context.restore()
   }

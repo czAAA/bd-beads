@@ -84,6 +84,8 @@ export interface ProjectTheme {
   /** Whether a bead sits in a rim of its own color with a satin light (ticket 1003, BeadBoard card, Canvas look): the
    * screen in light and dark. High contrast and exports keep the flat bead in `rim`. */
   ownColorRim: boolean
+  /** Whether a round bead in its own-color look fills its cell (ticket 1252): the screen only, never an export. */
+  touchingRounds: boolean
   /** Whether empty positions are tonal tiles from the Background (ticket 1001, BeadBoard card, Tonal tiles): the screen
    * in light and dark. High contrast and exports keep the `positionMark` outline and the `emptyBead` bead. */
   tonalTiles: boolean
@@ -132,6 +134,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   background: '#e8e3df',
   rim: 'rgba(20,20,19,.12)',
   ownColorRim: true,
+  touchingRounds: true,
   tonalTiles: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
@@ -156,6 +159,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   background: '#202020',
   rim: WHITE_RIM,
   ownColorRim: true,
+  touchingRounds: true,
   tonalTiles: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
@@ -179,6 +183,7 @@ const CONTRAST_THEME: ProjectTheme = {
   background: '#e8e3df',
   rim: 'rgba(0,0,0,.35)',
   ownColorRim: false,
+  touchingRounds: false,
   tonalTiles: false,
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
@@ -193,7 +198,7 @@ const CONTRAST_THEME: ProjectTheme = {
 }
 
 /** PNG and PDF exports: always light, whatever the app's theme, on the `print-board`, in the flat bead. */
-export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, offShape: LIGHT_THEME.canvas, background: '#f7f3ec', ownColorRim: false, tonalTiles: false }
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, offShape: LIGHT_THEME.canvas, background: '#f7f3ec', ownColorRim: false, touchingRounds: false, tonalTiles: false }
 
 const flatLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 
@@ -497,26 +502,48 @@ export function isOpenWeave(cornerRadius: number, width: number): boolean {
   return width > 0 && hasHalfCircleCorner(cornerRadius / width)
 }
 
+/** A round bead's corner on screen, as a share of its short side (ticket 1252). */
+const TOUCHING_CORNER = 0.3
+
+/** Whether a bead of this corner and width is drawn in `theme` as a touching round one: Open weave on screen, its body
+ * filling its cell (ticket 1252). The flat look keeps the pill, a gap in. */
+export function drawsTouching(cornerRadius: number, width: number, theme: ProjectTheme): boolean {
+  return theme.ownColorRim && theme.touchingRounds && isOpenWeave(cornerRadius, width)
+}
+
+/** The corner of a bead's box as `theme` draws it, for what is laid round or over the bead: a touching round bead's own,
+ * else the `cornerRadius` it carries. */
+export function bodyCorner(cornerRadius: number, width: number, height: number, theme: ProjectTheme): number {
+  return drawsTouching(cornerRadius, width, theme) ? touchingCorner(width, height) : cornerRadius
+}
+
+function touchingCorner(width: number, height: number): number {
+  return TOUCHING_CORNER * Math.min(width, height)
+}
+
 // A bead in its own-color rim (ticket 1003): the cell in the rim, the body a gap in, one soft light in its middle. A
-// round bead is in Open weave (ticket 1010): its body alone, the ground showing round it; one as light as that ground
-// keeps its rim as a thin edge of the body (ticket 1037).
-function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius }: BeadShape, { rim, fill, satin, edged }: BeadInk): void {
-  const bodyWidth = width - GAP_PX * 2
-  const bodyHeight = height - GAP_PX * 2
-  const radius = Math.min(Math.max(OWN_BODY_LEAST_RADIUS, cornerRadius - GAP_PX), bodyWidth / 2, bodyHeight / 2)
+// round bead is in Open weave (ticket 1010): its body alone, filling its cell so neighbours touch (ticket 1252); one as
+// light as the ground keeps its rim as a thin edge of the body (ticket 1037).
+function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius, theme }: BeadShape, { rim, fill, satin, edged }: BeadInk): void {
   const open = isOpenWeave(cornerRadius, width)
+  const touching = drawsTouching(cornerRadius, width, theme)
+  const inset = touching ? 0 : GAP_PX
+  const [left, top] = [x + inset, y + inset]
+  const bodyWidth = width - inset * 2
+  const bodyHeight = height - inset * 2
+  const radius = touching ? touchingCorner(width, height) : Math.min(Math.max(OWN_BODY_LEAST_RADIUS, cornerRadius - GAP_PX), bodyWidth / 2, bodyHeight / 2)
   if (!open) {
     context.fillStyle = rim
     context.fillRect(x, y, width, height)
   }
   if (open && edged) {
     context.fillStyle = rim
-    fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
+    fillShape(context, left, top, bodyWidth, bodyHeight, radius)
     context.fillStyle = fill
-    fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, bodyWidth - RIM_PX * 2, bodyHeight - RIM_PX * 2, Math.max(0, radius - RIM_PX))
+    fillShape(context, left + RIM_PX, top + RIM_PX, bodyWidth - RIM_PX * 2, bodyHeight - RIM_PX * 2, Math.max(0, radius - RIM_PX))
   } else {
     context.fillStyle = fill
-    fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
+    fillShape(context, left, top, bodyWidth, bodyHeight, radius)
   }
   if (!satin) return
   const light = context.createRadialGradient(0, 0, 0, 0, 0, 1)
@@ -524,7 +551,7 @@ function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, h
   light.addColorStop(SATIN_MIDDLE_AT, rgbaText(satin.color, satin.middle))
   light.addColorStop(1, rgbaText(satin.color, 0))
   context.save()
-  context.translate(x + GAP_PX + bodyWidth * SATIN_CENTRE_X, y + GAP_PX + bodyHeight * SATIN_CENTRE_Y)
+  context.translate(left + bodyWidth * SATIN_CENTRE_X, top + bodyHeight * SATIN_CENTRE_Y)
   context.scale(bodyWidth * SATIN_RADIUS_X, bodyHeight * SATIN_RADIUS_Y)
   context.fillStyle = light
   context.beginPath()
@@ -558,7 +585,7 @@ function spriteFor(bead: BeadShape, ink: BeadInk, draw: (context: DrawingContext
     return made.image
   }
   const [across, down] = [Math.max(1, Math.round(width * bead.deviceScale)), Math.max(1, Math.round(height * bead.deviceScale))]
-  const key = `bead|${pixels}|${size}|${width}x${height}|${cornerRadius}|${ink.rim}|${ink.fill}|${ink.satin ? 'satin' : 'flat'}${ink.edged ? '|edged' : ''}`
+  const key = `bead|${drawsTouching(cornerRadius, width, bead.theme) ? 'touching|' : ''}${pixels}|${size}|${width}x${height}|${cornerRadius}|${ink.rim}|${ink.fill}|${ink.satin ? 'satin' : 'flat'}${ink.edged ? '|edged' : ''}`
   const image = cachedSprite(key, across, width, (context) => draw(context, { ...bead, x: 0, y: 0 }, ink), down)
   ink.sprite = { pixels, size, width, height, radius: cornerRadius, image }
   return image

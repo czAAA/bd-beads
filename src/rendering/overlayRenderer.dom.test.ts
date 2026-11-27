@@ -484,6 +484,30 @@ describe('renderOverlay', () => {
       expect(named('fillRect')).toHaveLength(0)
     })
 
+    it('covers a touching round bead\'s whole cell, its corner 30% of the short side, and keeps the pill in high contrast (ticket 1252)', () => {
+      const project = createProject({ technique: 'loom', beadId: 'toho-round-11-0', size: { width: 3, height: 3, unit: 'beads' } })
+      const preview = { cells: [{ row: 0, column: 0 }], color: null }
+      const screen = recordingContext()
+      renderOverlay(screen.context, { project, region: whole(project), zoom: 1, preview, rowMarks: false })
+      const contrast = recordingContext()
+      renderOverlay(contrast.context, { project, region: whole(project), zoom: 1, preview, rowMarks: false, theme: PROJECT_THEMES.contrast })
+
+      expect(screen.named('roundRect')[0]!.args).toEqual([0, 0, 20, expect.closeTo(26.67, 1), 6])
+      expect(contrast.named('roundRect')[0]!.args).toEqual([0.5, 0.5, 19, expect.closeTo(25.67, 1), 9.5])
+    })
+
+    it('rings a touching round bead by its own corner, not as a pill (ticket 1252)', () => {
+      const made = createProject({ technique: 'loom', beadId: 'toho-round-11-0', size: { width: 3, height: 3, unit: 'beads' } })
+      const painted = onLayer(made, frameIdIn(made), (view) => paintCells(view, [{ row: 1, column: 0 }], '#e63746'))
+      const project = moveToRow(painted, 1, frameIdIn(painted))
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      // The raised bead is 22 wide: 30% of that, less the ring line's 1px to its centre.
+      expect(ringRects(calls)[0]!.args[4]).toBeCloseTo(5.6)
+    })
+
     it('follows a shifted peyote column and rounds its outline (ticket 0734)', () => {
       const project = ownCell(projectOf('peyote', 4, 3, noProgress))
       const { context, named } = recordingContext()
