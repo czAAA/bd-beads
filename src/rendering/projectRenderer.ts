@@ -242,24 +242,22 @@ function drawReferenceCut(context: DrawingContext, reference: DrawnReference, bo
   context.restore()
 }
 
-/** The Frame's box on the Canvas (tickets 458, 0666), `box` from frameGroundBox: filled in the Frame's own Background
- * where it differs from the Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458),
- * in the Frame's look. Tonal tiles are the Frame's own, drawn with its beads (ticket 1001). */
+/** The Frame's box on the Canvas (tickets 458, 0666), `box` from frameGroundBox: always covered in the Frame's own
+ * Background (its gap under tonal tiles), so no Canvas mark shows between the Frame's (ticket 1262), then marked round
+ * its positions in the Frame's look. Tonal tiles are the Frame's own, drawn with its beads (ticket 1001). */
 function drawFrameGround(
   context: DrawingContext,
-  { project, box, area, zoom, pixelRatio, canvasLook, frameLook, reference, tiles }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme; reference?: DrawnReference; tiles: boolean },
+  { project, box, area, zoom, pixelRatio, frameLook, reference, tiles }: { project: DrawnProject; box: readonly [number, number, number, number]; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; frameLook: ProjectTheme; reference?: DrawnReference; tiles: boolean },
   ref: FrameRef,
 ): void {
   const strip = stripIn(context, area)
-  if (frameLook.canvas !== canvasLook.canvas) {
-    context.fillStyle = frameLook.canvas
-    strip(...box)
-  }
+  const mark = markLookOf(frameLook, tiles)
+  context.fillStyle = mark.tiles ? gapColorOf(frameLook.canvas) : frameLook.canvas
+  strip(...box)
   // The reference image lies over the Frame's own Background too (ticket 0790), cut to its box; over its tonal tiles
   // when it has them, so the Frame draws it after them (ticket 1008).
-  if (reference && !markLookOf(frameLook, tiles).tiles) drawReferenceCut(context, reference, [box], 'inside')
+  if (reference && !mark.tiles) drawReferenceCut(context, reference, [box], 'inside')
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
-  const mark = markLookOf(frameLook, tiles)
   const pattern = !mark.tiles && geometryDrawnAlone(project, ref).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...mark })
   if (pattern) {
     context.fillStyle = pattern
@@ -894,7 +892,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
     if (frame && frameBox && layer !== 'canvas') {
       drawMarginSheet(context, project, ref, margin, zoom, theme.margin, input.slimSheet)
-      drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: under, tiles }, ref)
+      drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, frameLook: frameTheme, reference: under, tiles }, ref)
       const origin = { x: 0, y: 0 }
       const sheet = spaceOf(project, false, ref)
       // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's

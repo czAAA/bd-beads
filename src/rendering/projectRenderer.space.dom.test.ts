@@ -160,7 +160,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const project = withLayers(framedProject('loom'), { beads: {} })
     const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
 
-    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    const fills = named('fillRect').filter((call) => call.fillStyle === gapColorOf(frameLook.canvas))
     expect(fills).toHaveLength(1)
     const [x, y, width, height] = fills[0]!.args as number[]
     const corner = positionBoxPx({ technique: 'loom' }, 0, 0)
@@ -189,11 +189,19 @@ describe('the Frame on its own background (ticket 0666)', () => {
     expect(markFills(named)).toHaveLength(2)
   })
 
-  it('fills nothing more where the Frame is on the Canvas\'s background, and on its own fills its board', () => {
-    const project = framedProject('loom')
-    const alike = render(project, true, { region: whole, theme: canvasLook, frameTheme: { ...canvasLook } })
-    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string' && call.fillStyle !== gapColorOf(canvasLook.canvas))).toHaveLength(0)
+  it.each([
+    { look: 'tonal tiles', tonalTiles: true, fill: gapColorOf(canvasLook.canvas) },
+    { look: 'outlines', tonalTiles: false, fill: canvasLook.canvas },
+  ])('covers the Canvas under the Frame\'s box where both are on one Background, in $look (ticket 1262)', ({ tonalTiles, fill }) => {
+    const theme = { ...canvasLook, tonalTiles }
+    const { named } = render(framedProject('loom'), true, { region: whole, theme, frameTheme: { ...theme } })
+    const corner = positionBoxPx({ technique: 'loom' }, 0, 0)
+    const covering = named('fillRect').filter((call) => call.fillStyle === fill && call.args[2] === 3 * CELL_SIZE_PX + BEAD_GAP_PX)
+    expect(covering.map(({ args }) => args.slice(0, 2))).toEqual([[corner.x - BEAD_GAP_PX / 2, corner.y - BEAD_GAP_PX / 2]])
+  })
 
+  it('fills its board on its own', () => {
+    const project = framedProject('loom')
     const alone = render(project, false, { theme: canvasLook, frameTheme: frameLook })
     expect(alone.named('fillRect').some((call) => call.fillStyle === frameLook.background && call.args[2] === view.width)).toBe(true)
     expect(alone.beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
@@ -203,7 +211,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const project = withLayer(withLayers(framedProject('loom'), { beads: {} }), FRAME_ID, { bead: findBead('miyuki-delica-11-0')! })
     const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
 
-    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    const fills = named('fillRect').filter((call) => call.fillStyle === gapColorOf(frameLook.canvas))
     expect(fills).toHaveLength(1)
     const [, , width, height] = fills[0]!.args as number[]
     expect([width, height]).not.toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
@@ -215,7 +223,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const shaped = changeFrame(plain, { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } }, frameIdIn(plain))
     if (shaped.kind !== 'changed') throw new Error('expected a Triangle')
     const { named } = render(shaped.project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
-    expect(named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)).toHaveLength(1)
+    expect(named('fillRect').filter((call) => call.fillStyle === gapColorOf(frameLook.canvas))).toHaveLength(1)
     // Its Off-shape holds no position, so the box has no marks of its own: the Canvas's one fill is all.
     expect(markFills(named)).toHaveLength(1)
   })
