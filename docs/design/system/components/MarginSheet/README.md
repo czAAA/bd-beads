@@ -285,3 +285,12 @@ Hand-written from the ticket 0655 design canvas; static rendition.
 - **One rule:** `bandTools` (`src/rendering/marginBand.ts`) decides, from the band's room in drafting px, the pointer and the tools offered, the row, the tools on the band and the tools in the menu; the sheet's widths are worked out from the card's sizes, not measured, so it is the same in the page and in a test. A change of what the band holds (a Frame that cannot be turned or resized) fits again at once.
 - **Touch (ticket 0976) superseded:** the coarse pointer no longer keeps Edit Frame and **···** alone; it only widens the spacing.
 - **Left out:** no one has checked it by hand on a real iPad.
+
+## As built (ticket 1256)
+
+The strip's part of Calmer sheet 1 is in the app; the band and the one-line foot are still 1258's.
+
+- **The icons:** Reset progress (`reset`) and Show row marks (`row-highlight`), after the track and before the divider by Row done, 24px, in every form of the strip. Show row marks is a toggle (`aria-pressed`), filled `ink` with a `canvas` icon while on. They are second triggers: the settings button's list still holds both, and the four directions.
+- **The groove:** `--margin-track-height` (8px), `canvas-bg-1` with a 1px `switch-off` edge, the done part filled inside it, on every strip (the Homepage cuff's too, which has neither icon).
+- **Compact and folded:** Back a row (arrow only, `surface` fill, `line` border), Reset progress, Show row marks and Row done are round. With a mouse Row done is a 24px circle with its arrow, named for assistive tech; on touch it keeps its words where they fit. On touch each button's hit area is 44px tall and as wide as drawn, the strip's parts 8px apart. The track there may be as short as `--margin-track-compact` (40px).
+- **Short of room:** after Row done's words, the two icons are the last the strip gives up (the settings list holds them), so a strip is drawn on the same sheets as before.

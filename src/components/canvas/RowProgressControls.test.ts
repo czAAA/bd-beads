@@ -33,7 +33,7 @@ const at = (project: Project, row: number) => moveToRow(project, row, frameIdIn(
 const id = (name: string) => `[data-testid="margin-progress-${name}"]`
 
 /** What the strip shows, by its test ids and dividers. */
-function shown(project: Project, drop: 0 | 1 | 2 | 3 = 0): string[] {
+function shown(project: Project, drop: 0 | 1 | 2 | 3 | 4 = 0): string[] {
   const wrapper = strip(project, { drop })
   const parts = wrapper.findAll(':scope > *').map((part) =>
     part.classes('row-progress__divider') ? '|' : (part.attributes('data-testid') ?? part.find('[data-testid]').attributes('data-testid'))!.replace('margin-progress-', ''),
@@ -43,10 +43,12 @@ function shown(project: Project, drop: 0 | 1 | 2 | 3 = 0): string[] {
 }
 
 describe('Row progress strip as it runs out of room (MarginSheet card, 1221 option 4B)', () => {
-  it('holds Back a row, the counter, the track and Row done, and gives up its track, never Back a row or Row done', () => {
-    expect(shown(makeProject())).toEqual(['settings', 'previous', '|', 'compact-position', 'track', '|', 'next'])
-    expect(shown(makeProject(), 1)).toEqual(['settings', 'previous', '|', 'compact-position', '|', 'next'])
-    expect(shown(makeProject(), 3)).toEqual(['settings', 'previous', '|', 'compact-position', '|', 'next'])
+  it('gives up its track first and the two icons last, never Back a row or Row done', () => {
+    const icons = ['strip-reset', 'strip-marks']
+    expect(shown(makeProject())).toEqual(['settings', 'previous', '|', 'compact-position', 'track', ...icons, '|', 'next'])
+    expect(shown(makeProject(), 1)).toEqual(['settings', 'previous', '|', 'compact-position', ...icons, '|', 'next'])
+    expect(shown(makeProject(), 3)).toEqual(['settings', 'previous', '|', 'compact-position', ...icons, '|', 'next'])
+    expect(shown(makeProject(), 4)).toEqual(['settings', 'previous', '|', 'compact-position', '|', 'next'])
   })
 
   it('shows Back a row as its arrow alone at the last drop', () => {
@@ -297,6 +299,51 @@ describe('the settings list (MarginSheet card; tickets 0973, 455, 1251)', () => 
   })
 })
 
+describe('Reset progress and Show row marks on the strip (ticket 1256)', () => {
+  it('asks to reset through the list’s own event, and is off until a row is done', async () => {
+    const fresh = strip(makeProject())
+    expect(fresh.get(id('strip-reset')).attributes('aria-disabled')).toBe('true')
+    await fresh.get(id('strip-reset')).trigger('click')
+    expect(fresh.emitted('reset-progress')).toBeUndefined()
+    expect(fresh.text()).toContain(ru.tooltips.noProgressToReset)
+
+    const woven = strip(at(makeProject(), 4))
+    expect(woven.get(id('strip-reset')).attributes('aria-label')).toBe(ru.rowProgress.resetButton)
+    await woven.get(id('strip-reset')).trigger('click')
+    expect(woven.emitted('reset-progress')).toHaveLength(1)
+  })
+
+  it('shows Show row marks pressed while the marks are drawn, and toggles them', async () => {
+    const wrapper = strip(makeProject())
+    const marks = wrapper.get(id('strip-marks'))
+    expect(marks.attributes('aria-label')).toBe(ru.rowProgress.showRowMarks)
+    expect(marks.attributes('aria-pressed')).toBe('true')
+    expect(marks.classes()).toContain('icon-btn--selected')
+
+    await marks.trigger('click')
+    expect(wrapper.emitted('toggle-row-highlight')).toHaveLength(1)
+
+    await wrapper.setProps({ rowHighlight: false })
+    expect(marks.attributes('aria-pressed')).toBe('false')
+    expect(marks.classes()).not.toContain('icon-btn--selected')
+  })
+
+  it('draws a mouse’s compact strip with Back a row and Row done as arrows alone, their names kept', () => {
+    const wrapper = strip(at(makeProject(), 4), { compact: 'mouse' })
+    for (const [name, label] of [['previous', ru.rowProgress.previousButton], ['next', ru.rowProgress.nextButton]] as const) {
+      expect(wrapper.get(id(name)).attributes('aria-label')).toBe(label)
+    }
+    expect(wrapper.get(id('previous')).text()).toBe('')
+    expect(wrapper.get(id('next')).classes()).toContain('row-progress__done--icon')
+  })
+
+  it('keeps Row done’s words on a compact strip under a finger, where there is room', () => {
+    const wrapper = strip(at(makeProject(), 4), { compact: 'touch' })
+    expect(wrapper.get(id('previous')).text()).toBe('')
+    expect(wrapper.get(id('next')).classes()).not.toContain('row-progress__done--icon')
+  })
+})
+
 describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
   const project = makeProject()
   const press = (n: number, done: boolean): RowPress => ({ id: n, frame: frameIdIn(project), done, from: 0, to: 1, patternDone: false })
@@ -337,6 +384,8 @@ describe('the Homepage cuff’s strip (ticket 1157, 1223)', () => {
     expect(counter.element.tagName).toBe('P')
     expect(wrapper.find('[data-testid="welcome-cuff-previous"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="welcome-cuff-next"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="welcome-cuff-strip-reset"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="welcome-cuff-strip-marks"]').exists()).toBe(false)
     expect(wrapper.findAll('.app-tooltip__key')).toHaveLength(0)
   })
 })

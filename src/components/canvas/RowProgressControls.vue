@@ -13,9 +13,9 @@ import IconButton from '../ui/IconButton.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import RowDirectionPopover from './RowDirectionPopover.vue'
 
-// Row progress's strip (MarginSheet card, "Several Frames"; tickets 1176, 1223): the one Row progress, on each Frame's
-// margin sheet and, as `woven`, under the Homepage cuff, which has nothing to turn or reset. The settings button with its
-// list (the four ways, Show row marks, Reset progress; ticket 1251), Back a row, the counter, the track and Row done.
+// Row progress's strip (MarginSheet card, "Several Frames"; tickets 1176, 1223): on each Frame's margin sheet and, as
+// `woven`, under the Homepage cuff, which has nothing to turn or reset. The settings button and its list, Back a row, the
+// counter, the track, Reset progress and Show row marks again as icons (tickets 1251, 1256) and Row done.
 const props = withDefaults(defineProps<{
   project: Project
   /** The Frame whose Row progress this is: its own pointer, counter and direction. */
@@ -24,19 +24,22 @@ const props = withDefaults(defineProps<{
   rowHighlight?: boolean
   /** `woven` is the Homepage cuff's (ticket 1157): no settings button, and the keys stay the page's. */
   form?: 'strip' | 'woven'
-  /** What a strip too narrow for the whole of it gives up: 1 the track, 2 Back a row's words too, 3 Row done's. */
-  drop?: 0 | 1 | 2 | 3
+  /** What a strip too narrow for the whole of it gives up: 1 the track, 2 Back a row's words too, 3 Row done's, 4 the
+   * Reset progress and Show row marks icons, which the settings list still holds. */
+  drop?: 0 | 1 | 2 | 3 | 4
+  /** The compact and folded sheets' round buttons (ticket 1256), by pointer: on a mouse Row done is its arrow alone. */
+  compact?: 'mouse' | 'touch'
   /** The prefix of the controls' test ids, so the places can be told apart. */
   testid: string
   /** The last press of Row done or Back a row, wherever it was made (ticket 0730): Row done flares the spark. */
   rowPress?: RowPress
   /** The counter's short "5/30" in place of "Row 5 of 30" (ticket 1176): the first it gives up. */
   shortCount?: boolean
-}>(), { rowHighlight: true, form: 'strip', drop: 0, shortCount: false })
+}>(), { rowHighlight: true, form: 'strip', drop: 0, shortCount: false, compact: undefined })
 
 const emit = defineEmits<{
   'move-row': [delta: number]
-  /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
+  /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. From the icon or the list. */
   'reset-progress': []
   /** A way chosen from the settings list (ticket 0973). */
   'set-row-direction': [way: SeenWay]
@@ -50,6 +53,8 @@ const { t } = useI18n()
 const actions = {
   notDone: keyedHere(controlAction('row-not-done')),
   done: keyedHere(controlAction('row-done')),
+  reset: controlAction('reset-progress'),
+  marks: controlAction('row-highlight'),
 }
 
 /** On the Homepage's cuff Enter and Shift+Enter stay the page's (ticket 1157), so its moves show no key. */
@@ -101,18 +106,26 @@ function toggleList(event: MouseEvent) {
   listOpen.value = !listOpen.value
 }
 
-type Item = 'settings' | 'back' | 'counter' | 'track' | 'divider' | 'done'
-const ITEMS: readonly Item[] = ['settings', 'back', 'divider', 'counter', 'track', 'divider', 'done']
+type Item = 'settings' | 'back' | 'counter' | 'track' | 'reset' | 'marks' | 'divider' | 'done'
+const ITEMS: readonly Item[] = ['settings', 'back', 'divider', 'counter', 'track', 'reset', 'marks', 'divider', 'done']
 const woven = computed(() => props.form === 'woven')
-/** What each drop leaves out: the track, with the divider that set it off. */
+/** What each drop leaves out: the track first, the two icons last; the Homepage's cuff has nothing behind them. */
 const items = computed(() => {
-  const left = ITEMS.filter((item) => !(item === 'track' && props.drop >= 1) && !(item === 'settings' && woven.value))
+  const gone: Partial<Record<Item, boolean>> = {
+    settings: woven.value,
+    track: props.drop >= 1,
+    reset: woven.value || props.drop >= 4,
+    marks: woven.value || props.drop >= 4,
+  }
+  const left = ITEMS.filter((item) => !gone[item])
   return left.filter((item, index) => item !== 'divider' || left[index + 1] !== 'divider')
 })
+const arrowBack = computed(() => !!props.compact || props.drop >= 2)
+const arrowDone = computed(() => props.compact === 'mouse' || props.drop >= 3)
 </script>
 
 <template>
-  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--short': shortCount }]" :data-testid="`${testid}-strip`">
+  <div class="row-progress" :class="[`row-progress--${form}`, compact && `row-progress--compact row-progress--compact-${compact}`, { 'row-progress--short': shortCount }]" :data-testid="`${testid}-strip`">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
     <!-- The strip's one settings button (ticket 1251): its list holds the ways, Show row marks and Reset progress. -->
     <IconButton
@@ -129,7 +142,7 @@ const items = computed(() => {
     />
     <!-- Back a row stays to the last: its words go before it does, leaving its arrow. -->
     <IconButton
-      v-else-if="item === 'back' && drop >= 2"
+      v-else-if="item === 'back' && arrowBack"
       variant="plain"
       :action="actions.notDone"
       :label="notDoneLabel"
@@ -183,6 +196,27 @@ const items = computed(() => {
       :now="position.current"
       :testid="testid"
     />
+    <!-- Second triggers of the list's Reset progress and Show row marks (ticket 1256), through the same events. -->
+    <IconButton
+      v-else-if="item === 'reset'"
+      variant="plain"
+      :action="actions.reset"
+      class="row-progress__reset"
+      :disabled="!canReset"
+      :disabled-body="t.tooltips.noProgressToReset"
+      :data-testid="`${testid}-strip-reset`"
+      @click="emit('reset-progress')"
+    />
+    <IconButton
+      v-else-if="item === 'marks'"
+      variant="plain"
+      :action="actions.marks"
+      :label="t.rowProgress.showRowMarks"
+      class="row-progress__marks"
+      :selected="rowHighlight"
+      :data-testid="`${testid}-strip-marks`"
+      @click="emit('toggle-row-highlight')"
+    />
     <span v-else-if="item === 'divider'" class="row-progress__divider" aria-hidden="true" />
     <!-- Row done is the one filled button on the strip now that the Progress bar is gone (1221 option 4B). -->
     <AppButton
@@ -190,13 +224,13 @@ const items = computed(() => {
       variant="primary"
       size="sm"
       class="row-progress__done"
-      :class="[`row-progress__arrow--${arrowTurn}`, { 'row-progress__done--icon': drop >= 3 }]"
+      :class="[`row-progress__arrow--${arrowTurn}`, { 'row-progress__done--icon': arrowDone }]"
       :action="actions.done"
       :label="doneLabel"
       trailing-icon="arrow-down"
       :disabled="position.current >= position.total"
       :disabled-body="allDoneBody"
-      :aria-label="drop >= 3 ? doneLabel : undefined"
+      :aria-label="arrowDone ? doneLabel : undefined"
       :data-testid="`${testid}-next`"
       @click="emit('move-row', 1)"
     >
@@ -276,6 +310,8 @@ const items = computed(() => {
 /* Back a row and Row done keep to the strip's ends; the track fills what is left, never under 64 (ticket 1176). */
 .row-progress__settings,
 .row-progress__back,
+.row-progress__reset,
+.row-progress__marks,
 .row-progress__done {
   flex: none;
 }
@@ -289,6 +325,18 @@ const items = computed(() => {
   flex: 1 0 var(--margin-track);
   width: auto;
   margin-inline: var(--space-4);
+}
+
+/* The whole groove always shows, taller than a bare track and edged, so what is left reads beside the done part (ticket
+ * 1256). */
+.row-progress__track--strip {
+  --track-height: var(--margin-track-height);
+}
+
+.row-progress__track--strip :deep(.progress-track__groove) {
+  box-sizing: border-box;
+  background: var(--canvas-bg-1);
+  border: 1px solid var(--switch-off);
 }
 
 /* The arrows point along the rows: drawn for top to bottom, the arrows turn to point right, up or left. */
@@ -343,5 +391,49 @@ const items = computed(() => {
 /* Back a row is a quiet button: hover-fill, and the control type rather than the button's. */
 .row-progress :deep(.app-button--text) {
   font: var(--type-control);
+}
+
+/* Show row marks on is `ink`, as Edit Frame on the band; hover keeps it. */
+.row-progress :deep(.icon-btn.icon-btn--selected),
+.row-progress :deep(.icon-btn.icon-btn--selected:hover) {
+  color: var(--canvas);
+  background: var(--ink);
+}
+
+/* Compact and folded (ticket 1256): the strip's buttons are 24px circles, Back a row with a fill and a line of its own. */
+.row-progress--compact :deep(.row-progress__back),
+.row-progress--compact :deep(.row-progress__reset),
+.row-progress--compact :deep(.row-progress__marks),
+.row-progress--compact :deep(.app-button) {
+  border-radius: var(--radius-full);
+}
+
+.row-progress--compact :deep(.row-progress__back) {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.row-progress--compact :deep(.row-progress__back:hover:not([aria-disabled='true'])) {
+  background: var(--hover-fill);
+}
+
+.row-progress--compact .row-progress__track--strip {
+  flex-basis: var(--margin-track-compact);
+}
+
+.row-progress--compact-mouse :deep(.row-progress__done) {
+  width: var(--margin-done-compact);
+  padding: 0;
+}
+
+/* On touch each is 44px tall to a finger and as wide as drawn, so neighbors never share a press. */
+@media (pointer: coarse) {
+  .row-progress--compact-touch {
+    gap: var(--space-8);
+  }
+
+  .row-progress--compact-touch :deep(.ui-control)::before {
+    width: 100%;
+  }
 }
 </style>
