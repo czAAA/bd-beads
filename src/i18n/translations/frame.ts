@@ -124,8 +124,9 @@ export interface FrameTranslations {
     defaultName: string
     /** The refusal naming the Frame in the way: `{name}`. */
     meetsFrame: string
-    /** The Project panel's Frames section: the add ways' heading, why they are off at the most Frames (counted, the most Frames), and a Frame's
-     * three rows. */
+    /** The Project panel's Frames: the "frames" section's heading (ticket 1250), the add ways' heading, why they are off
+     * at the most Frames (counted, the most Frames), and the names of a Frame row's three buttons. */
+    framesHeading: string
     addFrameHeading: string
     framesFull: PluralForms
     showFrame: string

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import PanelItem from '../shell/PanelItem.vue'
+import PanelListRow from '../shell/PanelListRow.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import IconButton from '../ui/IconButton.vue'
+import ProjectThumbnail from './ProjectThumbnail.vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { fitToDrawing } from '../../domain/frame'
 import { framesFull } from '../../domain/frameLimit'
@@ -19,8 +21,8 @@ import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Project panel's Frames (ProjectPanel card, ticket 1222): the ways to add a Frame and the Frames. "add a frame" is
-// open with no Frame, folded once there is one; each Frame's section is open while it is the only one, folded at two or
-// more: Show this Frame, Export this Frame… and Remove Frame…, as its sheet's own actions. Size and tools are on its ···.
+// open with no Frame, folded once there is one. "frames" (ticket 1250) is open with one Frame, folded at two or more: a
+// row for each, its picture, name and summary, then Show, Export and Remove as icons, as its sheet's own actions.
 const props = defineProps<{ project: Project }>()
 const emit = defineEmits<{
   fit: []
@@ -40,7 +42,16 @@ const fullReason = computed(() => framesFullReason(t.value, locale.value))
 /** Fit a Frame to the drawing needs something drawn that no Frame covers. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 
-/** A Frame's folded summary: its Technique and size, "Peyote · 11 × 100", or a Custom frame's "Kite · 9 rows". */
+/** A row button's name for a screen reader: what it does, then to which Frame. */
+const named = (action: string, frame: string) => `${action}: ${frame}`
+
+/** Export and Remove open something else, so the panel goes first, as for a PanelItem. */
+function leaveFor(go: () => void) {
+  context?.close()
+  go()
+}
+
+/** A Frame's summary: its Technique and size, "Peyote · 11 × 100", or a Custom frame's "Kite · 9 rows". */
 function summaryOf(frame: ReturnType<typeof framesOf>[number]): string {
   const first = settingValuesOf(frame)[0]
   if (first && frame.shape) return `${t.value.frame.shapes[frame.shape]} · ${plural(locale.value, first.value, t.value.frame.sizeSettings[first.name].summary)}`
@@ -79,22 +90,17 @@ function summaryOf(frame: ReturnType<typeof framesOf>[number]): string {
       <PanelItem icon="select" :disabled="full" :name="t.frame.selectAFrame" :disabled-body="fullReason" :body="t.frame.selectFrameHint" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
     </PanelSection>
 
-    <PanelSection
-      v-for="(frame, at) in frames"
-      :id="`project:frame:${frame.id}`"
-      :key="frame.id"
-      :label="frameLabel(t, frame, at)"
-      :summary="summaryOf(frame)"
-      :folded="frames.length >= 2"
-      :data-frame="frame.id"
-      data-testid="project-frame"
-    >
-      <template #info>
-        <IconButton variant="plain" icon="fit" :icon-size="16" :label="t.frame.showFrame" data-testid="project-frame-show-button" @click="emit('show-frame', frameIdOf(frame))" />
-      </template>
-      <PanelItem icon="fit" stays data-testid="project-frame-show" @select="emit('show-frame', frameIdOf(frame))">{{ t.frame.showFrame }}</PanelItem>
-      <PanelItem icon="export" data-testid="project-frame-export" @select="emit('export-frame', frameIdOf(frame))">{{ t.frame.exportThisFrame }}</PanelItem>
-      <PanelItem icon="delete" danger data-testid="project-frame-remove" @select="emit('remove-frame', frameIdOf(frame))">{{ t.frame.removeThisFrame }}</PanelItem>
+    <PanelSection v-if="frames.length > 0" id="project:frames" :label="t.frame.framesHeading" :folded="frames.length >= 2" data-testid="project-frames-list">
+      <div v-for="(frame, at) in frames" :key="frame.id" class="project-frames__frame" :data-frame="frame.id" data-testid="project-frame">
+        <PanelListRow :name="frameLabel(t, frame, at)" :sub="summaryOf(frame)" still wraps>
+          <template #thumb><ProjectThumbnail :project="project" :frame="frameIdOf(frame)" /></template>
+          <template #actions>
+            <IconButton variant="plain" icon="fit" :icon-size="16" tooltip :label="t.frame.showFrame" :aria-label="named(t.frame.showFrame, frameLabel(t, frame, at))" data-testid="project-frame-show" @click="emit('show-frame', frameIdOf(frame))" />
+            <IconButton variant="plain" icon="export" :icon-size="16" tooltip :label="t.frame.exportThisFrame" :aria-label="named(t.frame.exportThisFrame, frameLabel(t, frame, at))" data-testid="project-frame-export" @click="leaveFor(() => emit('export-frame', frameIdOf(frame)))" />
+            <IconButton variant="plain" icon="delete" :icon-size="16" tooltip class="project-frames__remove" :label="t.frame.removeThisFrame" :aria-label="named(t.frame.removeThisFrame, frameLabel(t, frame, at))" data-testid="project-frame-remove" @click="leaveFor(() => emit('remove-frame', frameIdOf(frame)))" />
+          </template>
+        </PanelListRow>
+      </div>
     </PanelSection>
   </div>
 </template>
@@ -114,5 +120,17 @@ function summaryOf(frame: ReturnType<typeof framesOf>[number]): string {
 
 .project-frames > :deep(.panel-section:first-of-type) {
   margin-top: var(--space-4);
+}
+
+.project-frames__frame :deep(.project-frames__remove) {
+  color: var(--danger);
+}
+
+/* Touch: three icons side by side, so each is the touch target itself and the hit areas don't overlap. */
+@media (pointer: coarse) {
+  .project-frames__frame :deep(.icon-btn) {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
 }
 </style>

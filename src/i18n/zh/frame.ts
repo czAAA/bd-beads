@@ -110,6 +110,7 @@ export const frame: FrameTranslations = {
     addFrameButton: '添加边框',
     defaultName: '边框 {n}',
     meetsFrame: '离“{name}”太近。边框及其边距不能相接。',
+    framesHeading: '边框',
     addFrameHeading: '添加边框',
     framesFull: { other: '一个项目最多有 {count} 个边框。' },
     showFrame: '显示此边框',

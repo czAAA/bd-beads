@@ -38,7 +38,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['add a frame', 'Frame 1', 'Canvas, outside the Frame', 'reference image'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['add a frame', 'frames', 'Canvas, outside the Frame', 'reference image'])
     expect(wrapper.get('[data-testid="project-rows"]').find('.panel-section__header').exists()).toBe(false)
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)

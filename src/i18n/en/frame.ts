@@ -110,6 +110,7 @@ export const frame: FrameTranslations = {
     addFrameButton: 'Add Frame',
     defaultName: 'Frame {n}',
     meetsFrame: 'Too close to {name}. Frames and their margins can’t meet.',
+    framesHeading: 'frames',
     addFrameHeading: 'add a frame',
     framesFull: { one: 'A Project holds up to {count} Frame.', other: 'A Project holds up to {count} Frames.' },
     showFrame: 'Show this Frame',

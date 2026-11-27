@@ -1,6 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProjectFrames from './ProjectFrames.vue'
+import ProjectThumbnail from './ProjectThumbnail.vue'
+import { PANEL_CONTEXT } from '../shell/panelContext'
 import { createProject } from '../../domain/createProject'
 import { withFrameSheet } from '../../domain/frameSheet'
 import { frameIdOf, withLayer } from '../../domain/layerRecord'
@@ -23,6 +25,8 @@ const bare = (): Project => withLayers(createProject({ technique: 'loom', beadId
 const one = (): Project => withLayers(bare(), { frame: { row: 0, column: 0, rows: 6, columns: 4, technique: 'loom', beads: {} } })
 const mountFrames = (project: Project) => mount(ProjectFrames, { props: { project }, attachTo: document.body })
 const headers = (wrapper: ReturnType<typeof mountFrames>) => wrapper.findAll('.panel-section').map((section) => [section.get('.panel-section__label').text(), section.get('.panel-section__header').attributes('aria-expanded')])
+const rows = (wrapper: ReturnType<typeof mountFrames>) => wrapper.findAll('[data-testid="project-frame"]').map((row) => [row.get('.panel-list-row__name').text(), row.get('.panel-list-row__sub').text()])
+const unfoldFrames = (wrapper: ReturnType<typeof mountFrames>) => wrapper.get('[data-testid="project-frames-list"] .panel-section__header').trigger('click')
 
 describe('ProjectFrames (ProjectPanel card, ticket 1222)', () => {
   it('opens "add a frame" with no Frame, over its three ways, and folds it once there is one', () => {
@@ -33,30 +37,49 @@ describe('ProjectFrames (ProjectPanel card, ticket 1222)', () => {
     expect(headers(mountFrames(one()))[0]).toEqual(['add a frame', 'false'])
   })
 
-  it('lists each Frame by name with its Technique and size, open while it is the only one and folded at two or more', () => {
-    const named = withLayer(one(), frameIdIn(one()), { name: 'Gerdan' })
-    expect(headers(mountFrames(named))[1]).toEqual(['Gerdan', 'true'])
+  it('holds the Frames in one "frames" section, open while there is only one and folded at two or more (ticket 1250)', async () => {
+    expect(headers(mountFrames(bare()))).toHaveLength(1)
+    expect(headers(mountFrames(one()))[1]).toEqual(['frames', 'true'])
+    const wrapper = mountFrames(twoFrames())
+    expect(headers(wrapper).slice(1)).toEqual([['frames', 'false']])
+    expect(rows(wrapper)).toEqual([])
+    await unfoldFrames(wrapper)
+    expect(rows(wrapper)).toHaveLength(2)
+  })
+
+  it('lists each Frame as a row with its picture, name, Technique and size', async () => {
     const wrapper = mountFrames(withLayer(withLayer(twoFrames(), firstOf(twoFrames()), { name: 'Gerdan' }), SECOND, { name: 'Earring' }))
-    expect(headers(wrapper).slice(1)).toEqual([['Gerdan', 'false'], ['Earring', 'false']])
-    expect(wrapper.findAll('[data-testid="project-frame"]').map((section) => section.get('.panel-section__header').attributes('aria-label'))).toEqual(['Gerdan, Loom · 4 × 6', 'Earring, Loom · 4 × 6'])
+    await unfoldFrames(wrapper)
+    expect(rows(wrapper)).toEqual([['Gerdan', 'Loom · 4 × 6'], ['Earring', 'Loom · 4 × 6']])
+    expect(wrapper.findAllComponents(ProjectThumbnail).map((picture) => picture.props('frame'))).toEqual([firstOf(twoFrames()), SECOND])
   })
 
-  it('calls an unnamed Frame by the default its place gives it, Frame 1, then Frame 2', () => {
-    expect(headers(mountFrames(one()))[1]![0]).toBe('Frame 1')
-    expect(headers(mountFrames(twoFrames())).slice(1).map(([name]) => name)).toEqual(['Frame 1', 'Frame 2'])
+  it('calls an unnamed Frame by the default its place gives it, Frame 1, then Frame 2', async () => {
+    expect(rows(mountFrames(one()))[0]![0]).toBe('Frame 1')
+    const wrapper = mountFrames(twoFrames())
+    await unfoldFrames(wrapper)
+    expect(rows(wrapper).map(([name]) => name)).toEqual(['Frame 1', 'Frame 2'])
   })
 
-  it('shows, exports and removes the Frame whose section it is, from the heading\'s button and from its rows', async () => {
+  it('shows, exports and removes a Frame from the icon buttons always on its row, each named with the Frame', async () => {
     const wrapper = mountFrames(one())
     const id = frameIdIn(one())
-    await wrapper.get('[data-testid="project-frame-show-button"]').trigger('click')
-    await wrapper.get('[data-testid="project-frame-show"]').trigger('click')
-    await wrapper.get('[data-testid="project-frame-export"]').trigger('click')
-    await wrapper.get('[data-testid="project-frame-remove"]').trigger('click')
-    expect(wrapper.emitted('show-frame')).toEqual([[id], [id]])
+    const buttons = ['show', 'export', 'remove'].map((what) => wrapper.get(`[data-testid="project-frame-${what}"]`))
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual([`${en.frame.showFrame}: Frame 1`, `${en.frame.exportThisFrame}: Frame 1`, `${en.frame.removeThisFrame}: Frame 1`])
+    for (const button of buttons) await button.trigger('click')
+    expect(wrapper.emitted('show-frame')).toEqual([[id]])
     expect(wrapper.emitted('export-frame')).toEqual([[id]])
     expect(wrapper.emitted('remove-frame')).toEqual([[id]])
-    expect(wrapper.get('[data-testid="project-frame-remove"]').classes()).toContain('panel-item--danger')
+  })
+
+  it('closes the panel for Export and Remove, which open something else, and keeps it for Show', async () => {
+    const close = vi.fn()
+    const wrapper = mount(ProjectFrames, { props: { project: one() }, global: { provide: { [PANEL_CONTEXT as symbol]: { close, openSub: () => {} } } } })
+    await wrapper.get('[data-testid="project-frame-show"]').trigger('click')
+    expect(close).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="project-frame-export"]').trigger('click')
+    await wrapper.get('[data-testid="project-frame-remove"]').trigger('click')
+    expect(close).toHaveBeenCalledTimes(2)
   })
 
   it('disables every way to add a Frame at the most Frames, saying so, and Fit while nothing is drawn', async () => {

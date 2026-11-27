@@ -381,13 +381,13 @@ describe('The Project panel\'s Frames (ticket 1222)', () => {
     const mounted = mountPanels()
     await addTriangle(mounted)
     await mounted.openPanel('project')
+    // With two Frames "frames" is folded: unfolded to reach its rows.
+    await mounted.wrapper.get('[data-testid="project-frames-list"] .panel-section__header').trigger('click')
     const listed = mounted.wrapper.findAll('[data-testid="project-frame"]')
     expect(listed).toHaveLength(2)
     const second = frameIdOf(framesOf(loadProjects()[0]!)[1]!)
 
-    // With two Frames each folds: the second is unfolded to reach its rows.
-    await listed[1]!.get('.panel-section__header').trigger('click')
-    await click(mounted, 'project-frame-export')
+    await listed[1]!.get('[data-testid="project-frame-export"]').trigger('click')
     expect(mounted.panels.openPanel.value).toBe('export')
     expect(mounted.panels.exportedFrame.value).toBe(second)
   })
