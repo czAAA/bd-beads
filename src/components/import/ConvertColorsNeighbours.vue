@@ -10,12 +10,15 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import TextField from '../ui/form/TextField.vue'
 import ConvertBeadsThumb from './ConvertBeadsThumb.vue'
 
-// The Colors neighbours' card (ConvertImage card DS-2, ticket 0904): beside the Colors slider while it is in use, the beads
-// at one color fewer, the count shown and one more, each a button that takes its count, and a field for a number past the
+// The Colors neighbours' card (ConvertImage card DS-2, tickets 0904, 1253): beside the Colors slider in use, the beads at one
+// color fewer, the count shown and one more (up to 20 colors), each taking its count, and a field for a number past the
 // slider's end. Escape or a press outside closes it; focus leaving the slider and the card closes it too (ConvertColumn).
 const props = defineProps<{
   fewer: NeighbourPlace
   more: NeighbourPlace
+  /** Whether the card draws the three places: up to 20 colors, with as many found as asked (ticket 1253). Else it holds
+   * the typed number only. */
+  previews: boolean
   /** The Colors slider's range: its own press is not outside. */
   slider: () => HTMLElement | undefined
   /** The Colors section the card stands level with, 8 above its top. */
@@ -100,7 +103,7 @@ onMounted(() => {
     :aria-label="words.name"
     data-testid="convert-neighbours"
   >
-    <div class="convert-neighbours__places">
+    <div v-if="previews" class="convert-neighbours__places">
       <template v-for="{ side, place } in places" :key="side">
         <div v-if="place.end" class="convert-neighbours__end" :data-side="side" data-testid="convert-neighbour-end">
           {{ side === 'fewer' ? words.noFewer : words.noMore }}

@@ -14,7 +14,7 @@ const words = computed(() => t.value.convertImage.wizard)
 const has = computed(() => wizard.hasPicture.value)
 const offBody = computed(() => (has.value ? undefined : words.value.addPictureFirst))
 const NONE = '—'
-const { colorsEnd, colorsMarks, colorsValue, colorsReach, colorsMaxLabel } = useConvertColorsReadings()
+const { colorsEnd, colorsMarks, colorsValue, colorsValueText, colorsReach, colorsMaxLabel } = useConvertColorsReadings()
 </script>
 
 <template>
@@ -24,7 +24,7 @@ const { colorsEnd, colorsMarks, colorsValue, colorsReach, colorsMaxLabel } = use
     :min="MIN_IMAGE_COLORS"
     :max="colorsEnd"
     :value="has ? colorsValue : NONE"
-    :valuetext="has ? colorsValue : NONE"
+    :valuetext="has ? colorsValueText : NONE"
     :min-label="has ? String(MIN_IMAGE_COLORS) : ''"
     :max-label="has ? colorsMaxLabel : ''"
     :marks="has ? colorsMarks : undefined"

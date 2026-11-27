@@ -213,6 +213,7 @@ export const convert: ConvertTranslations = {
       },
       fewerFound: {
         asked: 'просілі {asked} · знойдзена {found}',
+        short: '{asked} → {found}',
         allGiven: '{colors} (усё, што дае гэтая выява ў {bead})',
       },
       backgroundChip: 'Фон знойдзены · {n}% выявы',

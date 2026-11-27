@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReductionRequest } from '../domain/convertColors'
-import { createColorReducer } from './colorReducer'
+import { createColorReducer, createColorReductionQueue } from './colorReducer'
 
 const request = (asked = 12): ReductionRequest => ({ counts: new Map([['#000000', 3], ['#ffffff', 2]]), asked, targets: undefined, choices: new Map(), leastBeads: 0 })
 
@@ -53,5 +53,46 @@ describe('createColorReducer (ticket 1163)', () => {
     createColorReducer().reduce(request(), (result) => (reduced = result))
     FakeWorker.all[0]!.onerror!()
     expect(reduced).toMatchObject({ colors: [{ hex: '#000000', count: 3 }, { hex: '#ffffff', count: 2 }] })
+  })
+})
+
+describe('createColorReductionQueue (ticket 1253)', () => {
+  it('reduces on the spot where the browser has no worker', async () => {
+    await expect(createColorReductionQueue().reduce(request())).resolves.toMatchObject({ colors: [{ hex: '#000000', count: 3 }, { hex: '#ffffff', count: 2 }] })
+  })
+
+  it('answers every request, each with its own result, from one worker', async () => {
+    vi.stubGlobal('Worker', FakeWorker)
+    const queue = createColorReductionQueue()
+    const first = queue.reduce(request(12))
+    const second = queue.reduce(request(24))
+    const [worker] = FakeWorker.all
+    expect(FakeWorker.all).toHaveLength(1)
+    const [a, b] = worker!.posted
+    worker!.onmessage!({ data: { id: b!.id, reduced: { colors: [], byHex: new Map(), keptApart: true } } })
+    worker!.onmessage!({ data: { id: a!.id, reduced: { colors: [], byHex: new Map(), keptApart: false } } })
+    await expect(first).resolves.toMatchObject({ keptApart: false })
+    await expect(second).resolves.toMatchObject({ keptApart: true })
+  })
+
+  it('drops what is waiting when cleared: a later request gets a fresh worker', async () => {
+    vi.stubGlobal('Worker', FakeWorker)
+    const queue = createColorReductionQueue()
+    let dropped = false
+    void queue.reduce(request(12)).then(() => (dropped = true))
+    queue.clear()
+    expect(FakeWorker.all[0]!.terminated).toBe(true)
+    const next = queue.reduce(request(24))
+    const worker = FakeWorker.all[1]!
+    worker.onmessage!({ data: { id: worker.posted[0]!.id, reduced: { colors: [], byHex: new Map(), keptApart: true } } })
+    await expect(next).resolves.toMatchObject({ keptApart: true })
+    expect(dropped).toBe(false)
+  })
+
+  it('reduces on the spot what was waiting when the worker fails', async () => {
+    vi.stubGlobal('Worker', FakeWorker)
+    const waiting = createColorReductionQueue().reduce(request())
+    FakeWorker.all[0]!.onerror!()
+    await expect(waiting).resolves.toMatchObject({ colors: [{ hex: '#000000', count: 3 }, { hex: '#ffffff', count: 2 }] })
   })
 })

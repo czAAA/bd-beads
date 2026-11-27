@@ -213,6 +213,7 @@ export const convert: ConvertTranslations = {
       },
       fewerFound: {
         asked: '{asked} asked · {found} found',
+        short: '{asked} → {found}',
         allGiven: '{colors} (all this picture gives in {bead})',
       },
       backgroundChip: 'Background found · {n}% of the picture',
