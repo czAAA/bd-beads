@@ -19,8 +19,8 @@ function setup() {
   const placed = ref(false)
   const isAtFit = ref(true)
   const bringIntoView = vi.fn()
-  const { showRow } = effectScope().run(() => useRowInView({ currentProject: () => current.value, bringIntoView, placed, isAtFit }))!
-  return { current, placed, isAtFit, bringIntoView, showRow }
+  effectScope().run(() => useRowInView({ currentProject: () => current.value, bringIntoView, placed, isAtFit }))
+  return { current, placed, isAtFit, bringIntoView }
 }
 
 describe('useRowInView (ticket 0934)', () => {
@@ -46,19 +46,14 @@ describe('useRowInView (ticket 0934)', () => {
     expect(bringIntoView).not.toHaveBeenCalled()
   })
 
-  it('glides to the row on Show row', () => {
-    const { bringIntoView, showRow } = setup()
-    showRow()
-    expect(bringIntoView).toHaveBeenCalledWith(expect.any(Function), { frame: frameIdIn(framed) })
-  })
-
-  it('brings the named Frame\'s row into view, not the Last edited Frame\'s (ticket 1243)', () => {
+  it('brings the Last edited Frame\'s row, found where that Frame lies (ticket 1243)', async () => {
     const second = frameIdOf({ id: 'second' })
-    const { current, bringIntoView, showRow } = setup()
-    current.value = withFrameSheet(framed, onCanvas(framed, { technique: 'loom', row: 0, column: 100, rows: 6, columns: 4, beads: {} }), { frame: second })
+    const { current, placed, bringIntoView } = setup()
+    current.value = { ...withFrameSheet(framed, onCanvas(framed, { technique: 'loom', row: 0, column: 100, rows: 6, columns: 4, beads: {} }), { frame: second }), lastEditedFrame: second }
     const surface = { beadToPoint: ({ row, column }: { row: number; column: number }, ref: string) => ({ x: column + (ref === second ? 100 : 0), y: row }), beadStep: () => ({ column: { x: 1, y: 0 }, row: { x: 0, y: 1 } }) } as unknown as SurfaceView
-    showRow({ frame: second })
-    expect(bringIntoView.mock.calls[0]![1]).toEqual({ frame: second })
+    placed.value = true
+    await nextTick()
+    expect(bringIntoView.mock.calls[0]![1]).toEqual({ jump: true, frame: second })
     const locate = bringIntoView.mock.calls[0]![0] as (surface: SurfaceView) => Region
     expect(locate(surface).x).toBeGreaterThan(50)
   })

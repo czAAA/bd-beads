@@ -106,11 +106,10 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenLastCalledWith('row-direction', `${en.rowProgress.directionToastRowsReversed} ${en.rowProgress.columnsKeptToast}`, 'success')
   })
 
-  it('brings the row it reaches into view and says it in the counter\'s words, once per move (ticket 0934)', () => {
+  it('says the row it reaches in the counter\'s words, once per move (ticket 0934)', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 10, columns: 3, beads: {} } })
     const announce = vi.fn()
-    const showRow = vi.fn()
-    const at = (row: number) => useRowOps({ currentProject: () => moveToRow(framed, row, frameIdIn(framed)), replaceProject: vi.fn(), showToast: vi.fn(), messages: () => en, announce, showRow })
+    const at = (row: number) => useRowOps({ currentProject: () => moveToRow(framed, row, frameIdIn(framed)), replaceProject: vi.fn(), showToast: vi.fn(), messages: () => en, announce })
 
     at(5).onMoveRow(1)
     expect(announce).toHaveBeenLastCalledWith('Row 7 of 10')
@@ -119,14 +118,10 @@ describe('useRowOps', () => {
     at(9).onMoveRow(1)
     expect(announce).toHaveBeenLastCalledWith(en.rowProgress.patternDone)
     expect(announce).toHaveBeenCalledTimes(4)
-    expect(showRow).toHaveBeenCalledTimes(4)
-    // The Frame whose pointer moved is the one to show (ticket 1243).
-    expect(showRow).toHaveBeenLastCalledWith({ frame: frameIdIn(framed) })
 
-    // A move that goes nowhere says nothing and pans nothing.
+    // A move that goes nowhere says nothing.
     at(0).onMoveRow(-1)
     expect(announce).toHaveBeenCalledTimes(4)
-    expect(showRow).toHaveBeenCalledTimes(4)
   })
 
   it('moves the Row progress pointer by the given step', () => {

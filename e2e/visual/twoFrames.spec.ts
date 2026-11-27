@@ -108,3 +108,26 @@ for (const [name, frame] of [['a second Frame', SECOND], ['a lone moved Frame', 
     expect(await sheet.boundingBox()).toEqual(before)
   })
 }
+
+// Ticket 1249: a Row progress press never moves the view, the row on screen or not.
+test('Row done and Back a row leave a view panned away from the row where it is (ticket 1249)', async ({ page }) => {
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 12, rows: 8 })])
+  await setZoom(page, 100)
+  await settle(page)
+  const sheet = page.getByTestId('margin-sheet')
+  const canvas = (await page.getByTestId('app-canvas').boundingBox())!
+  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2)
+  const start = (await sheet.boundingBox())!
+  // The Frame goes off the left side, so its row is only partly on screen.
+  await page.mouse.wheel(start.x - canvas.x + start.width / 2, 0)
+  await settle(page)
+  const panned = (await sheet.boundingBox())!
+  expect(panned.x).toBeLessThan(canvas.x)
+  // Back a row is offered only once a row is done, so it tells that each key moved the pointer.
+  for (const [key, done] of [['Enter', true], ['Shift+Enter', false]] as const) {
+    await page.keyboard.press(key)
+    await expect(sheet.getByTestId('margin-progress-previous')).toBeEnabled({ enabled: done })
+    await settle(page)
+    expect(await sheet.boundingBox()).toEqual(panned)
+  }
+})

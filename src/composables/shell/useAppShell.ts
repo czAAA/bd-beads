@@ -973,10 +973,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
-  /** The row the weaver is on kept in view (ticket 0934): after each row move and an opening. */
-  const { showRow } = useRowInView({ currentProject, bringIntoView, placed: viewPlaced, isAtFit })
+  /** An opened Project's view brought to the row the weaver is on (ticket 0934). */
+  useRowInView({ currentProject, bringIntoView, placed: viewPlaced, isAtFit })
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs, announce, showRow })
+  const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs, announce })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
   if (!demo) useSaveOnPageHide(flushPendingSave, noteClosing)
