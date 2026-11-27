@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
-import AppMenuItem from '../ui/AppMenuItem.vue'
+import PanelSection from '../shell/PanelSection.vue'
+import AppButton from '../ui/AppButton.vue'
+import FramePopoverBead from './FramePopoverBead.vue'
+import FramePopoverNames from './FramePopoverNames.vue'
+import FramePopoverProgress from './FramePopoverProgress.vue'
 import FrameSizeSection from './FrameSizeSection.vue'
+import { frameEstimate } from './frameEstimate'
 import type { FrameToolItem } from './framePopoverTools'
 import { controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -12,22 +17,37 @@ import { settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import type { FrameId } from '../../domain/grid'
 import { frameById, framesOf, soloFrame } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
+import type { SeenWay } from '../../domain/rowProgress'
+import type { Technique } from '../../domain/weave'
+import type { RowPress } from '../../composables/project/useRowOps'
 import { frameLabel } from '../../i18n/frameLabel'
 import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 
-// The Frame settings popover (MarginSheet card, Several Frames; ticket 1222): what the ··· button opens, everything about
-// one Frame top to bottom: its head, every band tool as a Menu item, its size and its Beads needed. The tools are second
-// triggers of the band's own controls, so each keeps its name, check, confirmation and reason for being off.
+// The Frame settings popover (MarginSheet card, Several Frames and Calmer sheet; tickets 1222, 1257): the head, the
+// band's tools as tiles, then Names, Bead and Technique, Size, Row progress and Beads needed folded. Every tile and
+// field is a second trigger of an existing action, with its name, check, confirmation and reason for being off.
 const props = defineProps<{
   project: Project
   /** The Frame whose popover it is. */
   frame: FrameId
   items: readonly FrameToolItem[]
   deps: ReturnType<typeof controlDeps>
+  rowHighlight?: boolean
+  rowPress?: RowPress
 }>()
 const emit = defineEmits<{
+  /** A tile was pressed: the host closes or holds the popover, then runs it. */
+  tool: [item: FrameToolItem]
+  rename: [name: string]
+  'save-maker-name': [name: string]
+  'set-technique': [technique: Technique]
+  'set-setting': [id: string, value: number]
+  'replace-bead': [beadId: string]
+  'move-row': [delta: number]
+  'set-row-direction': [way: SeenWay]
+  'toggle-row-highlight': []
   step: [edge: FrameEdge, step: 1 | -1]
   resize: [columns: number, rows: number]
   'set-settings': [change: FrameSettings]
@@ -49,10 +69,18 @@ const meta = computed(() => {
   return `${techniqueName(t.value, frame.technique)} · ${columns} × ${rows}`
 })
 const beadsProject = computed(() => soloFrame(props.project, props.frame))
+/** The Size row's summary: the size as seen, or a Custom frame's own, then the Estimated size. */
+const sizeSummary = computed(() => {
+  const frame = held.value
+  if (!frame) return undefined
+  const first = settingValuesOf(frame)[0]
+  const { columns, rows } = seenSize(frame)
+  const size = first ? plural(locale.value, first.value, t.value.frame.sizeSettings[first.name].summary) : `${columns} × ${rows}`
+  return [size, frameEstimate(t.value, locale.value, props.project, props.frame)].filter(Boolean).join(' · ')
+})
 
 const toolsEl = ref<HTMLElement>()
-const roving = useRovingFocus(toolsEl, { selector: '[role^="menuitem"]:not(:disabled)', axis: () => 'vertical', managesTabIndex: true })
-const disabled = (item: FrameToolItem) => (item.action.enabled ? !item.action.enabled(props.deps) : false)
+const roving = useRovingFocus(toolsEl, { selector: '.frame-popover__tile', managesTabIndex: true })
 onBeforeUnmount(() => emit('settle'))
 </script>
 
@@ -64,38 +92,42 @@ onBeforeUnmount(() => emit('settle'))
     </div>
 
     <div ref="toolsEl" class="frame-popover__tools" role="group" :aria-label="t.frame.margin.frameTools" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
-      <template v-for="item in items" :key="item.id">
-        <hr v-if="item.id === 'remove'" class="frame-popover__rule" />
-        <AppMenuItem
-          :icon="item.action.icon"
-          :disabled="disabled(item)"
-          :name="item.action.name(t)"
-          :disabled-body="disabled(item) ? item.action.disabledBody?.(t, deps) : undefined"
-          :checked="item.checked"
-          :class="{ 'frame-popover__danger': item.id === 'remove' }"
-          :data-testid="`margin-frame-tools-${item.id}`"
-          :data-rotate-from="item.id === 'rotate' ? 'menu' : undefined"
-          @select="item.run()"
-        >
-          {{ item.action.name(t) }}
-        </AppMenuItem>
-      </template>
+      <AppButton
+        v-for="item in items"
+        :key="item.id"
+        variant="text"
+        class="frame-popover__tile"
+        :class="{ 'frame-popover__tile--danger': item.id === 'remove' }"
+        :action="item.action"
+        :deps="deps"
+        :icon-size="20"
+        :selected="item.checked"
+        :aria-label="item.action.name(t)"
+        :data-testid="`margin-frame-tools-${item.id}`"
+        @click="emit('tool', item)"
+      >
+        <span>{{ t.frame.margin.tiles[item.id] }}</span>
+      </AppButton>
     </div>
 
-    <div class="frame-popover__section">
-      <span class="frame-popover__label">{{ t.frame.sizeHeading }}</span>
-      <FrameSizeSection :project="project" :frame="frame" @step="(edge, step) => emit('step', edge, step)" @resize="(columns, rows) => emit('resize', columns, rows)" @set-settings="emit('set-settings', $event)" @reset-progress="emit('reset-progress')" />
-    </div>
-
-    <BeadQuantities :project="beadsProject" />
+    <FramePopoverNames :project="project" :frame="frame" @rename="emit('rename', $event)" @save-maker-name="emit('save-maker-name', $event)" />
+    <FramePopoverBead :project="project" :frame="frame" @replace-bead="emit('replace-bead', $event)" @set-technique="emit('set-technique', $event)" @set-setting="(id, value) => emit('set-setting', id, value)" @reset-progress="emit('reset-progress')" />
+    <PanelSection id="frame-popover:size" :label="t.frame.sizeHeading" :summary="sizeSummary" folded data-testid="frame-popover-size">
+      <div class="frame-popover__body">
+        <FrameSizeSection :project="project" :frame="frame" @step="(edge, step) => emit('step', edge, step)" @resize="(columns, rows) => emit('resize', columns, rows)" @set-settings="emit('set-settings', $event)" @reset-progress="emit('reset-progress')" />
+      </div>
+    </PanelSection>
+    <FramePopoverProgress :project="project" :frame="frame" :row-highlight="rowHighlight" :row-press="rowPress" @move-row="emit('move-row', $event)" @set-row-direction="emit('set-row-direction', $event)" @toggle-row-highlight="emit('toggle-row-highlight')" @reset-progress="emit('reset-progress')" />
+    <BeadQuantities :project="beadsProject" folded />
   </div>
 </template>
 
 <style scoped>
 .frame-popover {
+  --panel-item-height: var(--panel-row);
+
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
   min-width: 0;
   color: var(--ink);
 }
@@ -104,11 +136,12 @@ onBeforeUnmount(() => emit('settle'))
   display: flex;
   flex-direction: column;
   min-width: 0;
+  padding: var(--space-4) var(--space-10) var(--space-6);
 }
 
 .frame-popover__name {
   overflow: hidden;
-  font: var(--margin-title-name);
+  font: var(--margin-roomy-name);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -118,34 +151,87 @@ onBeforeUnmount(() => emit('settle'))
   color: var(--muted);
 }
 
+/* The tools: tiles three by two, a 20px icon over a short word. */
 .frame-popover__tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-6);
+}
+
+.frame-popover__tools :deep(.app-button-wrap) {
   display: flex;
+  min-width: 0;
+}
+
+.frame-popover__tools :deep(.frame-popover__tile) {
+  flex: 1 1 auto;
   flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  height: auto;
+  min-height: var(--frame-popover-tile);
+  padding: var(--space-6) var(--space-2);
+  font: var(--type-small);
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+  border-color: var(--line-soft);
+  border-radius: var(--radius-sm);
 }
 
-.frame-popover__rule {
-  width: 100%;
-  margin: var(--space-4) 0;
-  border: 0;
-  border-top: 1px solid var(--line-soft);
-}
-
-.frame-popover__tools :deep(.frame-popover__danger),
-.frame-popover__tools :deep(.frame-popover__danger .app-icon) {
+.frame-popover__tools :deep(.frame-popover__tile--danger:not([aria-disabled='true'])) {
   color: var(--danger);
 }
 
-.frame-popover__section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding-top: var(--space-8);
-  border-top: 1px solid var(--line-soft);
+/* A narrow window gives the tiles two columns, so the longest word keeps to one line. */
+@media (max-width: 380px) {
+  .frame-popover__tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-.frame-popover__label {
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
+/* Mirror the whole Frame on: the band's own selected look, in the accent. */
+.frame-popover__tools :deep(.frame-popover__tile.app-button--selected) {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.frame-popover__tools :deep(.frame-popover__tile.app-button--selected:focus-visible) {
+  outline-color: var(--focus-ring-on-accent);
+}
+
+/* A folded row: its name keeps its room, and the summary wraps at the end rather than being cut. */
+.frame-popover :deep(.panel-section__header > .panel-section__label) {
+  flex: 1 0 auto;
+}
+
+.frame-popover :deep(.panel-section__row > .panel-section__label) {
+  flex: 0 0 auto;
+}
+
+.frame-popover :deep(.panel-section__summary) {
+  overflow: visible;
+  text-align: right;
+  white-space: normal;
+}
+
+.frame-popover :deep(.frame-popover__body) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-4) var(--space-10);
+}
+
+/* A finger's rows and tiles, so no two hit areas overlap. */
+@media (pointer: coarse) {
+  .frame-popover {
+    --panel-item-height: var(--touch-target);
+  }
+
+  .frame-popover__tools :deep(.frame-popover__tile) {
+    min-height: calc(var(--touch-target) + var(--space-16));
+  }
 }
 </style>

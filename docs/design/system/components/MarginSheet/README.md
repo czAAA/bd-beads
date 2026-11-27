@@ -285,3 +285,14 @@ Hand-written from the ticket 0655 design canvas; static rendition.
 - **One rule:** `bandTools` (`src/rendering/marginBand.ts`) decides, from the band's room in drafting px, the pointer and the tools offered, the row, the tools on the band and the tools in the menu; the sheet's widths are worked out from the card's sizes, not measured, so it is the same in the page and in a test. A change of what the band holds (a Frame that cannot be turned or resized) fits again at once.
 - **Touch (ticket 0976) superseded:** the coarse pointer no longer keeps Edit Frame and **···** alone; it only widens the spacing.
 - **Left out:** no one has checked it by hand on a real iPad.
+
+## As built (ticket 1257)
+
+The Calmer sheet's ··· popover (point 2). It replaces the popover of "Several Frames" above, and "Rotate Frame waits under the pointer" for the popover: no copy is left there.
+
+- **Values:** `--frame-popover-width` 25rem; a tile's least height `--frame-popover-tile` (two panel rows; on a coarse pointer 44px and 16px). The popover's own padding is 4px, as a menu's; the head and each row's body stand 10px in.
+- **Tiles:** secondary triggers of the band's tools, each a 20px icon over its word, named in full by its action (`aria-label` and Tooltip). One Tab stop, the arrows along them. In a window 380px wide or narrower they stand two by three, so the longest word keeps to one line. Mirror on is `accent` with `on-accent` (`aria-pressed`). A tile closes the popover and does as the band's button does, **Rotate** keeping it open where it is until Escape or a press outside; a Rotate that asks about rows done closes it first. Where the turn takes the sheet's band away (bare), the popover opens again at the same place from the lone ··· button.
+- **Folded rows:** PanelSections, folded until opened, then kept on the device. Names and, closed, Row progress show their summary; a long summary wraps at the end of its row, Names ending in an ellipsis.
+- **Names:** two open fields that save on Enter, on leaving them or as the popover closes; Escape puts the name back.
+- **Bead and Technique:** Brand, Type and Size each under its name, the Technique as a radio list, then the settings its description names. While a row is marked done the Technique and the settings are off, with the Technique's lock line and Reset progress; the Bead pickers stay on, as the legend's pencil does. A Bead pick closes the popover and asks Replace bead?.
+- **Row progress:** the Reset progress icon is on the row, folded or open. Turn row direction is a dropdown (none on a Custom frame).

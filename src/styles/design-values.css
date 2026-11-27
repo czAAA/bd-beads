@@ -373,7 +373,8 @@
   --margin-strip: 26px; /* MarginSheet card: Row progress's strip under the title block, across the sheet (ticket 1176). */
   --margin-done: 26px; /* MarginSheet card: Row done on the paper, the bar's primary button at 26px. */
   --margin-track: 64px; /* MarginSheet card: the Row progress track on the paper. */
-  --frame-popover-width: 21rem; /* MarginSheet card: the ··· Frame popover (approved 2026-11-24, ticket 1221; built by 1222). */
+  --frame-popover-width: 25rem; /* MarginSheet card: the ··· Frame popover (approved 2026-11-24, ticket 1221; built by 1222; 25rem since ticket 1257). */
+  --frame-popover-tile: calc(var(--panel-row) * 2); /* MarginSheet card, Calmer sheet: a Frame popover tool tile's least height (ticket 1257). */
   --margin-pencil: 18px; /* MarginSheet card: a title block pencil (a 12px icon). */
   --margin-legend-disc: 14px; /* MarginSheet card: one legend disc holding its Swatch letter. */
   --margin-edit-width: 260px; /* MarginSheet card: the title block's name editor, floated over the sheet (ticket 0657). */

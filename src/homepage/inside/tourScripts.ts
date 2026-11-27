@@ -174,6 +174,11 @@ async function removeFrame(hand: Hand): Promise<void> {
   await hand.press('confirm-modal-confirm')
 }
 
+/** A folded section's header button, which opens it. */
+function foldHeader(hand: Hand, testid: string) {
+  return () => hand.root.querySelector(`[data-testid="${testid}"] [aria-expanded]`)
+}
+
 /** A picker's own button: the one that opens its list. */
 function pickerButton(hand: Hand, testid: string) {
   return () => hand.root.querySelector(`[data-testid="${testid}"] .panel-picker__button`) ?? hand.root.querySelector(`[data-testid="${testid}"]`)
@@ -326,6 +331,8 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   /** The Frame's settings popover opened on Beads needed. */
   async beadsNeeded(hand) {
     await inFramePopover(hand, async () => {
+      // Folded in the popover until it is opened (ticket 1257).
+      if (!hand.root.querySelector('[data-testid="quantity-row"]')) await hand.press(foldHeader(hand, 'bead-quantities'))
       await hand.hover('bead-quantities', HOLD.beadsNeeded, 'start')
     })
   },

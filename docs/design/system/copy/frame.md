@@ -209,3 +209,18 @@ The Frames in the Project panel, the ··· Frame popover and the Margin color p
 | Too close to {name}. Frames and their margins can’t meet. (the refusal naming the Frame in the way) | Слишком близко к «{name}». Рамки и их поля не могут соприкасаться. | Надто близько до «{name}». Рамки та їхні поля не можуть торкатися. | Занадта блізка да «{name}». Рамкі і іх палі не могуць датыкацца. | 离“{name}”太近。边框及其边距不能相接。 | Demasiado cerca de {name}. Los marcos y sus márgenes no pueden tocarse. | Za blisko: {name}. Ramki i ich marginesy nie mogą się stykać. |
 
 As built, beyond the card (ticket 1222): the Margin color popover also holds the **Name and size on the margin** Switch and the line on what the margin is (the Frame panel's margin section had both); a Frame with no name (a Project saved before every Frame had one) is called by the default its place in the Project gives it, "Frame 1", "Frame 2", in lists and messages, and a new Frame takes the lowest number none of the others goes by.
+
+## Calmer Frame popover (ticket 1257)
+
+The ··· popover's tool tiles and its two new rows (MarginSheet card, Calmer sheet). A tile's word is short; its accessible name and Tooltip stay the tool's. The other rows and fields keep their existing keys (Size, Row progress, Beads needed, Frame name, Maker's name, Technique, Brand, Type, Turn row direction, Show row marks, Reset progress). The other languages are proposals for review.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+| --- | --- | --- | --- | --- | --- | --- |
+| Names (row) | Имена | Імена | Імёны | 名称 | Nombres | Nazwy |
+| Bead and Technique (row) | Бисер и техника | Бісер і техніка | Бісер і тэхніка | 珠子与技法 | Cuenta y técnica | Koralik i technika |
+| Mirror | Отражение | Відображення | Адлюстраванне | 镜像 | Espejo | Odbicie |
+| Rotate | Повернуть | Повернути | Павярнуць | 旋转 | Girar | Obróć |
+| Edit | Править | Правити | Правіць | 编辑 | Editar | Edytuj |
+| Export | Экспорт | Експорт | Экспарт | 导出 | Exportar | Eksport |
+| Color | Цвет | Колір | Колер | 颜色 | Color | Kolor |
+| Remove | Убрать | Прибрати | Прыбраць | 移除 | Quitar | Usuń |

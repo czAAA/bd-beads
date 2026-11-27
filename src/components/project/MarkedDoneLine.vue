@@ -8,6 +8,8 @@ import { useI18n } from '../../i18n/useI18n'
 defineProps<{
   /** Its test id; its button's is this with `-reset`. */
   testid: string
+  /** What is locked, said in full; the size's line where none is given (ticket 1257). */
+  line?: string
 }>()
 const emit = defineEmits<{ 'reset-progress': [] }>()
 
@@ -17,7 +19,7 @@ const resetAction = controlAction('reset-progress')
 
 <template>
   <div class="marked-done-line">
-    <p class="marked-done-line__text" :data-testid="testid">{{ t.frame.sizeLockedLine }}</p>
+    <p class="marked-done-line__text" :data-testid="testid">{{ line ?? t.frame.sizeLockedLine }}</p>
     <!-- Shown only while a row is marked done, when the action is always on. -->
     <AppButton size="sm" :action="resetAction" :disabled="false" :data-testid="`${testid}-reset`" @click="emit('reset-progress')" />
   </div>

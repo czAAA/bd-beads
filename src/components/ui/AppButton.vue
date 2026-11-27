@@ -18,6 +18,8 @@ const props = withDefaults(
     size?: 'md' | 'lg' | 'sm' | 'xl' | '2xl'
     icon?: IconName
     trailingIcon?: IconName
+    /** The leading icon's size in place of the size's own (a Frame popover tile's 20px, ticket 1257). */
+    iconSize?: IconSize
     /** `link` only: the destructive color. */
     danger?: boolean
     selected?: boolean
@@ -42,6 +44,7 @@ const props = withDefaults(
     size: 'md',
     icon: undefined,
     trailingIcon: undefined,
+    iconSize: undefined,
     danger: false,
     selected: undefined,
     expanded: undefined,
@@ -63,7 +66,7 @@ const iconName = computed(() => props.icon ?? props.action?.icon)
 /** Each size's icon (Button card): 15px beside a `control` label, growing with the big sizes' words; a link's is 16px. */
 const ICON_SIZE = { sm: 15, md: 15, lg: 15, xl: 18, '2xl': 22 } as const satisfies Record<NonNullable<typeof props.size>, IconSize>
 const trailingIconSize = computed(() => ICON_SIZE[props.size])
-const leadingIconSize = computed(() => (props.variant === 'link' ? 16 : ICON_SIZE[props.size]))
+const leadingIconSize = computed(() => props.iconSize ?? (props.variant === 'link' ? 16 : ICON_SIZE[props.size]))
 const isDisabled = computed(() => props.disabled ?? (props.action?.enabled ? !props.action.enabled(props.deps as never) : false))
 const reason = computed(
   () => props.disabledBody ?? (props.action?.disabledBody && props.deps ? props.action.disabledBody(t.value, props.deps as never) : undefined),

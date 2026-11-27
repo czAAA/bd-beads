@@ -293,7 +293,8 @@
   --margin-strip: 26px;
   --margin-done: 26px;
   --margin-track: 64px;
-  --frame-popover-width: 21rem;
+  --frame-popover-width: 25rem;
+  --frame-popover-tile: calc(var(--panel-row) * 2);
   --margin-pencil: 18px;
   --margin-legend-disc: 14px;
   --margin-edit-width: 260px;

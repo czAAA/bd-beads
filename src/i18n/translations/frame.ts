@@ -1,4 +1,5 @@
 import type { FrameShapeId, FrameSettingName } from '../../domain/frameShape'
+import type { BandToolId } from '../../rendering/marginBand'
 import type { PluralForms } from '../plural'
 
 /** The Frame, its panel and its export section. */
@@ -92,7 +93,7 @@ export interface FrameTranslations {
     background: { label: string }
     /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
      * Switch and the title block's Technique pencil. */
-    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; changeSetting: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
+    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; changeSetting: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string; names: string; beadAndTechnique: string; tiles: Record<BandToolId, string> }
     qualityHintLabel: string
     /** The Export quality Info note: each stop's DPI, {low}, {medium} and {high} (ticket 0957). */
     qualityHint: string
