@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-27",
+  "kind": "changed",
+  "line": {
+    "en": "Row progress now has Reset progress and Show row marks buttons beside a track that shows its whole length, with round buttons when zoomed out",
+    "ru": "У прогресса рядов появились кнопки «Сбросить прогресс» и «Показывать отметки рядов» рядом с дорожкой, видной во всю длину; при отдалении кнопки круглые",
+    "uk": "У прогресу рядів з’явилися кнопки «Скинути прогрес» і «Показувати позначки рядів» поруч зі смугою, яку видно на всю довжину; за віддалення кнопки круглі",
+    "be": "У прагрэсу радоў з’явіліся кнопкі «Скінуць прагрэс» і «Паказваць адзнакі радоў» побач з палосай, бачнай на ўсю даўжыню; пры аддаленні кнопкі круглыя",
+    "zh": "行进度新增“重置进度”和“显示行标记”按钮，进度条完整显示全长；缩小时按钮为圆形",
+    "es": "El progreso por filas tiene ahora los botones Reiniciar progreso y Mostrar marcas de fila junto a una barra visible en toda su longitud, con botones redondos al alejar",
+    "pl": "Postęp rzędów ma teraz przyciski Zresetuj postęp i Pokazuj oznaczenia rzędów obok paska widocznego na całej długości, a po oddaleniu przyciski są okrągłe"
+  }
+}
