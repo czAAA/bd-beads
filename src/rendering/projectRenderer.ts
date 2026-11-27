@@ -795,7 +795,7 @@ const canvasLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 
 /** A theme as the Canvas draws in it: a finished row fades toward the drawing area, not a board. One object per theme,
  * so the colors kept per theme last from draw to draw. */
-function canvasLook(theme: ProjectTheme): ProjectTheme {
+export function canvasLook(theme: ProjectTheme): ProjectTheme {
   let look = canvasLooks.get(theme)
   if (!look) {
     look = { ...theme, background: theme.canvas }

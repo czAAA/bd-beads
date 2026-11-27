@@ -44,9 +44,9 @@ function shown(project: Project, drop: 0 | 1 | 2 | 3 = 0): string[] {
 
 describe('Row progress strip as it runs out of room (MarginSheet card, 1221 option 4B)', () => {
   it('holds Back a row, the counter, the track and Row done, and gives up its track, never Back a row or Row done', () => {
-    expect(shown(makeProject())).toEqual(['previous', '|', 'compact-position', 'track', '|', 'next'])
-    expect(shown(makeProject(), 1)).toEqual(['previous', '|', 'compact-position', '|', 'next'])
-    expect(shown(makeProject(), 3)).toEqual(['previous', '|', 'compact-position', '|', 'next'])
+    expect(shown(makeProject())).toEqual(['settings', 'previous', '|', 'compact-position', 'track', '|', 'next'])
+    expect(shown(makeProject(), 1)).toEqual(['settings', 'previous', '|', 'compact-position', '|', 'next'])
+    expect(shown(makeProject(), 3)).toEqual(['settings', 'previous', '|', 'compact-position', '|', 'next'])
   })
 
   it('shows Back a row as its arrow alone at the last drop', () => {
@@ -142,7 +142,7 @@ describe('Row progress strip', () => {
     expect(wrapper.find('.row-progress__arrow--left').exists()).toBe(true)
     expect(wrapper.get(id('next')).text()).toBe(ru.rowProgress.columnNextButton)
 
-    await wrapper.get(id('compact-position')).trigger('click')
+    await wrapper.get(id('settings')).trigger('click')
     expect(wrapper.get(id('direction-left')).attributes('aria-checked')).toBe('true')
     wrapper.unmount()
   })
@@ -181,13 +181,13 @@ describe('Row progress strip', () => {
   })
 })
 
-describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 455)', () => {
+describe('the settings list (MarginSheet card; tickets 0973, 455, 1251)', () => {
   const list = (wrapper: ReturnType<typeof strip>) => wrapper.find(id('direction-list'))
   const ways = (wrapper: ReturnType<typeof strip>) => list(wrapper).findAll('[role="radio"]')
 
   it('opens on the first press with the four ways in words, the current one checked, and turns nothing', async () => {
     const wrapper = strip(at(makeProject(), 4))
-    const button = wrapper.get(id('compact-position'))
+    const button = wrapper.get(id('settings'))
     expect(button.attributes('aria-haspopup')).toBe('dialog')
     expect(list(wrapper).exists()).toBe(false)
 
@@ -203,7 +203,7 @@ describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 
 
   it('turns the rows the way chosen and closes; the way they run already, or Escape, turns nothing', async () => {
     const wrapper = strip(makeProject())
-    const button = wrapper.get(id('compact-position'))
+    const button = wrapper.get(id('settings'))
 
     await button.trigger('click')
     await wrapper.get(id('direction-up')).trigger('click')
@@ -224,7 +224,7 @@ describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 
 
   it('checks the way the rows run as the Frame lies', async () => {
     const wrapper = strip(toggleRowDirection(makeProject(), frameIdIn(makeProject())))
-    await wrapper.get(id('compact-position')).trigger('click')
+    await wrapper.get(id('settings')).trigger('click')
     expect(ways(wrapper).map((way) => way.attributes('aria-checked'))).toEqual(['false', 'true', 'false', 'false'])
     wrapper.unmount()
   })
@@ -233,7 +233,7 @@ describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 
     const wrapper = strip(makeProject())
     expect(wrapper.find(id('highlight')).exists()).toBe(false)
 
-    await wrapper.get(id('compact-position')).trigger('click')
+    await wrapper.get(id('settings')).trigger('click')
     const marks = () => wrapper.get(id('row-marks'))
     expect(marks().attributes('role')).toBe('switch')
     expect(marks().attributes('aria-checked')).toBe('true')
@@ -250,7 +250,7 @@ describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 
 
   it('asks to reset progress from its list, and closes it (ticket 455)', async () => {
     const wrapper = strip(at(makeProject(), 4))
-    await wrapper.get(id('compact-position')).trigger('click')
+    await wrapper.get(id('settings')).trigger('click')
 
     await wrapper.get(id('reset')).trigger('click')
 
@@ -261,7 +261,7 @@ describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 
 
   it('keeps Reset progress off while no row is done', async () => {
     const wrapper = strip(makeProject())
-    await wrapper.get(id('compact-position')).trigger('click')
+    await wrapper.get(id('settings')).trigger('click')
 
     const reset = wrapper.get(id('reset'))
     expect(reset.attributes('aria-disabled')).toBe('true')
@@ -276,7 +276,7 @@ describe('the counter’s list (MarginSheet card, 1221 option 4B; tickets 0973, 
     const wrapper = strip(at(placed.project, 2))
     expect(wrapper.get(id('compact-position')).text()).toContain('Круг 3 из 4')
 
-    await wrapper.get(id('compact-position')).trigger('click')
+    await wrapper.get(id('settings')).trigger('click')
     expect(ways(wrapper)).toHaveLength(0)
     expect(wrapper.find(id('row-marks')).exists()).toBe(true)
     expect(wrapper.find(id('reset')).exists()).toBe(true)

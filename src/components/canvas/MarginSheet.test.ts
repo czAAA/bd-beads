@@ -112,7 +112,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
   it('holds Expand the Frame, the Move bar and the tools in its top band, and Row progress under the title block, in that order and with their names (ticket 1176)', () => {
     const wrapper = mountSheet()
     const named = (testid: string) => control(wrapper, testid).findAll('button').map((button) => button.attributes('aria-label') ?? button.text())
-    expect(named('margin-progress-strip')).toEqual(['Back a row', 'Row 1 of 111/11', 'Row done'])
+    expect(named('margin-progress-strip')).toEqual(['Row progress settings', 'Back a row', 'Row done'])
     expect(named('margin-band')).toEqual([
       'Expand the Frame',
       'Move Frame',
@@ -132,7 +132,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     const stops = () => wrapper.findAll('button').filter((button) => button.attributes('tabindex') !== '-1')
     const names = stops().map((button) => button.attributes('aria-label') ?? button.text())
     expect(names.slice(0, 4)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Name this Frame'])
-    expect(names.indexOf('Back a row')).toBeGreaterThan(names.indexOf('Letters'))
+    expect(names.indexOf('Row progress settings')).toBeGreaterThan(names.indexOf('Letters'))
 
     const mirror = control(wrapper, 'margin-mirror-frame')
     ;(mirror.element as HTMLElement).focus()
@@ -300,7 +300,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     // Two rows done: the Frame holds still, its Edit Frame kept in place, disabled (ticket 0975).
     expect(names(wrapper)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame', 'Frame tools'])
     expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--line')
-    expect(control(wrapper, 'margin-progress-strip').findAll('button').map((button) => button.attributes('data-testid'))).toEqual(['margin-progress-previous', 'margin-progress-compact-position', 'margin-progress-next'])
+    expect(control(wrapper, 'margin-progress-strip').findAll('button').map((button) => button.attributes('data-testid'))).toEqual(['margin-progress-settings', 'margin-progress-previous', 'margin-progress-next'])
     expect(control(wrapper, 'margin-progress-compact-position').text()).toContain('3 of 11')
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(true)
     expect(styleOf(wrapper, 'margin-band')).toContain('top: 8px')

@@ -87,6 +87,7 @@ export const canvas: CanvasTranslations = {
     announcePass: '{step}, row {line}',
     announceColumnPass: '{step}, column {line}',
     showRowMarks: 'Show row marks',
+    settingsButton: 'Row progress settings',
   },
   removeLine: {
     rowTitle: 'Remove row?',

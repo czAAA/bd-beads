@@ -859,18 +859,19 @@ describe('ProjectSurface', () => {
     })
   })
 
-  it('draws the Row progress marker on the overlay, and no marker when no bead is in the pass', async () => {
+  it('draws the Row progress marker on the overlay, over a pass with beads or none', async () => {
     const progress: RowProgress = { way: 'down', down: 2 }
-    // Only a cell that holds a bead is marked (ticket 411).
     const beads = { 2: { 0: '#e63746', 1: '#e63746' } }
 
+    // Row 1, where the pointer starts, holds no bead.
     await mountSurface(projectOf(20, 10, { beads, rowProgress: { way: 'down' } }))
-    const without = context.named('stroke').length
+    const empty = context.named('stroke').filter((call) => call.strokeStyle === DEFAULT_THEME.marker)
+    expect(empty).toHaveLength(1)
 
     context.calls.length = 0
     await mountSurface(projectOf(20, 10, { beads, rowProgress: progress }))
     // The marker is two strokes, its `marker` line and its `canvas` line: the rings round the beads in the pass (tickets 375, 376, 1031), over whatever else the overlay strokes.
-    expect(context.named('stroke')).toHaveLength(without + 2)
+    expect(context.named('stroke').filter((call) => call.strokeStyle === DEFAULT_THEME.marker)).toHaveLength(1)
   })
 
   describe('moving the canvas', () => {

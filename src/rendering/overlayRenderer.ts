@@ -22,9 +22,10 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView, type ViewLayer } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { joinedTouching } from './touchingCells'
+import { canvasLook } from './projectRenderer'
 import { lookSideOf } from './pieceGround'
 import { drawDraftBeads, drawsDraft } from './draftRenderer'
-import { markLookAt } from './tonalTiles'
+import { drawTile, markLookAt, markLookOf, tileEdgeColorOf } from './tonalTiles'
 import { beadsOfLayer, firstFrameId, quarterTurnOf, frameById } from '../domain/layerRecord'
 import { isMirrorOn, mirrorLines, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
 import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
@@ -43,6 +44,9 @@ const MARKER_CASE_PX = 1
 /** How much larger than its neighbours a bead of the current pass is drawn on every side, in the layer's px (ticket
  * 1032, BeadBoard card): two touching beads' rings then share one `marker` line. */
 const RAISE_PX = 1
+
+/** Further than any Frame reaches in its own px: the outer edge of the cut round the done rows' shadow. */
+const OUTSIDE_PX = 1e7
 
 /** The one shadow under the current pass's raised beads (ticket 1032, BeadBoard card): its blur's spread (a CSS
  * `blur()`) and fall in px at 100% zoom, on the screen whatever the turn, and its black's opacity in each look. */
@@ -210,7 +214,7 @@ interface PassBead {
 }
 
 /** Draws a pass bead where it lies: in place, or on a Custom frame turned about its centre. */
-function inPlace(context: DrawingContext, bead: PassBead, draw: () => void): void {
+function inPlace(context: DrawingContext, bead: PassCell, draw: () => void): void {
   if (!bead.turned) {
     draw()
     return
@@ -228,16 +232,20 @@ function cornerOf(weave: Weave, by: number): number {
 }
 
 /** A pass bead drawn `by` px larger on every side, its corner `by` px rounder where it carries its own (ticket 1032). */
-function raisedBy(bead: PassBead, by: number): PassBead {
+function raisedBy<Cell extends PassCell>(bead: Cell, by: number): Cell {
   if (by === 0) return bead
   const turned = bead.turned && { ...bead.turned, radius: bead.turned.radius + by }
   return { ...bead, x: bead.x - by, y: bead.y - by, width: bead.width + by * 2, height: bead.height + by * 2, turned }
 }
 
-/** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
- * when the Frame has no such pass. */
-function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, at: number | undefined, ref: FrameRef): PassBead[] {
-  const pass = at ?? currentPass(rowProgressOf(project, ref))
+/** A position of a pass: its bead's box and color, null where it holds none (raised all the same, ticket 1251). */
+type PassCell = Omit<PassBead, 'color'> & { color: string | null }
+
+const isPainted = (cell: PassCell): cell is PassBead => cell.color !== null
+
+/** The positions the `passes` weave, each pass's in order along its line (on peyote's later lines only half the line
+ * is); none when the Frame has no such pass. */
+function passCells(project: DrawnProject, space: Space, geometry: LayerGeometry, passes: readonly number[], ref: FrameRef, view?: VisiblePositions): PassCell[] {
   if (!space.hasFrame) {
     return []
   }
@@ -250,45 +258,63 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
     const beads = beadsOfLayer(project, ref)!
-    return order.positionsOf(pass).flatMap((position) => {
+    return passes.flatMap((pass) => order.positionsOf(pass)).flatMap((position) => {
       const color = colorAt(beads, position.row, position.column)
       const place = geometry.place(position)
-      if (color === null || !place) return []
+      if (!place) return []
       const { x, y, width, height } = inGridPx(place.box)
       const radius = beadRoundness(weave.technique, weave.cell) * width
       return [{ x: -width / 2, y: -height / 2, width, height, color, turned: { centre: { x: x + width / 2, y: y + height / 2 }, angle: place.angle, radius } }]
     })
   }
-  return order.positionsOf(pass).flatMap((position) => {
+  return passes.flatMap((pass) => order.positionsOf(pass)).flatMap((position) => {
     const row = space.origin.row + position.row
     const column = space.origin.column + position.column
-    // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
-    const color = beadInSpace(project, space, row, column, ref)
-    return color === null ? [] : [{ ...positionBoxPx(weave, row, column), color }]
+    // Empty positions are drawn too, so a long line is cut to the view's: the cost follows what is in it.
+    const columns = view && row >= view.firstRow && row <= view.lastRow ? view.columnsOf(row) : undefined
+    if (view && (!columns || column < columns.first || column > columns.last)) return []
+    return [{ ...positionBoxPx(weave, row, column), color: beadInSpace(project, space, row, column, ref) }]
   })
+}
+
+/** One pass's positions, the current one's with none named. */
+function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, at: number | undefined, ref: FrameRef, view?: VisiblePositions): PassCell[] {
+  return passCells(project, space, geometry, [at ?? currentPass(rowProgressOf(project, ref))], ref, view)
 }
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
 // brick stitch, where a neighbour sits in the gaps between corners, their corners aren't covered.
 /** A pass bead's size as a bead drawer takes it: its own box turned, else a square of `side` unless its cell is not
  * square (a Bead's cell, ADR 0068, ticket 0724). */
-function sizeOf(bead: PassBead, side: number): { size: number; width?: number; height?: number } {
+function sizeOf(bead: PassCell, side: number): { size: number; width?: number; height?: number } {
   if (bead.turned) return { size: bead.width, width: bead.width, height: bead.height }
   return bead.width === side && bead.height === side ? { size: side } : { size: side, width: bead.width, height: bead.height }
 }
 
+/** How an empty position of the raised pass is drawn, as the layer under it draws it: its tonal tile, or the empty
+ * bead (ticket 1251). */
+function drawRaisedEmpty(context: DrawingContext, box: PassCell, cornerRadius: number, deviceScale: number, theme: ProjectTheme, tiles: boolean): void {
+  const mark = markLookOf(theme, tiles)
+  if (mark.tiles) drawTile(context, { x: box.x, y: box.y, width: box.width, height: box.height, cornerRadius }, mark.color, tileEdgeColorOf(theme.canvas), deviceScale)
+  else drawFlatBead(context, { x: box.x, y: box.y, ...sizeOf(box, box.width), cornerRadius, color: null, dimmed: false, deviceScale, theme })
+}
+
 // A pass just finished is drawn the same way, unbrightened and at its own size, while its glint shows it at full color
 // (ticket 0730). The current pass is raised `raise` px on every side (ticket 1032); its Letter keeps the bead's size.
-function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>, lift = CURRENT_ROW_BRIGHTNESS, raise = 0): void {
+function drawLiftedBeads(context: DrawingContext, beads: readonly PassCell[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>, lift = CURRENT_ROW_BRIGHTNESS, raise = 0, tiles = false): void {
   const cornerRadius = cornerOf(weave, raise)
   const look = drawsDraft(zoom * pixelRatio) ? flatLook(theme) : theme
   for (const bead of beads) {
     const raised = raisedBy(bead, raise)
     const radius = raised.turned?.radius ?? cornerRadius
-    const color = lift ? brighten(bead.color, lift) : bead.color
+    const color = bead.color !== null && lift ? brighten(bead.color, lift) : bead.color
     inPlace(context, bead, () => {
+      if (color === null) {
+        drawRaisedEmpty(context, raised, radius, zoom * pixelRatio, look, tiles)
+        return
+      }
       drawFlatBead(context, { x: raised.x, y: raised.y, ...sizeOf(raised, CELL_SIZE_PX + raise * 2), cornerRadius: radius, color, dimmed: false, deviceScale: zoom * pixelRatio, theme: look })
-      const letter = letters?.[bead.color]
+      const letter = letters?.[bead.color!]
       if (letter) {
         drawBeadLetter(context, { x: bead.x, y: bead.y, ...sizeOf(bead, CELL_SIZE_PX), color, letter, dimmed: false, theme })
       }
@@ -297,7 +323,7 @@ function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], we
 }
 
 /** Where a point of a pass bead's box lands across the device's pixels, under the transform `m`. */
-function deviceX(m: DOMMatrix2DInit, bead: PassBead, x: number, y: number): number {
+function deviceX(m: DOMMatrix2DInit, bead: PassCell, x: number, y: number): number {
   const { a = 1, c = 0, e = 0 } = m
   if (!bead.turned) return a * x + c * y + e
   const { centre, angle } = bead.turned
@@ -308,13 +334,13 @@ function deviceX(m: DOMMatrix2DInit, bead: PassBead, x: number, y: number): numb
 // The current pass's shadow (ticket 1032): the raised beads' bodies as one shape, a row's (or column's) touching beads
 // joined, filled once. The shape lies left of the device's pixels and the shadow is cast back, so only the shadow shows
 // (Safari took seconds over a blurred path of many shapes: ticket 1030). Light and dark on screen only, not the draft look.
-function drawRaisedShadow(context: DrawingContext, beads: readonly PassBead[], weave: Weave, deviceScale: number, theme: ProjectTheme): void {
+function drawRaisedShadow(context: DrawingContext, beads: readonly PassCell[], weave: Weave, deviceScale: number, theme: ProjectTheme): void {
   // The screen's full look is told by its own-color rim.
   if (!beads.length || !theme.ownColorRim || drawsDraft(deviceScale)) return
   const inset = BEAD_GAP_PX / 2
-  const body = (bead: PassBead) => raisedBy(bead, RAISE_PX - inset)
+  const body = (bead: PassCell) => raisedBy(bead, RAISE_PX - inset)
   const corner = cornerOf(weave, RAISE_PX - inset)
-  const upright = joinedTouching(beads.filter((bead) => !bead.turned)).map((cell) => body({ ...cell, color: '' }))
+  const upright = joinedTouching(beads.filter((bead) => !bead.turned)).map((cell) => body(cell))
   const turned = beads.filter((bead) => bead.turned).map(body)
   const shapes = [...upright, ...turned]
   const m = context.getTransform()
@@ -338,6 +364,42 @@ function drawRaisedShadow(context: DrawingContext, beads: readonly PassBead[], w
   context.shadowOffsetX = aside
   context.shadowOffsetY = RAISED_SHADOW.down * deviceScale
   context.fill()
+  context.restore()
+}
+
+/** The finished passes' positions as the few shapes their shadow is cast from, kept per Frame while its sheet, place
+ * and pointer stay: a hover draws the overlay again and must not walk a whole Frame's beads (ticket 1251). */
+const doneShapes = new Map<FrameRef, { key: string; shapes: PassCell[] }>()
+
+function doneShapesOf(project: DrawnProject, space: Space, geometry: LayerGeometry, ref: FrameRef): PassCell[] {
+  const done = currentPass(rowProgressOf(project, ref))
+  if (done <= 0) return []
+  const { beads: _beads, centre: _centre, ...sheet } = frameById(project, ref) ?? {}
+  const key = JSON.stringify([sheet, frameWeave(project, ref), rowProgressOf(project, ref), space.origin, space.rows, space.columns, space.hasFrame])
+  const kept = doneShapes.get(ref)
+  if (kept?.key === key) return kept.shapes
+  const cells = passCells(project, space, geometry, Array.from({ length: done }, (_, pass) => pass), ref)
+  // Color plays no part in the shape.
+  const shapes = [...joinedTouching(cells.filter((cell) => !cell.turned).map((cell) => ({ ...cell, color: null }))), ...cells.filter((cell) => cell.turned)]
+  doneShapes.set(ref, { key, shapes })
+  return shapes
+}
+
+// The rows marked done stay raised (ticket 1251): the same shadow, cut to outside their own cells, so it lies round and
+// below them and their faded beads, drawn by the layer under this one, show as they are.
+function drawDoneShadow(context: DrawingContext, shapes: readonly PassCell[], weave: Weave, deviceScale: number, theme: ProjectTheme): void {
+  if (!shapes.length || !theme.ownColorRim || drawsDraft(deviceScale)) return
+  context.save()
+  context.beginPath()
+  context.moveTo(-OUTSIDE_PX, -OUTSIDE_PX)
+  for (const [x, y] of [[1, -1], [1, 1], [-1, 1]] as const) context.lineTo(x * OUTSIDE_PX, y * OUTSIDE_PX)
+  context.closePath()
+  const corner = cornerOf(weave, 0)
+  for (const shape of shapes) {
+    inPlace(context, shape, () => roundedRect(context, shape.x, shape.y, shape.width, shape.height, shape.turned?.radius ?? corner))
+  }
+  context.clip('evenodd')
+  drawRaisedShadow(context, shapes, weave, deviceScale, theme)
   context.restore()
 }
 
@@ -377,7 +439,7 @@ function ringLines(theme: ProjectTheme): readonly RingLine[] {
 }
 
 /** One line of a ring round a bead's box, centred on its own thickness and following the bead's corner `radius`. */
-function ringPath(context: DrawingContext, bead: PassBead, line: RingLine, radius: number): void {
+function ringPath(context: DrawingContext, bead: PassCell, line: RingLine, radius: number): void {
   const centre = line.inset + line.width / 2
   roundedRect(context, bead.x + centre, bead.y + centre, bead.width - 2 * centre, bead.height - 2 * centre, Math.max(0, radius - centre))
 }
@@ -385,7 +447,7 @@ function ringPath(context: DrawingContext, bead: PassBead, line: RingLine, radiu
 // The Row progress marker (tickets 352, 375, 376, 1031, 1032): a ring round each raised bead in the current pass,
 // MARKER_RING_PX of `marker` on its edge and MARKER_CASE_PX of `canvas` inside it. Touching beads' `marker` lines fall
 // on the same px; no line joins them otherwise: each line is one path and one stroke.
-function drawBeadRings(context: DrawingContext, inPass: readonly PassBead[], weave: Weave, theme: ProjectTheme): void {
+function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], weave: Weave, theme: ProjectTheme): void {
   const corner = cornerOf(weave, RAISE_PX)
   const lines = ringLines(theme)
   const beads = inPass.map((bead) => raisedBy(bead, RAISE_PX))
@@ -1106,10 +1168,12 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     context.save()
     context.translate(origin.x, origin.y)
     if (scale !== 1) context.scale(scale, scale)
-    const inPass = showRows ? beadsInPass(project, sheetSpace, geometry!, undefined, ref) : []
+    const inPass = showRows ? beadsInPass(project, sheetSpace, geometry!, undefined, ref, geometry!.grid ? sheetView() : undefined) : []
+    // The rows marked done first: the current pass is raised over them.
+    if (showRows) drawDoneShadow(context, doneShapesOf(project, sheetSpace, geometry!, ref), sheetWeave, zoom * scale * pixelRatio, theme)
     // Under the current pass, so on peyote and brick stitch its lifted beads still lie over the one just finished.
     for (const { pass, elapsed } of showRows ? (rowMotion?.glints ?? []) : []) {
-      const finished = beadsInPass(project, sheetSpace, geometry!, pass, ref)
+      const finished = beadsInPass(project, sheetSpace, geometry!, pass, ref).filter(isPainted)
       if (elapsed >= glintMs(finished.length)) continue
       if (elapsed < ROW_MOTION.dimDelay) drawLiftedBeads(context, finished, sheetWeave, zoom * scale, pixelRatio, theme, letters, 0)
       drawGlint(context, finished, sheetWeave, elapsed)
@@ -1117,7 +1181,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (showRows) {
       // The pass raised over its neighbours on its one shadow (ticket 1032); its rings come after the Selection.
       drawRaisedShadow(context, inPass, sheetWeave, zoom * scale * pixelRatio, theme)
-      drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters, CURRENT_ROW_BRIGHTNESS, RAISE_PX)
+      drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, space.open ? canvasLook(frameTheme) : frameTheme, letters, CURRENT_ROW_BRIGHTNESS, RAISE_PX, space.open && !drawsDraft(zoom * scale * pixelRatio))
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, selectionColor, sheetView, layerOrigin, theme)
     // The whole-Frame Mirror, in the Frame's own positions from its first, drawn alone too: the Axes across a Frame on a

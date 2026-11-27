@@ -103,7 +103,6 @@ describe('renderOverlay', () => {
       expect(named('stroke').map((call) => call.strokeStyle)).toEqual([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase])
       expect(ringRects(calls)).toHaveLength(4)
       expect(caseRects(calls)).toHaveLength(4)
-      expect(named('lineTo')).toHaveLength(0)
     })
 
     it('lays the `marker` line on the raised bead\'s edge, 1px outside the cell, and the `canvas` line directly inside it (tickets 1031, 1032)', () => {
@@ -169,34 +168,32 @@ describe('renderOverlay', () => {
       expect(ringRects(calls).map((call) => call.args[4])).toEqual([R, R, R, R, R])
     })
 
-    it('marks only the cells that hold a bead: an empty cell gets no ring and no lift (ticket 411)', () => {
+    it('marks the whole row, its empty positions too (ticket 1251)', () => {
       const base = projectOf('loom', 3, 3, { currentRow: 1 })
       const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[0, 20], [40, 20]])
+      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[0, 20], [20, 20], [40, 20]])
     })
 
-    it('shows no marker for a pass with no beads', () => {
+    it('marks a pass with no beads (ticket 1251)', () => {
       const project = projectOf('loom', 3, 3, { currentRow: 1 }, 0, false)
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(named('stroke')).toHaveLength(0)
-      expect(named('roundRect')).toHaveLength(0)
+      expect(named('stroke')).toHaveLength(2)
     })
 
-    it('draws nothing for a row that is not there', () => {
+    it('rings nothing for a row that is not there', () => {
       const project = projectOf('loom', 4, 4, { currentRow: 9 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(named('fillRect')).toHaveLength(0)
-      expect(named('fill')).toHaveLength(0)
+      expect(named('stroke')).toHaveLength(0)
     })
   })
 
@@ -256,7 +253,7 @@ describe('renderOverlay', () => {
     })
 
     it('casts one shadow under the pass, a row\'s touching beads one shape: black, blurred 5px (a `shadowBlur` of twice that), 2px down, 24% in light and 72% in dark, following the zoom', () => {
-      const project = projectOf('loom', 4, 5, { currentRow: 2 })
+      const project = projectOf('loom', 4, 5, { currentRow: 0 })
       const light = shadowRecording()
       renderOverlay(light.context, { project, region: whole(project), zoom: 1, pixelRatio: 2 })
       const dark = shadowRecording()
@@ -266,8 +263,20 @@ describe('renderOverlay', () => {
       expect(dark.shadows).toEqual([{ color: 'rgba(0, 0, 0, 0.72)', blur: 30, down: 6, aside: expect.any(Number), shapes: 1 }])
     })
 
+    it('keeps the rows marked done raised: a shadow under them, cut to outside their cells, and no ring (ticket 1251)', () => {
+      const project = projectOf('loom', 4, 5, { currentRow: 2 }, 0, false)
+      const { context, calls, shadows } = shadowRecording()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      // The two done rows one shape, then the current row's own.
+      expect(shadows.map(({ shapes }) => shapes)).toEqual([1, 1])
+      expect(calls.filter((call) => call.name === 'clip')).toHaveLength(1)
+      expect(ringRects(calls)).toHaveLength(4)
+    })
+
     it('casts the shadow from a shape laid off the device\'s pixels to the left, so only the shadow shows', () => {
-      const project = projectOf('loom', 4, 5, { currentRow: 2 })
+      const project = projectOf('loom', 4, 5, { currentRow: 0 })
       const { context, calls, shadows } = shadowRecording()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -276,12 +285,12 @@ describe('renderOverlay', () => {
       const run = calls.find((call) => call.name === 'roundRect')!.args as number[]
       expect(run[0]! + run[2]!).toBeLessThan(0)
       expect(run[0]! + shadows[0]!.aside).toBe(-0.5)
-      expect(run.slice(1, 4)).toEqual([39.5, 81, 21])
+      expect(run.slice(1, 4)).toEqual([-0.5, 81, 21])
     })
 
     it('casts the shadow 2px down the screen however the Project is turned, the pass still one shape', () => {
       const falls = ([90, 180, 270] as const).map((rotation) => {
-        const project = projectOf('loom', 4, 5, { currentRow: 2 }, rotation)
+        const project = projectOf('loom', 4, 5, { currentRow: 0 }, rotation)
         const { context, shadows } = shadowRecording()
         renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)) })
         return shadows.map(({ down, shapes }) => ({ down, shapes }))
@@ -298,8 +307,8 @@ describe('renderOverlay', () => {
       const peyote = projectOf('peyote', 5, 3, { currentRow: 1 })
       renderOverlay(later.context, { project: peyote, region: whole(peyote), zoom: 1 })
 
-      expect(column.shadows.map(({ shapes }) => shapes)).toEqual([1])
-      expect(later.shadows.map(({ shapes }) => shapes)).toEqual([3])
+      expect(column.shadows.slice(-1).map(({ shapes }) => shapes)).toEqual([1])
+      expect(later.shadows.slice(-1).map(({ shapes }) => shapes)).toEqual([3])
     })
 
     it('casts no shadow in high contrast, in the draft look or with Row highlight off, and keeps the growth and the ring in the draft look', () => {
@@ -351,12 +360,11 @@ describe('renderOverlay', () => {
   describe('the column being woven (rows down the grid\'s columns)', () => {
     it('rings every bead of the column, as it does a row\'s', () => {
       const project = projectOf('loom', 4, 3, { direction: 'columns', currentColumn: 1 })
-      const { context, calls, named } = recordingContext()
+      const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[20, 0], [20, 20], [20, 40]])
-      expect(named('lineTo')).toHaveLength(0)
     })
 
     it('rings only the beads woven in the pass on peyote', () => {
@@ -370,7 +378,7 @@ describe('renderOverlay', () => {
   })
 
   describe('the pass being woven on a Custom frame (ticket 0594)', () => {
-    it('rings each bead of the current round turned to its panel\'s angle, and only the beads that hold a colour', () => {
+    it('rings each bead of the current round turned to its panel\'s angle, empty ones too', () => {
       const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined, { frame: frameIdIn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })) })
       const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } }, frameIdIn(open))
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
@@ -381,14 +389,12 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true, frameIdIn(project)) })
 
-      expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
-      // Each of the four beads casts its part of the shadow, is lifted and is ringed, all turned: twelve turns, no more.
-      expect(named('rotate')).toHaveLength(12)
+      expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.map(({ angle }) => angle)))
       // Each ring turned with its bead has both its lines (ticket 1031).
-      expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(4).fill([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase]).flat())
+      expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(round.length).fill([DEFAULT_THEME.marker, DEFAULT_THEME.markerCase]).flat())
       // Each turned bead is raised in its own box, centred on its place: its `marker` line 1px outside it (ticket 1032).
       const marker = calls.filter((call, at) => call.name === 'roundRect' && calls[at + 1]?.name === 'stroke' && calls[at + 1]!.strokeStyle === DEFAULT_THEME.marker)
-      expect(marker.map((call) => call.args.slice(0, 4))).toEqual(Array(4).fill([-10, -10, 20, 20]))
+      expect(marker.map((call) => call.args.slice(0, 4))).toEqual(Array(round.length).fill([-10, -10, 20, 20]))
     })
 
     it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {
@@ -1000,7 +1006,7 @@ describe('renderOverlay', () => {
     it('on a Star Frame turns about the layout\'s centre with the shape\'s five sides as the Fold: in Mirror mode five mirror lines from the Seam between two arms, 36° apart, through the ring (ticket 0706)', () => {
       const { project, centre } = star()
       const { context, calls, named } = recordingContext()
-      renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror') })
+      renderOverlay(context, { project, rowMarks: false, region: whole(project), zoom: 1, mirror: radial(2, 'mirror') })
 
       const ring = named('arc')[0]!
       expect(ring.strokeStyle).toBe(DEFAULT_THEME.mirror)
@@ -1020,7 +1026,7 @@ describe('renderOverlay', () => {
     it('on a Star Frame in Repeat mode draws five rays along the Seams between the arms, 72° apart, and the shape\'s own Radial whatever straight Axes the setting holds', () => {
       const { project, centre } = star()
       const repeat = recordingContext()
-      renderOverlay(repeat.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'repeat') })
+      renderOverlay(repeat.context, { project, rowMarks: false, region: whole(project), zoom: 1, mirror: radial(2, 'repeat') })
       const rays = lines(repeat.calls) as [number[], number[]][]
       expect(rays).toHaveLength(5)
       expect(rays.every(([from]) => Math.abs(from[0]! - centre.x) < 1e-6 && Math.abs(from[1]! - centre.y) < 1e-6)).toBe(true)
@@ -1029,7 +1035,7 @@ describe('renderOverlay', () => {
       expect(rays[0]![1][1]).toBeLessThan(centre.y)
 
       const straight = recordingContext()
-      renderOverlay(straight.context, { project, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false }, place: WHOLE_FRAME } })
+      renderOverlay(straight.context, { project, rowMarks: false, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false }, place: WHOLE_FRAME } })
       expect(lines(straight.calls)).toHaveLength(5)
       expect(straight.named('arc')).toHaveLength(1)
     })
@@ -1043,7 +1049,7 @@ describe('renderOverlay', () => {
       const { project } = star()
       const { row, column } = frameLayoutOf(frameOf(project)!)!.positions[0]!
       const turned = recordingContext()
-      renderOverlay(turned.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror'), preview: { cells: [{ row, column, layer: FRAME_ID }], color: null } })
+      renderOverlay(turned.context, { project, rowMarks: false, region: whole(project), zoom: 1, mirror: radial(2, 'mirror'), preview: { cells: [{ row, column, layer: FRAME_ID }], color: null } })
       expect(turned.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror])
     })
   })

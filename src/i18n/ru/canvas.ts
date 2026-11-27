@@ -87,6 +87,7 @@ export const canvas: CanvasTranslations = {
     announcePass: '{step}, ряд {line}',
     announceColumnPass: '{step}, столбец {line}',
     showRowMarks: 'Показывать отметки рядов',
+    settingsButton: 'Настройки прогресса рядов',
   },
   removeLine: {
     rowTitle: 'Удалить ряд?',

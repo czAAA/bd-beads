@@ -99,7 +99,7 @@ function problems(root: HTMLElement): string[] {
   const { box } = anchorAt(zoom.value, columns.value)
   const line = new DOMRect(sheet.left + box.left, sheet.top + box.top, box.width, box.height)
   // The band's tools, and Row progress's controls in the foot under the title block (ticket 1176).
-  const band = [...root.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], .margin-sheet__progress) :is(button, [role="progressbar"], .row-progress__counter)')]
+  const band = [...root.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], .margin-sheet__progress) :is(button, [role="progressbar"], .row-progress__count)')]
   const title = root.querySelector<HTMLElement>('[data-testid="margin-title"] > *')
   const parts = [...band, ...(title ? [title] : [])].map((element) => ({ name: element.getAttribute('aria-label') || element.dataset.testid || element.className, rect: element.getBoundingClientRect() }))
   const found: string[] = []

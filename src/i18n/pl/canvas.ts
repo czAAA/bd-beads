@@ -87,6 +87,7 @@ export const canvas: CanvasTranslations = {
     announcePass: '{step}, rząd {line}',
     announceColumnPass: '{step}, kolumna {line}',
     showRowMarks: 'Pokazuj oznaczenia rzędów',
+    settingsButton: 'Ustawienia postępu rzędów',
   },
   removeLine: {
     rowTitle: 'Usunąć rząd?',
