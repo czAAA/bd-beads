@@ -1,5 +1,5 @@
 import { BLACK_WHITE_BALANCE, channelsOf, fromCielab, mix, relativeLuminance, toCielab, toHex } from '../domain/color'
-import { RIM_PX, type DrawingContext, type ProjectTheme } from './beadLook'
+import { RIM_PX, type DrawingContext, type ProjectTheme, type TouchingShapes } from './beadLook'
 import { drawsDraft } from './draftRenderer'
 import { cachedSprite } from './sprites'
 
@@ -71,7 +71,7 @@ export function gapColorOf(background: string): string {
 }
 
 /** How a layer's empty positions are marked: tonal tiles in `color`, or the Position mark outline. */
-export interface MarkLook {
+export interface MarkLook extends TouchingShapes {
   color: string
   tiles: boolean
 }
@@ -81,7 +81,8 @@ export interface MarkLook {
  * `positionMark`, as high contrast, the draft look and every export keep. */
 export function markLookOf(theme: ProjectTheme, shown = true): MarkLook {
   const tiles = theme.tonalTiles && shown
-  return { color: tiles ? tileColorOf(theme.canvas) : theme.positionMark, tiles }
+  const { ownColorRim, touchingRounds } = theme
+  return { color: tiles ? tileColorOf(theme.canvas) : theme.positionMark, tiles, ownColorRim, touchingRounds }
 }
 
 /** The marks a page laid under or beside the drawing repeats (the empty Canvas under it, the Homepage's ground): the
@@ -100,7 +101,7 @@ export interface TileCell {
 }
 
 /** Adds the tile of a cell to the current path: the cell TILE_INSET_PX in on every side (`further` more for the inside
- * of its edge), its corner the bead's and never under TILE_LEAST_CORNER_PX. */
+ * of its edge), its corner the one `bodyCorner` gives the bead and never under TILE_LEAST_CORNER_PX. */
 function addTilePath(context: DrawingContext, { x, y, width, height, cornerRadius }: TileCell, further = 0): void {
   const inset = TILE_INSET_PX + further
   const [left, top] = [x + inset, y + inset]
