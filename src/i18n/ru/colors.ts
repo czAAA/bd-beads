@@ -37,7 +37,6 @@ export const colors: ColorsTranslations = {
     addTabBead: 'Цвета бисера',
     addTabCustom: 'Свой цвет',
     codeInCatalog: '{section}, код {code}',
-    codeHead: '{family} · {section}, код {code}',
     nudgeCoded: 'Такой цвет уже есть: {section}, код {code}. Поэтому он добавлен на тон иначе.',
     nudgeCustom: 'Такой цвет уже есть в своих цветах, поэтому он добавлен на тон иначе.',
     moveSection: 'Переставить раздел {section}',

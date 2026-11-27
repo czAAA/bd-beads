@@ -24,8 +24,6 @@ export interface ColorsTranslations {
     addTabCustom: string
     /** A code with its catalog, "TOHO code 1": a list row's first line; `{section}` is the catalog's own name. */
     codeInCatalog: string
-    /** The head and a swatch's Tooltip, "Red · TOHO code 341". */
-    codeHead: string
     /** The note that a color already in the Palette was added a shade apart. */
     nudgeCoded: string
     nudgeCustom: string
