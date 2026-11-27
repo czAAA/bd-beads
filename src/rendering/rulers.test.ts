@@ -520,6 +520,27 @@ describe('a Frame lying turned (ticket 0667)', () => {
   })
 })
 
+describe('the numbers of a staggered Frame lying turned (ticket 1248)', () => {
+  const cases = (['brick', 'peyote'] as const).flatMap((technique) => ([1, 2, 3] as const).map((quarterTurns) => ({ technique, quarterTurns })))
+  it.each(cases)('stand in one straight line outside the Frame line, $technique turned $quarterTurns', ({ technique, quarterTurns }) => {
+    const turned = { row: 0, column: 0, rows: 6, columns: 8, technique, quarterTurns }
+    const subject = bareProject({ technique, frame: { ...turned, beads: {}, angle: quarterTurns * 90 } })
+    const ref = frameIdIn(subject)
+    const surface = surfaceView({ space: OPEN_SPACE, technique, frame: turned, frameLayer: ref, frameDrawing: ownDrawing(300), rotation: 0, zoom: 1, viewport: { width: 2000, height: 2000 } })
+    const { labels, boxes } = rulerLayout(subject, surface, { fontPx: 11, numbers: true }, ref)
+    const shown = surface.beadBox(boxes[0]!, ref)
+    const line = boxes[0]!.outset
+    const top = labels.filter((label) => label.y < shown.y)
+    const left = labels.filter((label) => label.x < shown.x && label.y >= shown.y)
+
+    expect(top.length + left.length).toBe(labels.length)
+    expect(new Set(top.map((label) => Math.round(label.y))).size).toBe(1)
+    expect(new Set(left.map((label) => Math.round(label.x))).size).toBe(1)
+    for (const label of top) expect(label.y + label.height / 2).toBeLessThan(shown.y - line)
+    for (const label of left) expect(label.x + label.width / 2).toBeLessThan(shown.x - line)
+  })
+})
+
 describe('every ruler counts left to right and top to bottom as seen (ticket 1165)', () => {
   const sheet = { row: 0, column: 0, rows: 3, columns: 4, technique: 'loom' as const, beads: {} }
   const TURNS: Rotation[] = [0, 90, 180, 270]
