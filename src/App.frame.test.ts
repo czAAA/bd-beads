@@ -394,7 +394,7 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="tool-pill-layer"]').attributes('inert')).toBeUndefined()
     // The sheet measured itself, and the surface lays the slim sheet by what it told: no foot height in jsdom.
-    expect(surface().props('slim')).toMatchObject({ title: 0 })
+    expect(surface().props('slim')).toMatchObject({ foot: 0 })
     await key({ key: 'Escape' })
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
@@ -411,10 +411,9 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
   })
 
-  it('sets the Frame\'s Drop from its title block\'s stepper (ticket 0698)', async () => {
-    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
-    // Zoomed in twice, the sheet is full (from 100% since ticket 1213): its title block's one row holds the setting's
-    // pencil (ticket 1176).
+  it('sets the Frame\'s Drop from its chip\'s stepper in the sheet\'s band (tickets 0698, 1258)', async () => {
+    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 20, beads: {} } }))
+    // Zoomed in twice, the sheet is full (from 100% since ticket 1213) and wide enough for the name and its chips.
     for (const _ of [1, 2]) {
       await wrapper.get('[data-testid="zoom-in"]').trigger('click')
       await flushPromises()
