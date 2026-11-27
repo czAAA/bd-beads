@@ -7,21 +7,21 @@ import { beadChoices, beadLabel, type Bead } from '../../domain/beads'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSection from '../project/BeadSection.vue'
 import AppButton from '../ui/AppButton.vue'
-import IconButton from '../ui/IconButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 /** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
 const teleportTo = useShellScope().teleportTo
 
-// The Frame's Bead in the margin's roomy title block (ticket 1015, MarginSheet card): its name and a Change button
-// that opens Layer settings' Bead pickers in a popover, in the top layer so the sheet's scale never shrinks it. A pick
-// only asks, as in the Frame panel: the shell confirms Replace Bead.
-/** `pencil` is the legend's Change (ticket 1197): the Bead's label and its 18px pencil on the legend's top line, over
- * the colors (ticket 1213), the label in the popover's heading too. */
-const props = defineProps<{ bead: Bead; pencil?: boolean }>()
+// The Frame's Bead on the margin sheet's foot (tickets 1015, 1197, 1258; MarginSheet card): a chip of its label that
+// opens Layer settings' Bead pickers in a popover, in the top layer so the sheet's scale never shrinks it. A pick only
+// asks, as in the Frame panel: the shell confirms Replace Bead. Short of room, the label ends in an ellipsis.
+const props = defineProps<{ bead: Bead }>()
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
 const { t } = useI18n()
 const choices = computed(() => beadChoices(props.bead))
+/** The chip's name and Tooltip: Change, and the Bead whole, however short the label is cut. */
+const changeName = computed(() => `${t.value.form.beadPicker.change}: ${beadLabel(props.bead)}`)
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()
@@ -58,36 +58,25 @@ useOverlayLayer({
 </script>
 
 <template>
-  <span ref="rootEl" class="margin-bead" :class="{ 'margin-bead--pencil': pencil }" role="group" :aria-label="t.panels.project.bead" data-testid="margin-bead">
-    <span v-if="!pencil" class="margin-bead__label" aria-hidden="true">{{ t.panels.project.bead }}</span>
-    <span class="margin-bead__name" data-testid="margin-bead-name">{{ beadLabel(bead) }}</span>
-    <IconButton
-      v-if="pencil"
-      variant="plain"
-      icon="pencil"
-      :icon-size="12"
-      :label="`${t.form.beadPicker.change}: ${beadLabel(bead)}`"
-      :selected="open"
-      aria-haspopup="dialog"
-      :aria-expanded="open"
-      data-testid="margin-bead-change"
-      @click="open ? close() : show()"
-    />
+  <span ref="rootEl" class="margin-bead" role="group" :aria-label="t.panels.project.bead" data-testid="margin-bead">
     <AppButton
-      v-else
-      variant="in-box"
-      size="sm"
+      variant="text"
+      class="margin-chip"
+      :label="changeName"
+      :aria-label="changeName"
+      :tooltip="changeName"
       :expanded="open"
       aria-haspopup="dialog"
       data-testid="margin-bead-change"
       @click="open ? close() : show()"
     >
-      {{ t.form.beadPicker.change }}
+      <span class="margin-chip__text" data-testid="margin-bead-name">{{ beadLabel(bead) }}</span>
+      <AppIcon name="pencil" :size="12" />
     </AppButton>
     <!-- In the app shell: inside the sheet's scale, Safari keeps a top-layer popup where it first showed. -->
     <Teleport v-if="open" :to="teleportTo">
       <div ref="popupEl" class="margin-bead__popover anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="t.replaceBead.selectLabel" data-testid="margin-bead-popover">
-        <span class="margin-bead__heading">{{ pencil ? beadLabel(bead) : t.panels.project.bead }}</span>
+        <span class="margin-bead__heading">{{ beadLabel(bead) }}</span>
         <BeadSection :bead="bead" :candidates="choices.candidates" :outdated="choices.outdated" @pick="pick" />
         <p class="margin-bead__hint">{{ t.form.beadPicker.hint }}</p>
       </div>
@@ -96,51 +85,10 @@ useOverlayLayer({
 </template>
 
 <style scoped>
-.margin-bead {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-8);
-  font: var(--type-small);
-}
-
-/* The legend's top line: the label and its pencil 4px apart, as the Technique's (ticket 1213). Where the row is short
- * the label shows what fits, then an ellipsis ("TOHO…"); the pencil's name and the popover keep it whole. */
-.margin-bead--pencil {
+.margin-bead,
+.margin-bead :deep(.app-button-wrap) {
   display: flex;
-  gap: var(--space-4);
   min-width: 0;
-  white-space: nowrap;
-}
-
-.margin-bead--pencil .margin-bead__name {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.margin-bead--pencil :deep(.icon-btn-wrap) {
-  flex: none;
-}
-
-.margin-bead__label {
-  font: var(--type-meta-small);
-  color: var(--body);
-}
-
-/* Change is 24px, the least a button on the sheet is drawn at (MarginSheet card, Legible). */
-.margin-bead :deep(.app-button) {
-  height: var(--margin-tab);
-  min-height: 0;
-  padding: 0 var(--space-8);
-  font: var(--type-small);
-}
-
-/* The legend's pencil: 18px, `body`, a 12px icon, as the name's and the maker's. */
-.margin-bead :deep(.icon-btn) {
-  width: var(--margin-pencil);
-  height: var(--margin-pencil);
-  color: var(--body);
 }
 
 /* The shared popover look, as Margin color's: 12px padding, the overlay fill and line, elevation 3. */

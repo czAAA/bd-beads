@@ -114,6 +114,47 @@
   }
 }
 
+/* The margin sheet's editable chip (MarginSheet card, Calmer sheet; ticket 1258): a soft `surface` fill with a 12px
+   pencil, so what can be edited reads apart from the sheet's plain facts. On a Button, whose own rules it outranks. */
+button.ui-control.margin-chip {
+  gap: var(--space-6);
+  max-width: 100%;
+  min-width: 0;
+  height: var(--margin-tool-compact);
+  padding: 0 var(--space-8);
+  color: var(--ink);
+  font: var(--type-small);
+  background: var(--surface);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+button.ui-control.margin-chip:hover:not([aria-disabled='true']),
+button.ui-control.margin-chip[aria-expanded='true'] {
+  background: var(--elevated);
+}
+
+button.ui-control.margin-chip > svg {
+  flex: none;
+  color: var(--muted);
+}
+
+button.ui-control.margin-chip[aria-disabled='true'],
+.margin-chip__empty {
+  color: var(--muted);
+}
+
+:root[data-theme='contrast'] button.ui-control.margin-chip {
+  border-color: var(--line);
+}
+
+.margin-chip__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* A 20px chip in a hint line (CanvasHint card): a 1px `line-strong` edge with a 2px bottom, on `elevated`. Holds a
    key (CanvasHint) or an icon (Progress bar). */
 .hint-chip {

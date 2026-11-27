@@ -1,9 +1,13 @@
 import { frameIdIn } from '../../testUtils/frameId'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import MarginSheet from './MarginSheet.vue'
+import { beadChoices, beadLabel, findBead } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
+import { projectPalette } from '../../domain/palette'
+import { choosePanelOption } from '../../testUtils/choosePanelOption'
+import { paintAt } from '../../testUtils/layers'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -80,11 +84,11 @@ describe('each Frame\'s own sheet (ticket 1220)', () => {
   it('belongs to the Frame it is given: its name, its Row progress and its own id', () => {
     const second = mountSheet({ project: moveToRow(named(), 3, SECOND), frame: SECOND })
     expect(control(second, 'margin-sheet').attributes('data-frame')).toBe(SECOND)
-    expect(control(second, 'margin-title').text()).toContain('Earring')
-    expect(control(second, 'margin-title').text()).not.toContain('Gerdan')
+    expect(control(second, 'margin-identity').text()).toContain('Earring')
+    expect(control(second, 'margin-identity').text()).not.toContain('Gerdan')
     expect(control(second, 'margin-progress-compact-position').text()).toContain('4')
     const first = mountSheet({ project: moveToRow(named(), 3, SECOND), frame: firstOf(named()) })
-    expect(control(first, 'margin-title').text()).toContain('Gerdan')
+    expect(control(first, 'margin-identity').text()).toContain('Gerdan')
     expect(control(first, 'margin-progress-compact-position').text()).not.toContain('4')
   })
 
@@ -118,12 +122,16 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect((control(wrapper, 'margin-sheet').element as HTMLElement).style.transform).toBe('')
   })
 
-  it('holds Expand the Frame, the Move bar and the tools in its top band, and Row progress under the title block, in that order and with their names (ticket 1176)', () => {
+  it('holds Expand the Frame, the Frame\'s chips, the Move bar and the tools in its top band, and Row progress in its foot, in that order and with their names (tickets 1176, 1258)', () => {
     const wrapper = mountSheet()
     const named = (testid: string) => control(wrapper, testid).findAll('button').map((button) => button.attributes('aria-label') ?? button.text())
     expect(named('margin-progress-strip')).toEqual(['Row progress settings', 'Back a row', 'Reset progress', 'Show row marks', 'Row done'])
     expect(named('margin-band')).toEqual([
       'Expand the Frame',
+      'Name this Frame',
+      'Change Technique: Loom',
+      'Your name',
+      'Fold the title block',
       'Move Frame',
       'Mirror the whole Frame',
       'Rotate Frame',
@@ -136,11 +144,11 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(control(wrapper, 'margin-progress-previous').text()).toBe('Back a row')
   })
 
-  it('is a Tab stop each for Expand the Frame, the Move bar and the tools, ←/→ stepping along the tools, then the title block\'s name and Row progress (tickets 0857, 1169, 1176)', async () => {
+  it('is a Tab stop each for Expand the Frame, the Move bar and the tools, ←/→ stepping along the tools, each of the Frame\'s chips between, and the foot\'s controls then Row progress (tickets 0857, 1169, 1176, 1258)', async () => {
     const wrapper = mountSheet()
     const stops = () => wrapper.findAll('button').filter((button) => button.attributes('tabindex') !== '-1')
     const names = stops().map((button) => button.attributes('aria-label') ?? button.text())
-    expect(names.slice(0, 4)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Name this Frame'])
+    expect(names.slice(0, 7)).toEqual(['Expand the Frame', 'Name this Frame', 'Change Technique: Loom', 'Your name', 'Fold the title block', 'Move Frame', 'Mirror the whole Frame'])
     expect(names.indexOf('Row progress settings')).toBeGreaterThan(names.indexOf('Letters'))
 
     const mirror = control(wrapper, 'margin-mirror-frame')
@@ -248,12 +256,13 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(document.querySelector('[data-testid="margin-color-popover"]')).toBeNull()
   })
 
-  it('shows the title block until the Frame panel\'s Switch hides it', async () => {
+  it('shows who the Frame is and its facts until Name and size on the margin hides them', async () => {
     const wrapper = mountSheet()
-    expect(wrapper.find('[data-testid="margin-title-block"]').exists()).toBe(true)
+    const shown = () => ['margin-identity', 'margin-facts'].map((id) => wrapper.find(`[data-testid="${id}"]`).exists())
+    expect(shown()).toEqual([true, true])
     useCanvasBackground().margin.setTitleBlock(false)
     await nextTick()
-    expect(wrapper.find('[data-testid="margin-title-block"]').exists()).toBe(false)
+    expect(shown()).toEqual([false, false])
   })
 
   it('gives way to a Selection\'s handles where they lie under its top band (ticket 498)', () => {
@@ -272,26 +281,24 @@ const styleOf = (wrapper: ReturnType<typeof mountSheet>, testid: string) => cont
 // held between 1 and 1.5 (tickets 0698, 0851), so the sheet is full down to 80px of band (100%), compact to 40px (50%),
 // its legend kept to 52px (65%), folded to 31px (39%).
 describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom forms, tickets 0658, 0698, 0851)', () => {
-  it('is full at the drafting sheet\'s band, its tools 14px in and the title block in one row, pencils and all, on Row progress\'s strip 10px in (ticket 1176)', () => {
+  it('is full at the drafting sheet\'s band, its tools 14px in, the facts and Row progress 12px up', () => {
     const wrapper = mountSheet({ anchor: anchorAt(1) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--full')
     expect(styleOf(wrapper, 'margin-band')).toContain('top: 14px')
     expect(styleOf(wrapper, 'margin-band')).toContain('transform: scale(1)')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('line')
-    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--stacked')
+    expect(control(wrapper, 'margin-facts').attributes('data-form')).toBe('all')
     expect(wrapper.find('.margin-sheet__progress').attributes('data-form')).toBe('whole')
-    expect(styleOf(wrapper, 'margin-foot')).toContain('bottom: 10px')
-    // The strip runs the sheet's width inside its border.
-    expect(styleOf(wrapper, 'margin-foot')).toContain(`width: ${anchorAt(1).sheet.width - 20}px`)
+    expect(styleOf(wrapper, 'margin-foot')).toContain('bottom: 12px')
+    expect(styleOf(wrapper, 'margin-foot')).toContain(`width: ${anchorAt(1).sheet.width - 28}px`)
   })
 
-  it('draws the band\'s row and the title block at the band\'s scale, held between 1 and 1.5, so they grow with the beads (tickets 0698, 0851)', () => {
+  it('draws the band\'s row and the foot at the band\'s scale, held between 1 and 1.5, so they grow with the beads (tickets 0698, 0851)', () => {
     // At 150% the band is 120px: 1.5, the row 21px down, laid out 2 × 21px narrower than the sheet over the scale.
     const near = mountSheet({ anchor: anchorAt(1.5) })
     expect(styleOf(near, 'margin-band')).toContain('top: 21px')
     expect(styleOf(near, 'margin-band')).toContain('transform: scale(1.5)')
     expect(styleOf(near, 'margin-band')).toContain(`width: ${(anchorAt(1.5).sheet.width - 42) / 1.5}px`)
-    expect(styleOf(near, 'margin-foot')).toContain('bottom: 15px')
+    expect(styleOf(near, 'margin-foot')).toContain('bottom: 18px')
     expect(styleOf(near, 'margin-foot')).toContain('transform: scale(1.5)')
     // At 100% the band is 80px: still the full form, at 1 and no smaller, where its words and buttons are legible.
     const far = mountSheet({ anchor: anchorAt(1) })
@@ -299,64 +306,34 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(styleOf(far, 'margin-band')).toContain('transform: scale(1)')
   })
 
-  it('keeps the title block in one row on the strip however large the band: the two-row and roomy blocks need the strip\'s room (ticket 1176)', () => {
-    for (const zoom of [1.25, 1.5]) expect(control(mountSheet({ anchor: anchorAt(zoom) }), 'margin-title').attributes('data-form')).toBe('line')
-  })
-
-  it('is compact under 80px: the tools in the band, the title block in one row with its legend, the Row progress strip taking what it leaves', () => {
+  it('is compact under 80px: the tools in the band, the legend and Row progress 10px in, as the band', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.7), project: moveToRow(framed(), 2, frameIdIn(framed())) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
     // Two rows done: the Frame holds still, its Edit Frame kept in place, disabled (ticket 0975).
-    expect(names(wrapper)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame', 'Frame tools'])
-    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--line')
+    expect(names(wrapper).filter((name) => !name!.startsWith('Edit Frame name') && name !== 'Name this Frame')).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame', 'Frame tools'])
     expect(control(wrapper, 'margin-progress-strip').findAll('button').map((button) => button.attributes('data-testid'))).toEqual(['margin-progress-settings', 'margin-progress-previous', 'margin-progress-strip-reset', 'margin-progress-strip-marks', 'margin-progress-next'])
+    // No rules between the strip's parts on the sheet.
+    expect(wrapper.find('.row-progress__divider').exists()).toBe(false)
     expect(control(wrapper, 'margin-progress-compact-position').text()).toContain('3 of 11')
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(true)
     expect(styleOf(wrapper, 'margin-band')).toContain('top: 8px')
     expect(styleOf(wrapper, 'margin-band')).toContain('transform: scale(1)')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('compact')
-    expect(Number.parseFloat(styleOf(wrapper, 'margin-foot').split('bottom: ')[1]!)).toBeCloseTo(6)
-    expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
+    expect(styleOf(wrapper, 'margin-foot')).toContain('left: 10px')
+    expect(styleOf(wrapper, 'margin-foot')).toContain('bottom: 10px')
   })
 
-  it('stacks the compact title row on Row progress\'s strip from 76px, so the legend and Row progress both keep the sheet\'s width (tickets 1197, 1213)', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.975) })
-    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
-    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--stacked')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('compact')
-    expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
-    expect(wrapper.find('.margin-sheet__progress').attributes('data-form')).toBe('whole')
-    expect(styleOf(wrapper, 'margin-foot')).toContain(`width: ${anchorAt(0.975).sheet.width - 12}px`)
-  })
-
-  it('keeps the compact title row and Row progress on one line just under 76px of band (tickets 1197, 1213)', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.94) })
-    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
-    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--line')
-  })
-
-  it('leaves the compact row\'s legend out under 52px of band, where its two lines would reach the Frame\'s line (ticket 1213)', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.6) })
-    expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('brief')
-    expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(false)
-  })
-
-  it('folds under 40px: the Move bar and every tool that fits, the title block a tab, the Row progress strip beside it', () => {
+  it('folds under 40px: the name, the Move bar and every tool that fits in the band, Row progress alone in the foot', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--folded')
     // The Frame tools button stands at its end, so the least used tool, Remove Frame, is under it here (ticket 1220).
-    expect(names(wrapper)).toEqual(['Expand the Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Frame tools'])
-    // Back a row and Row done are never dropped; in jsdom no width is laid out, so the strip shows its least.
+    expect(names(wrapper)).toEqual(['Expand the Frame', 'Name this Frame', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Frame tools'])
+    // Back a row and Row done are never dropped.
     expect(wrapper.find('[data-testid="margin-progress-previous"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="margin-progress-next"]').exists()).toBe(true)
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
-    // Folded by the zoom, the tab only names the Frame: there is no room to unfold it.
-    expect(control(wrapper, 'margin-title-tab').element.tagName).toBe('SPAN')
-    expect(control(wrapper, 'margin-title-tab').text()).toBe('Name this Frame')
+    expect(wrapper.find('[data-testid="margin-facts"]').exists()).toBe(false)
   })
 
-  it('stands the folded row and tab in the middle of the room between the sheet\'s edge and the Frame\'s line', () => {
+  it('stands the folded row and strip in the middle of the room between the sheet\'s edge and the Frame\'s line', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     const px = (testid: string, side: string) => Number.parseFloat(styleOf(wrapper, testid).split(`${side}: `)[1]!)
     // At 45% the band is 36px, the line its outset out from the beads; the 24px row is 24px at 1.
@@ -369,7 +346,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     const wrapper = mountSheet({ anchor: anchorAt(0.2), editing: true })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--bare')
     expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="margin-facts"]').exists()).toBe(false)
     expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Expand the Frame', 'Move Frame', 'Frame tools'])
     // Row progress is not drawn either, as nothing of the sheet is (ticket 1245).
     expect(wrapper.find('[data-testid="margin-foot"]').exists()).toBe(false)
@@ -518,57 +495,168 @@ describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
   })
 })
 
-describe('folding the title block by hand (MarginSheet card, Title block, ticket 0658)', () => {
-  it('folds to the name tab from its fold button, and the tab unfolds it', async () => {
-    const wrapper = mountSheet({ project: withLayers(framed(), { frame: { ...frameOf(framed())!, name: 'Sun band' } }) })
+const named = (project: Project = framed()) => withLayers(project, { frame: { ...frameOf(project)!, name: 'Sun band' } })
+
+describe('who the Frame is, in the top band (MarginSheet card, Calmer sheet; ticket 1258)', () => {
+  const chips = (wrapper: ReturnType<typeof mountSheet>) => control(wrapper, 'margin-identity').findAll('button')
+
+  it('holds the name, the Technique, its Drop and the maker after Expand, each a chip with a pencil, then the fold', () => {
+    const woven = withLayers({ ...framed(), makerName: 'Ada' }, { frame: { ...frameOf(framed())!, name: 'Sun band', technique: 'brick', techniqueSettings: { brickDrop: 2 } } })
+    const wrapper = mountSheet({ project: woven })
+    expect(control(wrapper, 'margin-band').find('[data-testid="margin-identity"]').exists()).toBe(true)
+    expect(chips(wrapper).map((chip) => chip.text())).toEqual(['Sun band', 'Brick stitch', '2-drop', 'byAda', ''])
+    expect(chips(wrapper).slice(0, 4).map((chip) => chip.classes().includes('margin-chip') && chip.find('svg').exists())).toEqual([true, true, true, true])
+    expect(chips(wrapper).map((chip) => chip.attributes('aria-label'))).toEqual(['Rename Frame: Sun band', 'Change Technique: Brick stitch', 'Change Drop: 2-drop', 'Change the maker\'s name: Ada', 'Fold the title block'])
+  })
+
+  it('asks each chip\'s own edit: the name, the Technique, a setting and the maker\'s name', async () => {
+    const wrapper = mountSheet({ project: withLayers(framed(), { frame: { ...frameOf(framed())!, technique: 'brick', techniqueSettings: { brickDrop: 2 } } }) })
+    const save = async (testid: string, value: string) => {
+      await control(wrapper, `${testid}-edit`).trigger('click')
+      await control(wrapper, `${testid}-input`).setValue(value)
+      await control(wrapper, `${testid}-form`).trigger('submit')
+    }
+    await save('margin-frame-name', '  Sun band ')
+    await save('margin-maker', 'Ada')
+    await choosePanelOption(wrapper, 'margin-technique-picker', 'peyote')
+    await control(wrapper, 'margin-brick-drop-edit').trigger('click')
+    await control(wrapper, 'margin-brick-drop-stepper-more').trigger('click')
+    expect(wrapper.emitted('rename')).toEqual([['Sun band']])
+    expect(wrapper.emitted('save-maker-name')).toEqual([['Ada']])
+    expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
+    expect(wrapper.emitted('set-setting')).toEqual([['brickDrop', 3]])
+    await control(wrapper, 'margin-brick-drop-popover').trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('[data-testid="margin-brick-drop-popover"]').exists()).toBe(false)
+    // Loom's Technique describes no setting, so it has no chip for one.
+    expect(mountSheet().find('.margin-setting').exists()).toBe(false)
+  })
+
+  it('keeps the Technique on once a row is done, as a change asks first (ticket 1184), and locks its settings with the reason', async () => {
+    const woven = withLayers(framed(), { frame: { ...frameOf(framed())!, technique: 'peyote' } })
+    const wrapper = mountSheet({ project: moveToRow(woven, 1, frameIdIn(woven)) })
+    expect(control(wrapper, 'margin-technique-picker').get('button').attributes('aria-disabled')).toBeUndefined()
+    const drop = control(wrapper, 'margin-peyote-drop-edit')
+    expect(drop.attributes('aria-disabled')).toBe('true')
+    await drop.trigger('click')
+    expect(wrapper.find('[data-testid="margin-peyote-drop-popover"]').exists()).toBe(false)
+  })
+
+  // Safari lays out a top-layer popup that sits inside the sheet's scale where it first showed (the top-left corner),
+  // and a field there drops what is typed: every popup a chip opens sits in the app shell, outside the scale.
+  it.each([
+    ['name field', '[data-testid="margin-frame-name-edit"]', '[data-testid="margin-frame-name-form"]'],
+    ['maker field', '[data-testid="margin-maker-edit"]', '[data-testid="margin-maker-form"]'],
+    ['Technique list', '[data-testid="margin-technique-picker"] button', '.panel-picker__list'],
+    ['Drop stepper', '[data-testid="margin-brick-drop-edit"]', '[data-testid="margin-brick-drop-popover"]'],
+    ['Bead pickers', '[data-testid="margin-bead-change"]', '[data-testid="margin-bead-popover"]'],
+  ] as const)('opens its %s in the app shell, outside the sheet\'s scale', async (_, chip, popup) => {
+    const shell = document.body.appendChild(document.createElement('div'))
+    shell.className = 'app-shell'
+    onTestFinished(() => shell.remove())
+    const project = withLayers(framed(), { frame: { ...frameOf(framed())!, technique: 'brick', techniqueSettings: { brickDrop: 2 } } })
+    const wrapper = mount(MarginSheet, { props: { project, frame: frameIdIn(project), anchor, editing: false, pressing: false }, attachTo: shell, global: { stubs: { teleport: false } } })
+    mounted.push(wrapper)
+    await wrapper.get(chip).trigger('click')
+    await nextTick()
+    expect(document.querySelector(popup)?.parentElement).toBe(shell)
+  })
+
+  it('keeps the name alone compact and folded, still a chip that opens its field', async () => {
+    for (const zoom of [0.7, 0.45]) {
+      const wrapper = mountSheet({ anchor: anchorAt(zoom) })
+      expect(chips(wrapper).map((chip) => chip.text()), `${zoom}`).toEqual(['Name this Frame'])
+      await control(wrapper, 'margin-frame-name').trigger('click')
+      expect(wrapper.find('[data-testid="margin-frame-name-form"]').exists(), `${zoom}`).toBe(true)
+    }
+  })
+
+  it('folds the details and the foot\'s facts away from its fold button, the name and Row progress staying, and unfolds them', async () => {
+    const wrapper = mountSheet({ project: named() })
     await control(wrapper, 'margin-title-fold').trigger('click')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
-    const tab = control(wrapper, 'margin-title-tab')
-    expect(tab.text()).toBe('Sun band')
-    expect(tab.attributes('aria-label')).toBe('Show the title block: Sun band')
+    expect(chips(wrapper).map((chip) => chip.text())).toEqual(['Sun band', ''])
+    expect(wrapper.find('[data-testid="margin-facts"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="margin-progress-next"]').exists()).toBe(true)
     // The tools stay where they are.
     expect(names(wrapper)).toContain('Remove Frame')
-    await tab.trigger('click')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('line')
-  })
-
-  // An unnamed Frame's tab invites a name: "Name this Frame" opens the name field, the chevron unfolds (ticket 0803).
-  it('opens the name field from an unnamed Frame\'s tab, and its chevron unfolds the block', async () => {
-    const wrapper = mountSheet()
-    await control(wrapper, 'margin-title-fold').trigger('click')
-    await control(wrapper, 'margin-frame-name').trigger('click')
-    await control(wrapper, 'margin-frame-name-input').setValue('Sun band')
-    await control(wrapper, 'margin-frame-name-form').trigger('submit')
-    expect(wrapper.emitted('rename')).toEqual([['Sun band']])
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
     const unfold = control(wrapper, 'margin-title-unfold')
-    expect(unfold.attributes('aria-label')).toBe('Show the title block: Name this Frame')
+    expect(unfold.attributes('aria-label')).toBe('Show the title block: Sun band')
     await unfold.trigger('click')
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('line')
+    expect(wrapper.find('[data-testid="margin-facts"]').exists()).toBe(true)
   })
 
-  it('opens the name field from an unnamed Frame\'s tab folded by the zoom too, with no chevron', async () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
-    await control(wrapper, 'margin-frame-name').trigger('click')
-    expect(wrapper.find('[data-testid="margin-frame-name-form"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="margin-title-unfold"]').exists()).toBe(false)
-  })
-
-  it('keeps the fold for the session, on the next sheet too, and folds from the compact title block', async () => {
-    const compact = mountSheet({ anchor: anchorAt(0.6) })
-    await control(compact, 'margin-title-fold').trigger('click')
-    compact.unmount()
+  it('keeps the fold for the session, on the next sheet too, and unfolds from the compact band', async () => {
+    const first = mountSheet()
+    await control(first, 'margin-title-fold').trigger('click')
+    first.unmount()
     mounted.splice(0)
-    expect(control(mountSheet(), 'margin-title').attributes('data-form')).toBe('tab')
+    const compact = mountSheet({ anchor: anchorAt(0.7) })
+    expect(compact.find('[data-testid="margin-facts"]').exists()).toBe(false)
+    await control(compact, 'margin-title-unfold').trigger('click')
+    expect(compact.find('[data-testid="margin-facts"]').exists()).toBe(true)
   })
 })
 
-describe('the title block\'s place (ticket 1170)', () => {
-  it('sits inside the border at the sheet\'s bottom-left corner as seen, drawn from that corner', () => {
-    expect(styleOf(mountSheet({ anchor: anchorAt(1) }), 'margin-foot')).toMatch(/left: 10px; bottom: 10px;.*transform-origin: 0 100%/)
+describe('the sheet\'s one-line foot (MarginSheet card, Calmer sheet; ticket 1258)', () => {
+  const facts = (wrapper: ReturnType<typeof mountSheet>) => control(wrapper, 'margin-facts')
+  /** The Frame with its first `count` beads painted each in the next Palette color. */
+  const painted = (count: number) =>
+    projectPalette(framed()).colors.slice(0, count).reduce((project, color, column) => paintAt(project, [{ row: 0, column }], color.hex), framed())
+
+  it('reads the size in beads then in cm as plain facts, the Bead\'s chip, the legend, Letters, then Row progress', () => {
+    const wrapper = mountSheet({ project: painted(3) })
+    const parts = [...facts(wrapper).element.children].map((part) => part.className.split(' ')[0])
+    expect(parts).toEqual(['margin-facts__size', 'margin-bead', 'margin-facts__legend', 'margin-facts__letters'])
+    expect(control(wrapper, 'margin-size').text()).toBe('40 × 11')
+    expect(control(wrapper, 'margin-estimate').text()).toBe('≈ 6.0 × 1.7 cm')
+    expect(facts(wrapper).find('.margin-facts__size button').exists()).toBe(false)
+    expect(control(wrapper, 'margin-foot').element.lastElementChild?.className).toContain('margin-sheet__progress')
   })
 
-  it('leaves the band\'s row the sheet\'s whole width, and the folded tab in the middle of the room below the Frame\'s line', () => {
+  it('letters its legend with each color\'s Swatch letter, at most 8, then "+n"', () => {
+    expect(mountSheet({ project: painted(3) }).findAll('.margin-facts__disc').map((disc) => disc.text())).toEqual(['A', 'B', 'C'])
+    const many = mountSheet({ project: painted(10) })
+    expect(many.findAll('.margin-facts__disc')).toHaveLength(8)
+    expect(control(many, 'margin-legend-more').text()).toBe('+2')
+  })
+
+  it('opens the Bead\'s pickers from its chip, a pick asking to Replace Bead, and turns Letters on', async () => {
+    const wrapper = mountSheet()
+    const own = findBead('toho/cube/1.5mm')!
+    const chip = control(wrapper, 'margin-bead-change')
+    expect(chip.text()).toBe(beadLabel(own))
+    expect(chip.attributes('aria-label')).toBe(`Change: ${beadLabel(own)}`)
+    await chip.trigger('click')
+    expect(control(wrapper, 'margin-bead-popover').text()).toContain('Sets size, weight and colors.')
+    const other = beadChoices(own).candidates.find((bead) => bead.brand.id !== own.brand.id)!
+    await choosePanelOption(wrapper, 'bead-brand', other.brand.id)
+    expect(wrapper.emitted('replace-bead')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="margin-bead-popover"]').exists()).toBe(false)
+    await control(wrapper, 'margin-letters').trigger('click')
+    expect(wrapper.emitted('set-letters')).toEqual([[true]])
+  })
+
+  it('closes the Bead\'s pickers on Escape, asking nothing', async () => {
+    const wrapper = mountSheet()
+    await control(wrapper, 'margin-bead-change').trigger('click')
+    await control(wrapper, 'margin-bead-popover').trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('[data-testid="margin-bead-popover"]').exists()).toBe(false)
+    expect(wrapper.emitted('replace-bead')).toBeUndefined()
+  })
+
+  it('keeps the legend alone compact, and no facts folded', () => {
+    const compact = mountSheet({ anchor: anchorAt(0.7), project: painted(3) })
+    expect(facts(compact).attributes('data-form')).toBe('legend')
+    expect([...facts(compact).element.children].map((part) => part.className.split(' ')[0])).toEqual(['margin-facts__legend'])
+    expect(mountSheet({ anchor: anchorAt(0.45), project: painted(3) }).find('[data-testid="margin-facts"]').exists()).toBe(false)
+  })
+})
+
+describe('the foot\'s place (tickets 1170, 1258)', () => {
+  it('stands at the sheet\'s bottom-left corner as seen, inside the border, drawn from that corner', () => {
+    expect(styleOf(mountSheet({ anchor: anchorAt(1) }), 'margin-foot')).toMatch(/left: 14px; bottom: 12px;.*transform-origin: 0 100%/)
+  })
+
+  it('leaves the band\'s row the sheet\'s whole width, and the folded strip in the middle of the room below the Frame\'s line', () => {
     const full = mountSheet({ anchor: anchorAt(1) })
     expect(styleOf(full, 'margin-band')).toMatch(new RegExp(`left: ${MARGIN_PX.place.full.side}px;`))
     const folded = mountSheet({ anchor: anchorAt(0.45) })
@@ -737,7 +825,7 @@ describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
     expect(control(wrapper, 'margin-expand-frame').attributes('aria-pressed')).toBeUndefined()
   })
 
-  it('draws no Move bar while expanded, which is then no Tab stop, and its row and title block 6px in at scale 1', async () => {
+  it('draws no Move bar while expanded, which is then no Tab stop, and its row and foot 6px in at scale 1', async () => {
     const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
     await nextTick()
     expect(wrapper.find('[data-testid="frame-move-handle"]').exists()).toBe(false)
@@ -748,29 +836,31 @@ describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
     expect(styleOf(wrapper, 'margin-foot')).toContain('bottom: 6px')
   })
 
-  it('holds Row progress on the strip under the title block, its Row done the one filled button (tickets 1176, 1223)', async () => {
+  it('holds Row progress in the foot, its Row done the one filled button (tickets 1176, 1223)', async () => {
     const wrapper = mountSheet()
     expect(control(wrapper, 'margin-progress-next').classes()).toContain('app-button--primary')
     await wrapper.setProps({ expanded: true, anchor: expandedAnchor })
-    expect(control(wrapper, 'margin-foot').classes()).toContain('margin-sheet__foot--stacked')
     expect(control(wrapper, 'margin-progress-next').classes()).toContain('app-button--primary')
   })
 
-  it('takes the two-row title block, never the roomy one, however large the band', async () => {
+  it('holds every chip and fact, however large the band', async () => {
     const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
     await nextTick()
-    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('full')
+    expect(control(wrapper, 'margin-identity').attributes('data-form')).toBe('all')
+    expect(control(wrapper, 'margin-facts').attributes('data-form')).toBe('all')
   })
 
-  it('tells the canvas what its row and its foot (the title block on Row progress\'s strip) measure, so it lays the slim sheet round them', async () => {
+  it('tells the canvas what its row and its foot measure, so it lays the slim sheet round them', async () => {
     const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
     await nextTick()
-    const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; title: number; rowWidth: number }])[0]
+    const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; foot: number; rowWidth: number }])[0]
     const foot = () => control(wrapper, 'margin-foot').element.getBoundingClientRect().height
-    expect(last()).toEqual({ row: MARGIN_PX.tool, title: foot(), rowWidth: 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap })
+    // The narrowest row holds Expand, the name at its least and the Frame tools button.
+    const bare = 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap
+    expect(last()).toEqual({ row: MARGIN_PX.tool, foot: foot(), rowWidth: bare + MARGIN_PX.nameGap.mouse + MARGIN_PX.nameLeast })
     useCanvasBackground().margin.setTitleBlock(false)
     await nextTick()
-    expect(last().title).toBe(foot())
+    expect(last()).toMatchObject({ foot: foot(), rowWidth: 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap })
     // The strip stays: Row progress is on the sheet alone while expanded.
     expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
     await wrapper.setProps({ expanded: false })
@@ -843,7 +933,8 @@ describe('the Frame settings popover and the Margin color popover\'s Background 
     expect(wrapper.emitted('set-background')).toEqual([[3]])
     popover.querySelector<HTMLElement>('[data-testid="margin-title-block-switch"]')!.click()
     await nextTick()
-    expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="margin-identity"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="margin-facts"]').exists()).toBe(false)
   })
 })
 

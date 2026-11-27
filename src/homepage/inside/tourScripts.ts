@@ -203,12 +203,12 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await pickColor(hand, 'E')
     for (const press of ringGroundFills(DEMO_FIRST_STRIP)) await hand.stroke(beadsOn(DEMO_FRAME, [press]))
   },
-  /** The Frame's Technique from its title block's pencil, each of the others in turn and back to the ring's peyote, each
+  /** The Frame's Technique from its chip in the sheet's band, each of the others in turn and back to the ring's peyote, each
    * held a moment so the beads show how they sit. */
   async techniques(hand) {
     for (const technique of [...TECHNIQUES.filter((each) => each !== DEMO_TECHNIQUE), DEMO_TECHNIQUE]) {
-      // The pencil is only on the wider forms of the title block; where a longer Technique's name has stepped it down to
-      // the compact one, the change is made as the pencil would make it.
+      // The Technique's chip is only on the wider forms of the band; where a longer Technique's name has taken it off,
+      // the change is made as the chip would make it.
       if (hand.root.querySelector('[data-testid="margin-technique-picker"]')) {
         await hand.press(pickerButton(hand, 'margin-technique-picker'))
         await hand.press(techniqueOption(hand, technique))
@@ -315,7 +315,9 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   },
   /** Letters: each color's letter on its beads. */
   async letters(hand) {
-    await hand.press('margin-letters')
+    // Letters leaves the foot where the sheet is compact or narrow: turned on as its switch would turn it.
+    if (hand.root.querySelector('[data-testid="margin-letters"]')) await hand.press('margin-letters')
+    else hand.canvas.onSetLetters(true, firstFrameId(hand.canvas.activeProject.value))
     await hand.wait(HOLD.letters)
   },
   /** Row done for the traced cuff's first rows, the first five slower, then a rest: too many to show them all. */

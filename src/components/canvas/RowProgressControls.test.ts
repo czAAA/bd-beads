@@ -45,10 +45,10 @@ function shown(project: Project, drop: 0 | 1 | 2 | 3 | 4 = 0): string[] {
 describe('Row progress strip as it runs out of room (MarginSheet card, 1221 option 4B)', () => {
   it('gives up its track first and the two icons last, never Back a row or Row done', () => {
     const icons = ['strip-reset', 'strip-marks']
-    expect(shown(makeProject())).toEqual(['settings', 'previous', '|', 'compact-position', 'track', ...icons, '|', 'next'])
-    expect(shown(makeProject(), 1)).toEqual(['settings', 'previous', '|', 'compact-position', ...icons, '|', 'next'])
-    expect(shown(makeProject(), 3)).toEqual(['settings', 'previous', '|', 'compact-position', ...icons, '|', 'next'])
-    expect(shown(makeProject(), 4)).toEqual(['settings', 'previous', '|', 'compact-position', '|', 'next'])
+    expect(shown(makeProject())).toEqual(['settings', 'previous', 'compact-position', 'track', ...icons, 'next'])
+    expect(shown(makeProject(), 1)).toEqual(['settings', 'previous', 'compact-position', ...icons, 'next'])
+    expect(shown(makeProject(), 3)).toEqual(['settings', 'previous', 'compact-position', ...icons, 'next'])
+    expect(shown(makeProject(), 4)).toEqual(['settings', 'previous', 'compact-position', 'next'])
   })
 
   it('shows Back a row as its arrow alone at the last drop', () => {

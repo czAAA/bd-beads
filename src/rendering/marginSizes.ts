@@ -6,7 +6,7 @@
  * form too. */
 export const MARGIN_PX = {
   /** The drafting sheet's band, where the scale is 1 (80, ticket 1213; 72 until then), and the scale's bounds (0698). The
-   * least is 1 (0851), where the name tab's 11px and the 24px compact tools, Row done, tab and Move bar are `legible`;
+   * least is 1 (0851), where the smallest words' 11px and the 24px compact tools, chips, Row done and Move bar are `legible`;
    * the Homepage demo's 0.6, as its tour presses the band in a view it cannot grow. */
   scale: { band: 80, min: 1, max: 1.5, demo: 0.6 },
   /** The least the sheet's words and buttons are drawn at on screen (ticket 0851, accessibility.md): smaller, they are
@@ -14,41 +14,39 @@ export const MARGIN_PX = {
   legible: { text: 11, button: 24 },
   /** The band height, at scale 1, from which each form fits (MarginSheet card, Zoom forms; ticket 0682 for folded). */
   band: {
-    /** The full form's title row on Row progress's strip (ticket 1176), its legend in two lines (ticket 1213; 72 until
-     * then), 10px in, clear of the Frame's line and its outset: 10px border, the 38px row, the 26px strip (a rule shared)
-     * and 7px. */
+    /** The full form (ticket 1213): its two-row foot (tickets 1176, 1258), 12px up, the 24px facts and the 26px strip,
+     * stands clear of the Frame's line and its outset. */
     full: 80,
-    /** The compact form's stacked foot (ticket 1197): from here the compact title row stands on Row progress's strip, so
-     * the legend and Row progress both keep the sheet's width; under it they share one line. 6px border, the 38px row
-     * (ticket 1213; 22px until then), the 26px strip (a rule shared) and the 7px the Frame's line and its outset keep. */
-    stacked: 76,
-    /** The compact title row with its two-line legend on one line with Row progress (ticket 1213): 6px border, the 38px
-     * row and 8px clear of the Frame's line. Under it the compact row leaves its legend out (`brief`). */
-    legend: 52,
+    /** The compact form's two-row foot (tickets 1197, 1258): from here the legend stands over Row progress; under it
+     * they share one line. 10px in, the 14px legend, a finger's 8px, the 24px strip and the 7px the Frame's line and its
+     * outset keep, with room over. */
+    stacked: 68,
     /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds. */
     compact: 40,
     /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */
     folded: 31,
   },
-  /** The band on screen from which the title block is roomy (ticket 1015): its 79px, 10px in at the sheet's scale, stay
-   * clear of the Frame's line, and the block is drawn at 1 there. */
-  roomy: 104,
   /** The band's row down from the sheet's top and in from its sides, and the inner border's inset. */
   place: { full: { top: 14, side: 14, border: 10 }, compact: { top: 8, side: 10, border: 6 } },
+  /** The foot's inset from the sheet's sides and bottom edge (ticket 1258): clear inside the border; compact as the
+   * band's. */
+  foot: { full: { side: 14, bottom: 12 }, compact: { side: 10, bottom: 10 } },
   /** The sheet's outer corners. */
   sheetRadius: { full: 12, compact: 10 },
   /** The inner border's corners. */
   borderRadius: 6,
-  /** One row of the two-row title block (expanded), the one without the legend. */
-  titleRow: 23,
-  /** The title block's row that holds the legend: the Bead's label and its 18px pencil over the 14px discs, 2px apart,
-   * 1px in at top and bottom (ticket 1213). */
-  legendRow: 36,
+  /** The Frame's name in the band at its least, cut with an ellipsis, and what stands between it and Expand the Frame
+   * (ticket 1258). */
+  nameLeast: 80,
+  nameGap: { mouse: 4, touch: 12 },
+  /** The foot's facts row and what parts it from Row progress's strip (ticket 1258). */
+  factsRow: 24,
+  footGap: 4,
   /** A tool in the full form's row, and that row's height. */
   tool: 28,
-  /** The folded title block's name tab, the Move bar outside the full form, and the compact and folded row's height. */
+  /** The Move bar outside the full form, and the compact and folded row's height. */
   tab: 24,
-  /** Row progress's strip under the title block, across the sheet (ticket 1176), its rules included. */
+  /** Row progress's strip in the foot (ticket 1176). */
   strip: 26,
   /** The Move bar's hit area, the gutter handle's width. */
   moveWidth: 56,
@@ -58,7 +56,7 @@ export const MARGIN_PX = {
   icon: { full: 16, compact: 14 },
   /** The current pass's mark (ticket 0685): the pill's room round its number, and the tick's thickness. */
   pass: { pillPad: 2, tick: 3 },
-  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet's row and title block in from its edge (`inset`),
+  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet's row and foot in from its edge (`inset`),
    * smaller under bp-tablet, and the room between the row, the numbers and the Frame's line (`numbers`). The sheet
    * meets the screen's edges and the Tool pill with no gap (ticket 1176). */
   expanded: { inset: { full: 6, compact: 4 }, numbers: 3 },

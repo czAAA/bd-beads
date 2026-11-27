@@ -220,7 +220,7 @@ const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElem
 
 const framed = withLayers(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
 
-/** The roomy title block's Bead and its Change, in the app shell its pickers open in (ticket 1015). */
+/** The margin sheet's Bead chip, in the app shell its pickers open in (ticket 1015). */
 const MarginBeadCellHost = defineComponent({
   setup: () => () => h('div', { class: 'app-shell', style: { position: 'fixed', left: '8px', bottom: '8px' } }, [h(MarginBeadCell, { bead: cubeBead })]),
 })
@@ -285,7 +285,7 @@ const CASES: FitCase[] = [
   ['CanvasHint', CanvasHint, {}],
   ['FirstRunHints', FirstRunHints, {}],
   ['MarginSheet', marginSheetHost(1), {}],
-  // At 150%: the title block's one row on Row progress's strip, at the sheet's largest scale (ticket 1176).
+  // At 150%: the sheet at its largest scale (ticket 1176).
   ['MarginSheet (150%)', marginSheetHost(1.5), {}],
   ['MarginBeadCell (Bead pickers)', MarginBeadCellHost as Component, {}, (root: HTMLElement) => press(root, 'margin-bead-change')],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],

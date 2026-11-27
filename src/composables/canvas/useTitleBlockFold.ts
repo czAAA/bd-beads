@@ -2,7 +2,7 @@ import { hasInjectionContext, inject, provide, readonly, ref, type InjectionKey 
 
 /** The fold of one shell's title block, so the Homepage's demo folds its own and not the editor's (ticket 0797). */
 function createTitleBlockFold() {
-  /** Whether the person folded the margin sheet's title block to its name tab: kept for the session, never saved. */
+  /** Whether the person folded the margin sheet's details away, the Frame's name staying: for the session, never saved. */
   const folded = ref(false)
   return {
     folded: readonly(folded),
@@ -22,8 +22,8 @@ export function provideTitleBlockFold(): void {
   provide(foldKey, createTitleBlockFold())
 }
 
-/** The title block folded by hand with its fold button and unfolded from its tab (MarginSheet card, ticket 0658), for
- * the session only, unlike the Frame panel's Switch that hides it, which the device remembers. */
+/** The title block (the band's chips and the foot's facts) folded and unfolded by hand (MarginSheet card, tickets 0658,
+ * 1258), for the session only, unlike the Switch that hides it with the name, which the device remembers. */
 export function useTitleBlockFold(): TitleBlockFold {
   return (hasInjectionContext() ? inject(foldKey, undefined) : undefined) ?? pageFold
 }

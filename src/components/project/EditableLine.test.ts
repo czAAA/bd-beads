@@ -158,19 +158,20 @@ describe('EditableLine gives the keyboard back to the line (ticket 0939)', () =>
   })
 })
 
-describe('EditableLine in the margin\'s title block (ticket 0685)', () => {
-
-  // The empty text is an invitation: pressing it starts the edit, as the pencil does (ticket 0803).
-  it('starts the edit from its empty text', async () => {
-    const wrapper = mountLine({ bare: true })
+describe('EditableLine as a chip on the margin sheet (tickets 0685, 1258)', () => {
+  // The whole chip is the button: the empty text is an invitation (ticket 0803), a value reads with its pencil.
+  it.each(['', 'Ada'])('starts the edit from a press on its words (%j)', async (value) => {
+    const wrapper = mountLine({ value, bare: true })
     await wrapper.get('[data-testid="line"]').trigger('click')
     expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(true)
   })
 
-  it('invite only, has no pencil and keeps a value read only', async () => {
-    const wrapper = mountLine({ value: 'Ada', bare: true, inviteOnly: true })
-    expect(wrapper.find('[data-testid="line-edit"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="line"]').trigger('click')
-    expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(false)
+  it('is one button holding its words round the value and a pencil, named for the edit and the value', () => {
+    const wrapper = mountLine({ value: 'Ada', bare: true, prefix: 'by' })
+    const chip = wrapper.get('button')
+    expect(wrapper.findAll('button')).toHaveLength(1)
+    expect(chip.text()).toBe('byAda')
+    expect(chip.find('svg').exists()).toBe(true)
+    expect(chip.attributes('aria-label')).toMatch(/: Ada$/)
   })
 })

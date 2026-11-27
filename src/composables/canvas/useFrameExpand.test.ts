@@ -145,7 +145,7 @@ describe('useFrameExpand (ticket 1169)', () => {
     expand.toggle()
     await nextTick()
     const tall = view.zoom.value
-    expand.measured({ row: 24, title: 0, rowWidth: 0 })
+    expand.measured({ row: 24, foot: 0, rowWidth: 0 })
     await nextTick()
     expect(view.zoom.value).toBeGreaterThan(tall)
     stop()

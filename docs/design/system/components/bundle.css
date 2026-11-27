@@ -275,11 +275,8 @@
   --piece-line-radius: 6px;
   --margin-tool: 28px;
   --margin-tool-compact: 24px;
-  --margin-title-row: 23px;
-  --margin-legend-row: 36px; /* MarginSheet card (ticket 1213): the title block's row holding the legend, the Bead's label and pencil over the colors. */
   --margin-band-full: 80px;
-  --margin-band-stacked: 76px; /* MarginSheet card (ticket 1197): the band height, in screen pixels, from which the compact form stacks its title row on Row progress's strip. */
-  --margin-band-legend: 52px; /* MarginSheet card (ticket 1213): the band height, in screen pixels, from which the compact title row keeps its two-line legend beside Row progress; under it the row leaves the legend out. */
+  --margin-band-stacked: 68px; /* MarginSheet card: the band height, in screen pixels, from which the compact foot stands the legend over Row progress (ticket 1258). */
   --margin-band-compact: 40px;
   --margin-band-folded: 31px;
   --margin-band-inset-compact: 10px;
@@ -287,7 +284,6 @@
   --margin-done-compact: 24px;
   --margin-track-compact: 40px;
   --margin-tab: 24px;
-  --margin-tab-name: 600 0.6875rem/0.875rem var(--font-sans);
   --margin-band-inset: 14px;
   --margin-move-height: 28px;
   --margin-strip: 26px;
@@ -301,12 +297,8 @@
   --margin-edit-width: 260px;
   --margin-title-name: 600 0.75rem/1rem var(--font-sans);
   --margin-legend-letter: 600 0.5rem/1 var(--font-sans);
-  --margin-band-roomy: 104px; /* MarginSheet card: the band height on screen from which the title block is roomy (ticket 1015). */
-  --margin-roomy-row: 38px; /* MarginSheet card: one of the roomy title block's two key rows. */
-  --margin-roomy-name: 600 0.875rem/1.25rem var(--font-sans); /* MarginSheet card: the Frame's name in the roomy title block (Inter 600 14). */
-  --margin-key-disc: 18px; /* MarginSheet card: one disc of the roomy title block's color key. */
-  --margin-key-letter: 600 0.625rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a key disc (Inter 600 10). */
-  --margin-bead-popover: 17rem; /* MarginSheet card: the roomy title block's Bead popover, holding the three pickers on one row. */
+  --margin-roomy-name: 600 0.875rem/1.25rem var(--font-sans); /* MarginSheet card: the Frame's name at the head of the Frame popover (Inter 600 14). */
+  --margin-bead-popover: 17rem; /* MarginSheet card: the Bead chip's popover, holding the three pickers on one row. */
   --margin-expanded-inset: 6px; /* MarginSheet card, Expand the Frame: the expanded sheet's row and title block in from its edge. */
   --margin-expanded-inset-compact: 4px; /* MarginSheet card, Expand the Frame: the same under bp-tablet. */
   --schema-tag-height: 28px;
@@ -1101,13 +1093,12 @@ body {
 .bb-margin-sheet--editing { outline: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 3px; }
 .bb-margin-border { position: absolute; inset: var(--margin-border-inset); border: 1px solid var(--margin-line); border-radius: var(--margin-border-radius); pointer-events: none; }
 .bb-margin-tool { width: var(--margin-tool); height: var(--margin-tool); border: 0; border-radius: var(--radius-md, 12px); background: transparent; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.bb-margin-chip { display: inline-flex; align-items: center; gap: var(--space-6); height: var(--margin-tool-compact); padding: 0 var(--space-8); border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: var(--type-small); white-space: nowrap; }
 .bb-margin-tool:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
 .bb-margin-tool[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
 /* Rotate Frame's copy (ticket 1016): the band's button lifted off the paper where it was pressed; fades on leaving. */
 .bb-margin-rotate-copy { position: absolute; display: flex; margin: calc(-1 * (var(--space-4, 4px) + 1px)); padding: var(--space-4, 4px); background: var(--elevated); border: 1px solid var(--overlay-line); border-radius: var(--radius-lg, 16px); box-shadow: var(--elevation-3); transition: opacity var(--rotate-copy-fade) var(--ease-in); }
 .bb-margin-rotate-copy.is-leaving { opacity: 0; }
-.bb-margin-title { position: absolute; right: var(--margin-border-inset); bottom: var(--margin-border-inset); display: grid; grid-template-rows: var(--margin-title-row) var(--margin-legend-row); background: var(--margin-title); border: 1px solid var(--margin-line); border-radius: 0 0 var(--margin-border-radius) 0; }
-.bb-margin-title > * { display: flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; border-right: 1px solid var(--margin-line); border-bottom: 1px solid var(--margin-line); white-space: nowrap; min-width: 0; }
 [data-theme="contrast"] .bb-frame-margin { border-width: 2px; }
 .bb-frame-num { min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--elevated); font: 400 12px/20px var(--font-mono); color: var(--ink); cursor: pointer; }
 .bb-disclosure--split { cursor: default; }

@@ -11,17 +11,17 @@ import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
 import type { ShownView } from './useCanvasView'
 
 /** What the slim sheet's own controls measure on the page (MarginSheet card, Expand the Frame), in screen px: the
- * band's row, the foot under the Frame (the title block and Row progress's strip; ticket 1176) and the narrowest row it
+ * band's row, the foot under the Frame (the facts and Row progress; tickets 1176, 1258) and the narrowest row it
  * shows (0 until it has had to show it). */
 export interface SlimMeasures {
   row: number
-  title: number
+  foot: number
   rowWidth: number
 }
 
-/** Until the sheet measures itself: the full row, and the two-row title block on Row progress's strip (ticket 1176), the
- * tallest it holds: a 23px row over the legend's (ticket 1213). */
-const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: MARGIN_PX.titleRow + MARGIN_PX.legendRow + 1 + MARGIN_PX.strip - 1, rowWidth: 0 }
+/** Until the sheet measures itself: the full row, and the foot at its tallest, the facts over Row progress's strip
+ * (tickets 1176, 1258). */
+const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, foot: MARGIN_PX.factsRow + MARGIN_PX.footGap + MARGIN_PX.strip, rowWidth: 0 }
 
 /** What Expand the Frame works the view through (`useCanvasView`). */
 export interface FrameExpandDeps {
@@ -71,8 +71,8 @@ export function useFrameExpand(deps: FrameExpandDeps) {
 
   /** What the slim sheet holds with its numbers at a size, no room to fill. */
   function contentAt(project: Project, fontPx: number): SlimContent {
-    const { row, title, rowWidth } = measures.value
-    return { compact: deps.compact.value, row, title, rowWidth, fontPx, numbers: frameNumberBands(project, fontPx, expandedFrame.value ?? firstFrameId(project)) }
+    const { row, foot, rowWidth } = measures.value
+    return { compact: deps.compact.value, row, foot, rowWidth, fontPx, numbers: frameNumberBands(project, fontPx, expandedFrame.value ?? firstFrameId(project)) }
   }
 
   /** The room the slim sheet takes from each side of the drawing area, past the Frame's beads, at a zoom and the bead
@@ -114,7 +114,7 @@ export function useFrameExpand(deps: FrameExpandDeps) {
   /** The slim sheet measured itself: a fit that follows it fits its new size. */
   function measured(next: SlimMeasures): void {
     const now = measures.value
-    if (now.row !== next.row || now.title !== next.title || now.rowWidth !== next.rowWidth) measures.value = next
+    if (now.row !== next.row || now.foot !== next.foot || now.rowWidth !== next.rowWidth) measures.value = next
   }
 
   const roomKey = () => (expanded.value ? JSON.stringify(content.value) : '')

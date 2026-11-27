@@ -117,7 +117,8 @@ const items = computed(() => {
     reset: woven.value || props.drop >= 4,
     marks: woven.value || props.drop >= 4,
   }
-  const left = ITEMS.filter((item) => !gone[item])
+  // The margin's strip stands on the sheet with no rules (MarginSheet card, Calmer sheet); the cuff keeps them.
+  const left = ITEMS.filter((item) => !gone[item] && (woven.value || item !== 'divider'))
   return left.filter((item, index) => item !== 'divider' || left[index + 1] !== 'divider')
 })
 const arrowBack = computed(() => !!props.compact || props.drop >= 2)
@@ -254,19 +255,29 @@ const arrowDone = computed(() => props.compact === 'mouse' || props.drop >= 3)
 </template>
 
 <style scoped>
-/* The strip (MarginSheet card): one band of the title block's paper, 1px `margin-line` rules, its controls 4px apart. */
+/* The strip (MarginSheet card, Calmer sheet): straight on the sheet's paper, no fill or rules, its controls 8px apart,
+ * 4px compact. Under the Homepage cuff it keeps a band of its own. */
 .row-progress {
   display: flex;
   flex: 1;
   align-items: center;
   box-sizing: border-box;
-  gap: var(--space-4);
+  gap: var(--space-8);
   min-width: 0;
   height: var(--margin-strip);
+}
+
+.row-progress--woven {
+  gap: var(--space-4);
   padding-inline: var(--space-2);
   background: var(--margin-title);
   border: 1px solid var(--margin-line);
   border-radius: var(--radius-sm);
+}
+
+.row-progress--compact {
+  gap: var(--space-4);
+  height: var(--margin-done-compact);
 }
 
 /* The counter: text in the control type. */
@@ -382,7 +393,7 @@ const arrowDone = computed(() => props.compact === 'mouse' || props.drop >= 3)
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* Squarish, as the title block over it, not the pill a button is elsewhere (ticket 1245). */
+/* Squarish, as the sheet's chips, not the pill a button is elsewhere (ticket 1245). */
 .row-progress :deep(.app-button) {
   height: var(--margin-done-compact);
   border-radius: var(--margin-border-radius);
@@ -391,6 +402,10 @@ const arrowDone = computed(() => props.compact === 'mouse' || props.drop >= 3)
 /* Back a row is a quiet button: hover-fill, and the control type rather than the button's. */
 .row-progress :deep(.app-button--text) {
   font: var(--type-control);
+}
+
+.row-progress--strip :deep(.row-progress__back) {
+  color: var(--body);
 }
 
 /* Show row marks on is `ink`, as Edit Frame on the band; hover keeps it. */

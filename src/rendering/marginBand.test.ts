@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { BAND_ORDER, bandRowWidth, bandTools, type BandRow, type BandToolId } from './marginBand'
+import { MARGIN_PX } from './marginSizes'
+import { BAND_ORDER, bandNameRoom, bandRowWidth, bandTools, type BandRow, type BandToolId } from './marginBand'
 
 const ALL: readonly BandToolId[] = BAND_ORDER
 const ROWS: readonly BandRow[] = ['full', 'compact', 'folded']
@@ -52,5 +53,43 @@ describe('which Frame tools stand on the band (MarginSheet card, ticket 1195)', 
 
   it('fits the expanded row side by side with no Move bar', () => {
     expect(bandRowWidth('folded', ALL, false, false, true)).toBeLessThan(bandRowWidth('folded', ALL, false, false, false))
+  })
+})
+
+describe('the Frame\'s name after Expand (MarginSheet card, Calmer sheet; ticket 1258)', () => {
+  it('counts at its least beside Expand, so a narrow band sends tools under the menu button sooner', () => {
+    const bare = bandRowWidth('folded', ALL, true, false, true)
+    expect(bandRowWidth('folded', ALL, true, false, true, true) - bare).toBe(MARGIN_PX.nameGap.mouse + MARGIN_PX.nameLeast)
+    const fit = bandTools(deps(bare, { rows: ['folded'], expanded: true, name: true }))
+    expect(fit?.named).toBe(true)
+    expect(fit?.overflow.length).toBeGreaterThan(0)
+  })
+
+  it('keeps room for the unfold chevron beside it, so folded details can be brought back', () => {
+    expect(bandRowWidth('folded', ALL, true, false, true, true, true) - bandRowWidth('folded', ALL, true, false, true, true)).toBe(MARGIN_PX.gap + MARGIN_PX.tab)
+    for (let room = 0; room <= 700; room++) {
+      const fit = bandTools(deps(room, { name: true, unfold: true }))
+      if (fit?.named) expect(bandNameRoom(fit, room, false, false)).toBeGreaterThanOrEqual(MARGIN_PX.nameLeast + MARGIN_PX.gap + MARGIN_PX.tab)
+    }
+  })
+
+  it('leaves every tool where the tools\' side is already the wider one', () => {
+    const room = bandRowWidth('full', ALL, true, false, false)
+    expect(bandTools(deps(room, { name: true }))).toEqual({ row: 'full', onBand: ALL, overflow: [], named: true })
+  })
+
+  it('is left out of a band too narrow for it, which keeps its tools', () => {
+    const narrow = bandTools(deps(bandRowWidth('folded', [], true, false, false), { rows: ['folded'], name: true }))
+    expect(narrow).toMatchObject({ row: 'folded', onBand: [] })
+    expect(narrow?.named).toBeUndefined()
+  })
+
+  it('has at least its least room wherever it is on the band, by either pointer, expanded or not', () => {
+    for (const touch of [false, true])
+      for (const expanded of [false, true])
+        for (let room = 0; room <= 700; room++) {
+          const fit = bandTools(deps(room, { touch, expanded, name: true }))
+          if (fit?.named) expect(bandNameRoom(fit, room, touch, expanded)).toBeGreaterThanOrEqual(MARGIN_PX.nameLeast)
+        }
   })
 })
