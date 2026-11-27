@@ -147,12 +147,15 @@ export const measureTextMisfits = ({ oneLine, userText, moreLines, cutOffByDesig
       const clipsY = style.overflowY !== 'visible'
       if (!considered || (!clipsX && !clipsY)) continue
       const rect = ancestor.getBoundingClientRect()
+      // `client*` are the element's own px; inside a CSS scale (the margin sheet, ticket 1258) the box on screen is not.
+      const own = ancestor instanceof HTMLElement && ancestor.offsetWidth ? rect.width / ancestor.offsetWidth : 1
+      const scale = Math.abs(own - 1) > 0.01 ? own : 1
       clips.push({
         name: describe(ancestor),
-        left: rect.left + ancestor.clientLeft,
-        right: rect.left + ancestor.clientLeft + ancestor.clientWidth,
-        top: rect.top + ancestor.clientTop,
-        bottom: rect.top + ancestor.clientTop + ancestor.clientHeight,
+        left: rect.left + ancestor.clientLeft * scale,
+        right: rect.left + (ancestor.clientLeft + ancestor.clientWidth) * scale,
+        top: rect.top + ancestor.clientTop * scale,
+        bottom: rect.top + (ancestor.clientTop + ancestor.clientHeight) * scale,
         // A scroll container scrolls vertically, so text cut at its bottom edge is not a fault; hidden is.
         vertical: clipsY && style.overflowY !== 'auto' && style.overflowY !== 'scroll',
         scrolls: style.overflowY === 'auto' || style.overflowY === 'scroll',

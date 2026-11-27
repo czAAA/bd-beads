@@ -27,13 +27,13 @@ import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 const zoom = ref(1)
 const columns = ref(40)
 const rows = ref(11)
-/** Brick stitch gives the title block a Drop cell (ticket 0698). */
+/** Brick stitch gives the band a Drop chip (ticket 0698). */
 const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
 const expanded = ref(false)
 /** The least width the expanded sheet last asked the canvas for. */
 const slimRowWidth = ref(0)
-/** The Frame's name: empty, its tab invites one (ticket 0803). */
+/** The Frame's name: empty, its chip invites one (ticket 0803). */
 const frameName = ref('Sun band')
 /** How many of the Palette's colors the Frame's first row is painted in, at most. */
 const colorCount = ref(99)
@@ -98,10 +98,9 @@ function problems(root: HTMLElement): string[] {
   const sheet = root.querySelector<HTMLElement>('[data-testid="margin-sheet"]')!.getBoundingClientRect()
   const { box } = anchorAt(zoom.value, columns.value)
   const line = new DOMRect(sheet.left + box.left, sheet.top + box.top, box.width, box.height)
-  // The band's tools, and Row progress's controls in the foot under the title block (ticket 1176).
-  const band = [...root.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], .margin-sheet__progress) :is(button, [role="progressbar"], .row-progress__count)')]
-  const title = root.querySelector<HTMLElement>('[data-testid="margin-title"] > *')
-  const parts = [...band, ...(title ? [title] : [])].map((element) => ({ name: element.getAttribute('aria-label') || element.dataset.testid || element.className, rect: element.getBoundingClientRect() }))
+  // The band's chips and tools, and the foot: each fact and Row progress's controls (tickets 1176, 1258).
+  const controls = [...root.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], .margin-sheet__progress) :is(button, [role="progressbar"], .row-progress__count), .margin-facts > *')]
+  const parts = controls.map((element) => ({ name: element.getAttribute('aria-label') || element.dataset.testid || element.className, rect: element.getBoundingClientRect() }))
   const found: string[] = []
   // Bare, the Move bar and the Frame tools button beside it may stand outside where the sheet would be, but never over
   // the Frame's line or beads (ticket 1164).
@@ -132,7 +131,7 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
       }
     })
 
-    it(`fits an unnamed Frame's tab, "Name this Frame" and its chevron, folded by hand at 100% and 60%, in ${locale}`, async () => {
+    it(`fits an unnamed Frame's chip, "Name this Frame", and the chevron, folded by hand at 100% and 60%, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       frameName.value = ''
@@ -150,7 +149,7 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
       }
     })
 
-    it(`fits brick stitch's Drop cell in the title block at 150%, 100%, 90% and 60%, in ${locale}`, async () => {
+    it(`keeps brick stitch's chips on one line in the band at 150%, 100%, 90% and 60%, the Drop's where the form is full, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       technique.value = 'brick'
@@ -162,36 +161,35 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         zoom.value = at
         await settled(root)
         expect(problems(root), `${at}`).toEqual([])
-        // At 60% the sheet is compact, its title block one row without the Drop cell.
-        if (80 * at < MARGIN_PX.band.full) continue
-        expect(root.querySelector('[data-testid="margin-brick-drop-short"]'), `${at}`).not.toBeNull()
-        // The one row's pencils stand on one line, the Technique's picker too (ticket 1176).
-        expect(root.querySelector('[data-testid="margin-title"]')!.getAttribute('data-form'), `${at}`).toBe('line')
-        const pencils = ['margin-frame-name-edit', 'margin-technique-picker', 'margin-brick-drop-edit']
-          .map((id) => root.querySelector(`[data-testid="${id}"] svg`)!.getBoundingClientRect())
-          .map((icon) => icon.top + icon.height / 2)
-        expect(Math.max(...pencils) - Math.min(...pencils), `${at}`).toBeLessThan(0.5)
+        // At 60% the sheet is compact, its band holding the name alone.
+        const full = 80 * at >= MARGIN_PX.band.full
+        expect(!!root.querySelector('[data-testid="margin-brick-drop-short"]'), `${at}`).toBe(full)
+        const middles = [...root.querySelectorAll('[data-testid="margin-identity"] svg')].map((icon) => icon.getBoundingClientRect()).map((icon) => icon.top + icon.height / 2)
+        expect(Math.max(...middles) - Math.min(...middles), `${at}`).toBeLessThan(0.5)
       }
     })
 
-    it(`keeps the title block in one row on Row progress's strip from 100% to 150%, the Bead's label over the legend, clear of the Frame's line, in ${locale} (tickets 1176, 1213)`, async () => {
+    it(`sets the facts and Row progress on one line on a wide sheet, the facts over the strip on a narrower one, clear of the Frame's line, from 100% to 150%, in ${locale} (ticket 1258)`, async () => {
       zoom.value = 1
-      columns.value = 40
+      columns.value = 90
+      onTestFinished(() => {
+        columns.value = 40
+      })
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
-      const titleForm = () => root.querySelector('[data-testid="margin-title"]')?.getAttribute('data-form')
-      for (const at of [1, 1.25, 1.5]) {
-        zoom.value = at
-        await settled(root)
-        expect(titleForm(), `${at}`).toBe('line')
-        const name = root.querySelector('[data-testid="margin-bead-name"]')!.getBoundingClientRect()
-        const colors = root.querySelector('[data-testid="margin-legend"]')!.getBoundingClientRect()
-        expect(name.bottom, `${at}`).toBeLessThanOrEqual(colors.top + 0.5)
-        expect(root.querySelector('.margin-sheet__progress')?.getAttribute('data-form'), `${at}`).toBe('whole')
-        expect(problems(root), `${at}`).toEqual([])
+      for (const [across, layout] of [[90, 'line'], [26, 'stacked']] as const) {
+        columns.value = across
+        for (const at of [1, 1.25, 1.5]) {
+          zoom.value = at
+          await settled(root)
+          const where = `${across} columns at ${at}`
+          expect(root.querySelector('[data-testid="margin-foot"]')!.classList.contains(`margin-sheet__foot--${layout}`), where).toBe(true)
+          expect(root.querySelector('[data-testid="margin-facts"]'), where).not.toBeNull()
+          expect(problems(root), where).toEqual([])
+        }
       }
     })
 
-    it(`cuts the Bead's label in the legend to what fits before the one row steps down, every cell else whole, in ${locale} (ticket 1213)`, async () => {
+    it(`cuts the Bead's label to what fits before the Letters or the Bead leave the foot, every fact else whole, in ${locale} (tickets 1213, 1258)`, async () => {
       zoom.value = 1
       colorCount.value = 1
       onTestFinished(() => {
@@ -200,20 +198,20 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
       })
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
       let cut = 0
-      for (let across = 36; across >= 18; across -= 1) {
+      for (let across = 26; across >= 6; across -= 1) {
         columns.value = across
         await settled(root)
         expect(problems(root), `${across}`).toEqual([])
-        if (root.querySelector('[data-testid="margin-title"]')?.getAttribute('data-form') !== 'line') continue
-        const block = root.querySelector<HTMLElement>('[data-testid="margin-title-block"]')!
+        const facts = root.querySelector<HTMLElement>('[data-testid="margin-facts"]')
+        if (!facts) continue
         const foot = root.querySelector<HTMLElement>('[data-testid="margin-foot"]')!
-        expect(block.offsetWidth, `${across}`).toBeLessThanOrEqual(foot.offsetWidth + 0.5)
-        const name = root.querySelector<HTMLElement>('[data-testid="margin-bead-name"]')!
-        if (name.scrollWidth > name.clientWidth + 0.5) cut += 1
-        for (const other of block.querySelectorAll<HTMLElement>('.margin-title__cell:not(.margin-title__legend) span'))
+        expect(facts.offsetWidth, `${across}`).toBeLessThanOrEqual(foot.offsetWidth + 0.5)
+        const name = root.querySelector<HTMLElement>('[data-testid="margin-bead-name"]')
+        if (name && name.scrollWidth > name.clientWidth + 0.5) cut += 1
+        for (const other of facts.querySelectorAll<HTMLElement>(':is(.margin-facts__size, .margin-facts__letters) span'))
           expect(other.scrollWidth, `${across} ${other.textContent}`).toBeLessThanOrEqual(other.clientWidth + 0.5)
       }
-      expect(cut, 'a sheet where the label is cut and the row kept').toBeGreaterThan(0)
+      expect(cut, 'a sheet where the label is cut and kept').toBeGreaterThan(0)
     })
 
     it(`fits at every zoom from 25% to 150%, and on a narrow Frame, stepping down a form where the sheet is too narrow, in ${locale}`, async () => {
@@ -236,9 +234,9 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
   }
 })
 
-describe('the title block in the sheet\'s bottom-left corner (ticket 1170)', () => {
+describe('the facts in the sheet\'s bottom-left corner (tickets 1170, 1258)', () => {
   for (const locale of FIT_LOCALES) {
-    it(`sits there at every width and zoom, the band's row the sheet's whole width, nothing overlapping, in ${locale}`, async () => {
+    it(`sit there at every width and zoom, nothing overlapping, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
@@ -251,11 +249,8 @@ describe('the title block in the sheet\'s bottom-left corner (ticket 1170)', () 
           const where = `${across} columns at ${percent}%`
           const wrong = problems(root)
           const sheet = root.querySelector('[data-testid="margin-sheet"]')!.getBoundingClientRect()
-          const title = root.querySelector('[data-testid="margin-title"] > *')?.getBoundingClientRect()
-          if (title) {
-            const middle = { x: sheet.left + sheet.width / 2, y: sheet.top + sheet.height / 2 }
-            if (title.top < middle.y || title.left - sheet.left > sheet.right - title.right) wrong.push('the title block is not at the bottom-left')
-          }
+          const facts = root.querySelector('[data-testid="margin-facts"]')?.getBoundingClientRect()
+          if (facts && (facts.top < sheet.top + sheet.height / 2 || facts.left - sheet.left > 24 * 1.5)) wrong.push('the facts are not at the bottom-left')
           if (!root.querySelector('[data-testid="frame-move-handle"]')) wrong.push('no Move bar')
           if (wrong.length) found[where] = wrong
         }
@@ -263,10 +258,29 @@ describe('the title block in the sheet\'s bottom-left corner (ticket 1170)', () 
       expect(found).toEqual({})
     })
   }
+
+  // Row progress once took the room before the folded name's tab had been measured, so the name came and went with the
+  // zoom's history (seen in ticket 1256): in the band it shows at a zoom however that zoom was reached.
+  it('show the Frame\'s name at a zoom whichever way it was reached', async () => {
+    zoom.value = 0.45
+    columns.value = 40
+    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
+    const shown = async () => {
+      await settled(root)
+      return root.querySelector('[data-testid="margin-frame-name"]')?.textContent
+    }
+    expect(await shown()).toBe('Sun band')
+    for (const from of [1.5, 0.7, 0.2]) {
+      zoom.value = from
+      await settled(root)
+      zoom.value = 0.45
+      expect(await shown(), `from ${from}`).toBe('Sun band')
+    }
+  })
 })
 
-describe('the title block and Row progress giving way at the bottom-left (tickets 498, 1170, 1176)', () => {
-  it('give way to a Selection\'s handles that reach under them at the bottom-left, and not to one at the top-right', async () => {
+describe('the foot giving way at the bottom-left (tickets 498, 1170, 1176)', () => {
+  it('gives way to a Selection\'s handles that reach under it at the bottom-left, and not to one at the top-right', async () => {
     const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>
       defineComponent({
         setup: () => () => h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { ...ownProject(projectOf(40)), anchor: anchorAt(1, 40), editing: false, pressing: false, selection })]),
@@ -427,13 +441,13 @@ describe('the band\'s row after a label changes (ticket 0851)', () => {
 })
 
 /** What the sheet draws under `MARGIN_PX.legible` on screen (ticket 0851): words under 11px, and the band's buttons, the
- * bare Move bar and the name tab under 24px. The legend's letters mark its discs and the title block's switches,
- * pencils and fold button are the drafting sheet's own smaller marks: at scale 1 and up they are drawn as it draws them. */
+ * and the bare Move bar under 24px. The legend's letters mark its discs and the Letters switch is the drafting
+ * sheet's own smaller mark: at scale 1 and up they are drawn as it draws them. */
 function specks(root: HTMLElement): string[] {
   const { text, button } = MARGIN_PX.legible
   const sheet = root.querySelector<HTMLElement>('[data-testid="margin-sheet"]')!
   const found: string[] = []
-  for (const element of sheet.querySelectorAll<HTMLElement>(':not(.margin-title__disc)')) {
+  for (const element of sheet.querySelectorAll<HTMLElement>(':not(.margin-facts__disc)')) {
     const rect = element.getBoundingClientRect()
     if (rect.width === 0 || element.offsetHeight === 0) continue
     const words = [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent!.trim())
@@ -441,7 +455,7 @@ function specks(root: HTMLElement): string[] {
     const size = parseFloat(getComputedStyle(element).fontSize) * (rect.height / element.offsetHeight)
     if (words && size < text - 0.05) found.push(`"${element.textContent!.trim()}" is ${size.toFixed(1)}px`)
   }
-  const buttons = sheet.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], [data-testid="margin-handle"]) button:not([role="switch"]), [data-testid="margin-title-tab"]')
+  const buttons = sheet.querySelectorAll<HTMLElement>(':is([data-testid="margin-band"], [data-testid="margin-handle"]) button:not([role="switch"])')
   for (const element of buttons) {
     const rect = element.getBoundingClientRect()
     if (Math.min(rect.width, rect.height) < button - 0.05) found.push(`${element.getAttribute('aria-label') || element.dataset.testid} is ${rect.width.toFixed(1)} × ${rect.height.toFixed(1)}px`)

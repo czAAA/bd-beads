@@ -19,9 +19,9 @@ export interface SlimMeasures {
   rowWidth: number
 }
 
-/** Until the sheet measures itself: the full row, and the two-row title block on Row progress's strip (ticket 1176), the
- * tallest it holds: a 23px row over the legend's (ticket 1213). */
-const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: MARGIN_PX.titleRow + MARGIN_PX.legendRow + 1 + MARGIN_PX.strip - 1, rowWidth: 0 }
+/** Until the sheet measures itself: the full row, and the foot at its tallest, the facts over Row progress's strip
+ * (tickets 1176, 1258). */
+const UNMEASURED: SlimMeasures = { row: MARGIN_PX.tool, title: MARGIN_PX.factsRow + MARGIN_PX.footGap + MARGIN_PX.strip, rowWidth: 0 }
 
 /** What Expand the Frame works the view through (`useCanvasView`). */
 export interface FrameExpandDeps {

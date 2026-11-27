@@ -18,37 +18,36 @@ export const MARGIN_PX = {
      * then), 10px in, clear of the Frame's line and its outset: 10px border, the 38px row, the 26px strip (a rule shared)
      * and 7px. */
     full: 80,
-    /** The compact form's stacked foot (ticket 1197): from here the compact title row stands on Row progress's strip, so
-     * the legend and Row progress both keep the sheet's width; under it they share one line. 6px border, the 38px row
-     * (ticket 1213; 22px until then), the 26px strip (a rule shared) and the 7px the Frame's line and its outset keep. */
-    stacked: 76,
-    /** The compact title row with its two-line legend on one line with Row progress (ticket 1213): 6px border, the 38px
-     * row and 8px clear of the Frame's line. Under it the compact row leaves its legend out (`brief`). */
-    legend: 52,
+    /** The compact form's two-row foot (tickets 1197, 1258): from here the legend stands over Row progress; under it
+     * they share one line. 10px in, the 14px legend, a finger's 8px, the 24px strip and the 7px the Frame's line and its
+     * outset keep, with room over. */
+    stacked: 68,
     /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds. */
     compact: 40,
     /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */
     folded: 31,
   },
-  /** The band on screen from which the title block is roomy (ticket 1015): its 79px, 10px in at the sheet's scale, stay
-   * clear of the Frame's line, and the block is drawn at 1 there. */
-  roomy: 104,
   /** The band's row down from the sheet's top and in from its sides, and the inner border's inset. */
   place: { full: { top: 14, side: 14, border: 10 }, compact: { top: 8, side: 10, border: 6 } },
+  /** The foot's inset from the sheet's sides and bottom edge (ticket 1258): clear inside the border; compact as the
+   * band's. */
+  foot: { full: { side: 14, bottom: 12 }, compact: { side: 10, bottom: 10 } },
   /** The sheet's outer corners. */
   sheetRadius: { full: 12, compact: 10 },
   /** The inner border's corners. */
   borderRadius: 6,
-  /** One row of the two-row title block (expanded), the one without the legend. */
-  titleRow: 23,
-  /** The title block's row that holds the legend: the Bead's label and its 18px pencil over the 14px discs, 2px apart,
-   * 1px in at top and bottom (ticket 1213). */
-  legendRow: 36,
+  /** The Frame's name in the band at its least, cut with an ellipsis, and what stands between it and Expand the Frame
+   * (ticket 1258). */
+  nameLeast: 80,
+  nameGap: { mouse: 4, touch: 12 },
+  /** The foot's facts row and what parts it from Row progress's strip (ticket 1258). */
+  factsRow: 24,
+  footGap: 4,
   /** A tool in the full form's row, and that row's height. */
   tool: 28,
-  /** The folded title block's name tab, the Move bar outside the full form, and the compact and folded row's height. */
+  /** The Move bar outside the full form, and the compact and folded row's height. */
   tab: 24,
-  /** Row progress's strip under the title block, across the sheet (ticket 1176), its rules included. */
+  /** Row progress's strip in the foot (ticket 1176). */
   strip: 26,
   /** The Move bar's hit area, the gutter handle's width. */
   moveWidth: 56,

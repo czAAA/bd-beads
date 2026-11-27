@@ -25,6 +25,8 @@ const props = defineProps<{
   /** The button is this icon alone, named by `label` in its Tooltip (the margin title block's Technique pencil, ticket
    * 0657); the value is shown beside it by the host. */
   iconOnly?: IconName
+  /** With `iconOnly`, the margin sheet's chip (ticket 1258): the value on the button too, before the icon. */
+  chip?: boolean
   /** The list sits in the app shell, not beside its button: inside the margin sheet's scale, Safari keeps a top-layer
    * list where it first showed (the top-left corner). */
   inShell?: boolean
@@ -165,7 +167,7 @@ function onListKeydown(event: KeyboardEvent) {
       <button
         ref="buttonEl"
         class="ui-control panel-picker__button"
-        :class="{ 'panel-picker__button--open': open, 'panel-picker__button--icon': iconOnly }"
+        :class="{ 'panel-picker__button--open': open, 'panel-picker__button--icon': iconOnly && !chip, 'margin-chip': chip }"
         type="button"
         aria-haspopup="menu"
         :aria-expanded="open"
@@ -175,7 +177,10 @@ function onListKeydown(event: KeyboardEvent) {
         @click="onButtonClick"
         @keydown="onButtonKeydown"
       >
-        <AppIcon v-if="iconOnly" :name="iconOnly" :size="12" />
+        <template v-if="iconOnly">
+          <span v-if="chip" class="margin-chip__text" :lang="chosen?.lang">{{ shown }}</span>
+          <AppIcon :name="iconOnly" :size="12" />
+        </template>
         <template v-else>
           <AppIcon v-if="toolbar && icon" class="panel-picker__lead" :name="icon" :size="18" />
           <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
@@ -248,6 +253,15 @@ function onListKeydown(event: KeyboardEvent) {
 .panel-picker--bare .panel-picker__button {
   justify-content: space-between;
   width: 100%;
+}
+
+/* The margin sheet's chip is as wide as its words (ticket 1258). */
+.panel-picker--bare:has(.margin-chip) {
+  flex: none;
+}
+
+.panel-picker--bare .panel-picker__button.margin-chip {
+  width: max-content;
 }
 
 .panel-picker__value {
