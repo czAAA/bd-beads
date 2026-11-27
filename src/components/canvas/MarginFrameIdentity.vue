@@ -19,7 +19,7 @@ import PanelPicker from '../shell/PanelPicker.vue'
 import IconButton from '../ui/IconButton.vue'
 import MarginSettingCell from './MarginSettingCell.vue'
 import { frameNameLine } from './marginFrameName'
-import type { IdentityForm } from './marginForms'
+import type { IdentityForm, IdentityPart } from './marginForms'
 import { rowWidth } from './rowFit'
 
 // Who the Frame is, in the margin sheet's top band after Expand (MarginSheet card, Calmer sheet; ticket 1258): its name,
@@ -32,6 +32,8 @@ const props = defineProps<{
   forms: readonly IdentityForm[]
   /** The band's room for the chips, in the sheet's drafting px. */
   room: number
+  /** The expanded sheet's rail (ticket 1260): these chips alone, whole and wrapping, with no fold. */
+  only?: readonly IdentityPart[]
 }>()
 
 const emit = defineEmits<{
@@ -88,17 +90,22 @@ const form = useFittingForm({
   labels: () =>
     JSON.stringify([name.value, t.value.frame.nameEmpty, makerLine.value, techniqueName(t.value, technique.value), settings.value.map(({ setting, value }) => fillBlanks(weaveSettingWords(t.value, setting).short, { count: value }))]),
 })
-const shows = computed(() => ({
-  technique: form.value === 'all' || form.value === 'noMaker' || form.value === 'noSettings',
-  settings: form.value === 'all' || form.value === 'noMaker',
-  maker: form.value === 'all',
-  fold: form.value !== 'alone',
-}))
+const shows = computed(() => {
+  const only = props.only
+  if (only) return { name: only.includes('name'), technique: only.includes('technique'), settings: only.includes('technique'), maker: only.includes('maker'), fold: false }
+  return {
+    name: true,
+    technique: form.value === 'all' || form.value === 'noMaker' || form.value === 'noSettings',
+    settings: form.value === 'all' || form.value === 'noMaker',
+    maker: form.value === 'all',
+    fold: form.value !== 'alone',
+  }
+})
 </script>
 
 <template>
-  <div v-if="form" ref="rowEl" class="margin-identity" :style="{ maxWidth: `${room}px` }" :data-form="form" data-testid="margin-identity">
-    <div class="margin-identity__name">
+  <div v-if="form" ref="rowEl" class="margin-identity" :class="{ 'margin-identity--stacked': only }" :style="only ? undefined : { maxWidth: `${room}px` }" :data-form="form" data-testid="margin-identity">
+    <div v-if="shows.name" class="margin-identity__name">
       <EditableLine v-bind="nameLine" @save="emit('rename', $event)" />
     </div>
     <PanelPicker
@@ -169,6 +176,26 @@ const shows = computed(() => ({
 .margin-identity__part {
   display: flex;
   flex: none;
+}
+
+/* In the expanded rail the chips wrap, a long name over several lines. */
+.margin-identity--stacked {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+
+.margin-identity--stacked .margin-identity__name {
+  flex-basis: 100%;
+  max-width: 100%;
+}
+
+.margin-identity--stacked .margin-identity__name :deep(.margin-chip__text) {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.margin-identity--stacked .margin-identity__name :deep(button.margin-chip) {
+  font: var(--margin-roomy-name);
 }
 
 /* The Technique picker as a chip: no row height of its own. */

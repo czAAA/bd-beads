@@ -379,8 +379,10 @@
   --margin-legend-letter: 600 0.5rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a legend disc (Inter 600 8). */
   --margin-roomy-name: 600 0.875rem/1.25rem var(--font-sans); /* MarginSheet card: the Frame's name at the head of the Frame popover (Inter 600 14). */
   --margin-bead-popover: 17rem; /* MarginSheet card: the Bead chip's popover, holding the three pickers on one row. */
-  --margin-expanded-inset: 6px; /* MarginSheet card, Expand the Frame: the expanded sheet's row and title block in from its edge. */
+  --margin-expanded-inset: 6px; /* MarginSheet card, Expand the Frame: the room round the Frame's line where no numbers stand. */
   --margin-expanded-inset-compact: 4px; /* MarginSheet card, Expand the Frame: the same under bp-tablet. */
+  --margin-rail: 300px; /* MarginSheet card, Calmer sheet 3: the expanded sheet's rails, its facts' and its tools'. */
+  --margin-rail-compact: 232px; /* MarginSheet card, Calmer sheet 3: the rails in a window up to 1500px wide. */
   /* SchemaTag card (tickets 0721, 0733): an unframed Schema's name on a tag above its Piece, in screen px at every zoom. */
   --schema-tag-height: 28px; /* SchemaTag card: the tag's height. */
   --schema-tag-end: 9px; /* SchemaTag card: the tag's cut left corners, and the hole's centre in from its left end. */

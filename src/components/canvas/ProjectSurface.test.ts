@@ -1574,8 +1574,8 @@ describe('ProjectSurface', () => {
 
       it('lets a press off the expanded Frame and past its margin through, as unexpanded: Expand only enlarges the view (ticket 1176)', async () => {
         const project = framed()
-        const slim = { compact: false, row: 28, title: 0, numbers: { left: 0, top: 0 }, rowWidth: 0 }
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'erase' }), slim })
+        const expanded = { compact: false, chrome: { top: 0, right: 0, bottom: 0, left: 0 }, numbers: { left: 0, top: 0 }, fontPx: 11 }
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'erase' }), expanded })
         const surface = wrapper.find('[data-testid="project-surface"]')
         // Row 2, column 2 is well outside the 4-position margin round the Frame at rows and columns 10 to 13.
         await surface.trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })

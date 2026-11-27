@@ -170,6 +170,9 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput, ref: 
   for (const box of layout.boxes) {
     if (box.outlined !== false) strokeBoxLine(context, box, surface, theme)
   }
+  // The paper under numbers held at the expanded room's edge (ticket 1260): the beads run on beneath it.
+  context.fillStyle = theme.margin.fill
+  for (const header of layout.headers) context.fillRect(header.x, header.y, header.width, header.height)
   for (const dot of layout.dots) {
     drawDot(context, dot, looks[dot.kind].scale, looks[dot.kind].theme)
   }

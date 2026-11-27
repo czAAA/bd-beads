@@ -4,6 +4,7 @@ import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/us
 import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { frameOf } from '../../domain/layerRecord'
 import { backBeadsAt, pieceFaceOf, wholePieceOf } from '../../domain/pieceFaces'
+import { letterInk } from '../../rendering/beadLook'
 import type { Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
 import { faceInfoWords } from '../../i18n/pieceFaceWords'
@@ -28,6 +29,9 @@ const props = defineProps<{
   closedFirst?: boolean
   /** Folded until it is opened, then kept per device (the Frame popover, ticket 1257). */
   folded?: boolean
+  /** In the expanded sheet's rail (ticket 1260): never folded, every color, each swatch a disc with its Swatch letter,
+   * counts alone. */
+  rail?: boolean
 }>()
 
 const { t, locale } = useI18n()
@@ -83,17 +87,19 @@ const piece = computed(() => {
 })
 
 const expanded = ref(false)
-const shown = computed(() => (expanded.value ? quantities.value : quantities.value.slice(0, SUMMARY_ROWS)))
+const shown = computed(() => (expanded.value || props.rail ? quantities.value : quantities.value.slice(0, SUMMARY_ROWS)))
+/** The weights' column, which the rail leaves out. */
+const weighed = computed(() => !props.rail && averageGrams.value !== undefined)
 </script>
 
 <template>
-  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="total || undefined" keep-summary :closed-first="closedFirst" :folded="folded" data-testid="bead-quantities">
-    <template v-if="quantities.length > 0 && info" #info>
+  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="total || undefined" keep-summary :closed-first="closedFirst" :folded="folded" :always-open="rail" class="bead-quantities__section" :class="{ 'bead-quantities__section--rail': rail }" data-testid="bead-quantities">
+    <template v-if="!rail && quantities.length > 0 && info" #info>
       <InfoButton :label="info.label" :body="info.body" data-testid="quantities-info" />
     </template>
     <template v-if="quantities.length > 0" #summary><span data-testid="quantity-total">{{ total }}</span></template>
     <div class="bead-quantities">
-      <p v-if="beadName" class="bead-quantities__bead" data-testid="quantities-bead">{{ beadName }}</p>
+      <p v-if="beadName && !rail" class="bead-quantities__bead" data-testid="quantities-bead">{{ beadName }}</p>
       <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
         {{ t.quantities.noProjectMessage }}
       </p>
@@ -109,25 +115,26 @@ const shown = computed(() => (expanded.value ? quantities.value : quantities.val
           <tr>
             <th>{{ t.quantities.colorHeading }}</th>
             <th>{{ t.quantities.countHeading }}</th>
-            <th v-if="averageGrams !== undefined">{{ t.quantities.weightHeading }}</th>
+            <th v-if="weighed">{{ t.quantities.weightHeading }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="quantity in shown" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
             <td class="bead-quantities__color">
-              <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
+              <span v-if="rail" class="bead-quantities__disc" :style="{ backgroundColor: quantity.hex, color: letterInk(quantity.hex) }">{{ project.paletteLetters?.[quantity.hex] ?? '?' }}</span>
+              <span v-else class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
               <ColorLabel :color="colorOf(quantity.colorId, quantity.hex)" :catalog="catalog ?? beadColors?.catalog.value" />
             </td>
             <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
               {{ groupThousands(quantity.count, locale) }}
             </td>
-            <td v-if="averageGrams !== undefined" class="bead-quantities__grams" :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`">
+            <td v-if="weighed" class="bead-quantities__grams" :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`">
               {{ weightOf(quantity.count) }}
             </td>
           </tr>
         </tbody>
       </table>
-      <button v-if="quantities.length > SUMMARY_ROWS" class="ui-control bead-quantities__more" :class="{ 'bead-quantities__more--folded': !expanded }" type="button" :aria-expanded="expanded" data-testid="quantities-toggle" @click="expanded = !expanded">
+      <button v-if="!rail && quantities.length > SUMMARY_ROWS" class="ui-control bead-quantities__more" :class="{ 'bead-quantities__more--folded': !expanded }" type="button" :aria-expanded="expanded" data-testid="quantities-toggle" @click="expanded = !expanded">
         <span>{{ expanded ? t.quantities.showFewer : fillBlanks(t.quantities.showAll, { count: quantities.length }) }}</span>
         <AppIcon name="chevron-down" :size="14" class="bead-quantities__chevron" :class="{ 'bead-quantities__chevron--up': expanded }" />
       </button>
@@ -238,6 +245,37 @@ const shown = computed(() => (expanded.value ? quantities.value : quantities.val
   height: var(--swatch-dot);
   border-radius: var(--radius-2xs);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
+}
+
+/* The rail's disc, as the sheet's legend draws it: the color with its Swatch letter. */
+.bead-quantities__disc {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--margin-legend-disc);
+  height: var(--margin-legend-disc);
+  font: var(--margin-legend-letter);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1px var(--swatch-edge);
+}
+
+.bead-quantities__section--rail .bead-quantities__row > td,
+.bead-quantities__section--rail .bead-quantities__color {
+  height: var(--margin-done);
+  min-height: var(--margin-done);
+}
+
+.bead-quantities__section--rail .bead-quantities,
+.bead-quantities__section--rail :deep(.panel-section__heading) {
+  padding-inline: var(--space-6);
+}
+
+/* Its heading reads as the rail's other labels do. */
+.bead-quantities__section--rail :deep(.panel-section__heading) {
+  flex-wrap: wrap;
+  font: var(--type-small);
+  text-transform: none;
 }
 
 .bead-quantities__count,

@@ -33,8 +33,6 @@ export interface BandToolsDeps {
   room: number
   /** A coarse pointer: 44px hit areas, so the tools stand further apart. */
   touch: boolean
-  /** Expanded, Expand the Frame and the tools stand side by side, with no Move bar between them (ticket 1169). */
-  expanded: boolean
   /** The Frame's name is to stand after Expand (ticket 1258): it counts at its least, so it is cut before a tool leaves
    * and a narrow band sends tools under the menu sooner. */
   name?: boolean
@@ -67,20 +65,19 @@ function toolsWidth(row: BandRow, shown: readonly BandToolId[], menu: boolean, t
 const leadWidth = (touch: boolean, unfold: boolean) => nameGap(touch) + MARGIN_PX.nameLeast + (unfold ? MARGIN_PX.gap + MARGIN_PX.tab : 0) + nameClear(touch)
 
 /** The band row's width in drafting px with `shown` tools: the Move bar centred, with room on each side for the wider
- * of Expand the Frame (with the name at its least) and the tools; expanded, the two side by side. */
-export function bandRowWidth(row: BandRow, shown: readonly BandToolId[], menu: boolean, touch: boolean, expanded: boolean, name = false, unfold = false): number {
+ * of Expand the Frame (with the name at its least) and the tools.
+ * @internal Its test works out the room a fit needs with it. */
+export function bandRowWidth(row: BandRow, shown: readonly BandToolId[], menu: boolean, touch: boolean, name = false, unfold = false): number {
   const start = toolSize(row) + (name ? leadWidth(touch, unfold) : 0)
   const end = toolsWidth(row, shown, menu, touch)
-  if (expanded) return start + end + 2 * MARGIN_PX.gap + (touch ? (TOUCH_TARGET - toolSize(row)) / 2 : 0)
   return MARGIN_PX.moveWidth + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap
 }
 
 /** The room a fitted band of `room` drafting px leaves the name and the chips after it: their side of the centred Move
- * bar less Expand the Frame; expanded, all the tools leave. */
-export function bandNameRoom({ row, onBand }: BandFit, room: number, touch: boolean, expanded: boolean): number {
+ * bar less Expand the Frame. */
+export function bandNameRoom({ row }: BandFit, room: number, touch: boolean): number {
   const around = nameGap(touch) + nameClear(touch)
-  if (!expanded) return (room - MARGIN_PX.moveWidth - 2 * MARGIN_PX.gap) / 2 - toolSize(row) - around
-  return room - bandRowWidth(row, onBand, true, touch, true) - around
+  return (room - MARGIN_PX.moveWidth - 2 * MARGIN_PX.gap) / 2 - toolSize(row) - around
 }
 
 /** The first row that holds every tool; where none does, the last row with as many tools as fit, the rest under the
@@ -91,10 +88,10 @@ export function bandTools(deps: BandToolsDeps): BandFit | undefined {
   return named ? { ...named, named: true } : fitTools(deps, false)
 }
 
-function fitTools({ tools, rows, room, touch, expanded, unfold }: BandToolsDeps, name: boolean): BandFit | undefined {
+function fitTools({ tools, rows, room, touch, unfold }: BandToolsDeps, name: boolean): BandFit | undefined {
   const all = BAND_ORDER.filter((id) => tools.includes(id))
   // The Frame tools button is always there (ticket 1220), so every row counts it.
-  const fits = (row: BandRow, shown: readonly BandToolId[]) => bandRowWidth(row, shown, true, touch, expanded, name, unfold) <= room
+  const fits = (row: BandRow, shown: readonly BandToolId[]) => bandRowWidth(row, shown, true, touch, name, unfold) <= room
   const whole = rows.find((row) => fits(row, all))
   if (whole) return { row: whole, onBand: all, overflow: [] }
   const row = rows.at(-1)

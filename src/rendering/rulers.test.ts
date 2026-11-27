@@ -27,6 +27,7 @@ interface Look {
   sheet?: MarginForm
   sheetScale?: number
   expanded?: boolean
+  pin?: { left: number; top: number }
 }
 
 const block = (row: number, column: number, rows = 3, columns = 3): [number, number][] =>
@@ -38,13 +39,13 @@ const project = (positions: [number, number][], frame?: Rect, technique: Techniq
     beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
   })
 /** The Ruler layout of a Project in a view of the Canvas. */
-const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet, sheetScale, expanded }: Look = {}) => {
+const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet, sheetScale, expanded, pin }: Look = {}) => {
   const frame = placedFrame(subject, frameIdIn(subject))
   const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, ...(frame ? { frame } : {}), rotation, zoom, scroll: at, viewport: size })
   // A turn carries the box off the top-left corner: centre it in a viewport that holds it, whichever way it is turned.
   const looking = centred ? view(undefined, { width: 2000, height: 2000 }) : undefined
   const surface = looking ? view(looking.scrollToCentre(centred), { width: 2000, height: 2000 }) : view(scroll)
-  return rulerLayout(subject, surface, { fontPx: 11, numbers, sheet, sheetScale, expanded }, frameIdIn(subject))
+  return rulerLayout(subject, surface, { fontPx: 11, numbers, sheet, sheetScale, expanded, pin }, frameIdIn(subject))
 }
 /** A Frame's own drawing (spec 1234): its own surface, shifted clear of the origin. A gridded Frame's geometry is turned by
  * its quarter turns already, so its surface is at no turn of its own, whatever the Canvas does (`ProjectSurface`). */
@@ -655,5 +656,30 @@ describe('frameNumberBands', () => {
 
   it('is none without a Frame', () => {
     expect(frameNumberBands(project([]), 10, frameIdIn(project([])))).toEqual({ left: 0, top: 0 })
+  })
+})
+
+describe('numbers held at the expanded room’s edge (ticket 1260)', () => {
+  const frame = { row: 0, column: 0, rows: 60, columns: 8 }
+  // Scrolled 400px down: the Frame's top and its column numbers are above the drawing area.
+  const scrolled = (pin?: { left: number; top: number }) => framed(frame, { expanded: true, scroll: { x: -300, y: 400 }, viewport: { width: 1000, height: 600 }, pin })
+
+  it('are not held where nothing asks, and leave no header', () => {
+    expect(scrolled().headers).toEqual([])
+    expect(scrolled().labels.filter((label) => label.axis === 'column')).toEqual([])
+  })
+
+  it('keeps the column numbers at the top edge over a header, the row numbers under it left out', () => {
+    const layout = scrolled({ left: 100, top: 40 })
+    const columns = layout.labels.filter((label) => label.axis === 'column')
+    expect(columns).toHaveLength(8)
+    const header = layout.headers[0]!
+    for (const label of columns) expect([label.y - label.height / 2 >= 40, label.y + label.height / 2 <= header.height]).toEqual([true, true])
+    for (const label of layout.labels.filter((label) => label.axis === 'row')) expect(label.y).toBeGreaterThanOrEqual(header.height)
+  })
+
+  it('holds nothing and draws no header while the numbers stand clear of the edge', () => {
+    const layout = framed(frame, { expanded: true, scroll: { x: -300, y: -300 }, viewport: { width: 1000, height: 600 }, pin: { left: 100, top: 40 } })
+    expect(layout.headers).toEqual([])
   })
 })

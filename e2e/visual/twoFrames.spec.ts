@@ -70,8 +70,9 @@ test('Expand the Frame on one sheet expands that Frame alone', async ({ page }) 
   await setZoom(page, 100)
   await settle(page)
   await sheetOf(page, SECOND).getByTestId('margin-expand-frame').click()
-  await expect(sheetOf(page, SECOND)).toHaveClass(/margin-sheet--expanded/)
-  await expect(page.locator('.margin-sheet--expanded')).toHaveCount(1)
+  await expect(page.getByTestId('margin-rails')).toHaveAttribute('data-frame', SECOND)
+  // The other Frame's sheet lies under the paper, so it is not drawn (ticket 1260).
+  await expect(page.getByTestId('margin-sheet')).toHaveCount(0)
 })
 
 test('painting on a Frame makes it the Last edited Frame, kept with the Project', async ({ page }) => {

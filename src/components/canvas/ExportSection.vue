@@ -4,10 +4,12 @@ import EditableLine from '../project/EditableLine.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectFileButton from './ProjectFileButton.vue'
 import PanelSection from '../shell/PanelSection.vue'
+import PanelItem from '../shell/PanelItem.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import ChipRadioGroup from '../ui/form/ChipRadioGroup.vue'
 import LoadingState from '../ui/LoadingState.vue'
+import { usePanelSection } from '../../composables/shell/usePanelSection'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { usePrintChoices } from '../../composables/export/usePrintChoices'
 import type { Project } from '../../domain/project'
@@ -37,6 +39,8 @@ const props = defineProps<{
   exporting?: ExportChoice
   /** The row its panel opens on (ticket 0843), marked as the panel's entry so it takes the focus. */
   opensOn?: ExportChoice
+  /** Unfolded in the expanded sheet's rail (ticket 1260): plain rows, the file's name read only. */
+  rail?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -147,12 +151,33 @@ const makerLine = computed(() => ({
 function onRename(name: string) {
   typedName.value = name || undefined
 }
+/** The settings fold, kept on this device as the panel's is: the rail's row and the panel's section are one. */
+const settings = usePanelSection(() => 'export:settings', () => true)
+/** Name on exports' row in the rail, unfolded to the maker's chip. */
+const makerOpen = ref(false)
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: projectNameOf(props.project) }))
 </script>
 
 <template>
-  <div class="export-section__files" data-testid="export-files">
+  <div v-if="rail" class="export-section__rows" data-testid="export-files">
+    <PanelItem :disabled="!frame || exportBusy" :name="t.frame.exportPicture" :body="pngValue" :disabled-body="pngValue" :aria-label="spoken(t.frame.exportPicture, pngValue)" data-testid="export-png" @select="emit('export-png')">
+      PNG
+      <BetaChip v-if="customFrame" feature="customFrameExports" name="PNG export" />
+    </PanelItem>
+    <PanelItem :disabled="!frame || exportBusy" :name="t.frame.exportChart" :body="pdfValue" :disabled-body="pdfValue" :aria-label="spoken(t.frame.exportChart, pdfValue)" data-testid="export-pdf" @select="emit('export-pdf')">
+      PDF
+      <BetaChip v-if="customFrame" feature="customFrameExports" name="PDF export" />
+    </PanelItem>
+    <ProjectFileButton row @save-project-file="emit('save-project-file')" />
+    <p class="export-section__name" data-user-text data-testid="export-file-name">{{ pdfName }}</p>
+    <PanelItem :expanded="makerOpen" data-testid="export-maker-row" @select="makerOpen = !makerOpen">{{ t.frame.nameOnExports }}</PanelItem>
+    <div v-if="makerOpen" class="export-section__file">
+      <EditableLine v-bind="makerLine" bare @save="emit('save-maker-name', $event)" />
+    </div>
+    <PanelItem :expanded="settings.open.value" data-testid="export-settings-row" @select="settings.toggle()">{{ t.frame.exportSettings }}</PanelItem>
+  </div>
+  <div v-if="!rail" class="export-section__files" data-testid="export-files">
     <AppButton
       variant="accent-2"
       icon="image"
@@ -183,14 +208,16 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
     </AppButton>
     <ProjectFileButton @save-project-file="emit('save-project-file')" />
   </div>
-  <div class="export-section__file">
-    <EditableLine v-bind="fileLine" @save="onRename" />
-  </div>
-  <div class="export-section__file">
-    <EditableLine v-bind="makerLine" @save="emit('save-maker-name', $event)" />
-  </div>
-  <!-- The settings fold (ticket 1210): folded until opened, then kept on this device. -->
-  <PanelSection id="export:settings" folded :label="t.frame.exportSettings">
+  <template v-if="!rail">
+    <div class="export-section__file">
+      <EditableLine v-bind="fileLine" @save="onRename" />
+    </div>
+    <div class="export-section__file">
+      <EditableLine v-bind="makerLine" @save="emit('save-maker-name', $event)" />
+    </div>
+  </template>
+  <!-- The settings fold (ticket 1210): folded until opened, then kept on this device; in the rail its row folds it. -->
+  <component :is="rail ? 'div' : PanelSection" v-if="!rail || settings.open.value" v-bind="rail ? { class: 'export-section__settings' } : { id: 'export:settings', folded: true, label: t.frame.exportSettings }">
     <div class="export-section__quality">
       <QualitySlider
         :label="t.frame.exportQuality"
@@ -217,12 +244,53 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
         @update:model-value="rowByRowWay = $event ?? rowByRowWay"
       />
     </div>
-  </PanelSection>
+  </component>
   <slot />
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />
 </template>
 
 <style scoped>
+/* In the expanded sheet's rail (ticket 1260): rows indented under Export, the settings a step further. */
+.export-section__rows > * {
+  --panel-item-indent: calc(var(--space-6) + var(--space-16) + var(--space-8));
+}
+
+.export-section__rows :deep(.panel-item) {
+  padding-inline: var(--panel-item-indent) var(--space-6);
+}
+
+.export-section__rows .export-section__file {
+  padding-inline: var(--panel-item-indent) var(--space-6);
+}
+
+.export-section__name {
+  margin: 0;
+  padding: var(--space-4) var(--space-6) var(--space-4) var(--panel-item-indent);
+  font: var(--type-meta);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.export-section__settings {
+  padding-inline-start: var(--space-16);
+}
+
+/* A long word breaks inside its stop, and the chosen one's name goes under the label, in a narrow rail. */
+.export-section__settings :deep(.qs-head) {
+  flex-wrap: wrap;
+}
+
+.export-section__settings :deep(.qs-stop > *) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.export-section__settings .export-section__quality,
+.export-section__settings .export-section__way,
+.export-section__settings :deep(.panel-switch-row) {
+  padding-inline: var(--space-4) var(--space-6);
+}
+
 /* PNG, PDF and File side by side, a third of the row each (ticket 1121). */
 .export-section__files {
   display: grid;

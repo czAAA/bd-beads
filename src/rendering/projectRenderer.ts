@@ -744,10 +744,10 @@ export function marginSheetPx(project: DrawnProject, ref: FrameRef, margin = MAR
   return { sheet, footprint, band: Math.round(narrowest * 1e6) / 1e6 }
 }
 
-/** The expanded Frame's slim sheet as drawn (ticket 1169): its box in grid px and its outer corners in screen px. */
+/** The expanded Frame's sheet as drawn (tickets 1169, 1260): its box in grid px, square-cornered, as the page rounds
+ * what is seen of it. */
 export interface SlimSheet {
   sheet: Region
-  radius: number
 }
 
 /** The keep-out margin as drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the Frame's
@@ -759,13 +759,13 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, ref: Fr
   const sheet = slim?.sheet ?? kept.sheet
   const gridBand = slim ? Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height) : kept.band
   const band = gridBand * zoom
-  // Expanded, the sheet is full at scale 1 at every zoom, with no inner border.
+  // Expanded, the paper is at scale 1 at every zoom, with no inner border.
   const form = slim ? 'slim' : marginForm(band, look.leastScale)
   if (form === 'bare') return
   const px = slim ? 1 / zoom : marginScale(band, look.leastScale) / zoom
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(slim ? slim.radius / zoom : MARGIN_PX.sheetRadius[drawn] * px, gridBand)
+  const radius = slim ? 0 : Math.min(MARGIN_PX.sheetRadius[drawn] * px, gridBand)
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)

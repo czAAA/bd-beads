@@ -11,7 +11,7 @@ import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
-import { gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { gridBox, beadStepPx, type Region, type SurfaceView, type ViewLayer } from './surfaceView'
 import { type Layered, frameById } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers along the left and the top of the Frame
@@ -149,6 +149,12 @@ export interface RulerDot {
   half: number
 }
 
+/** Where numbers stop on the left and the top, in viewport px. */
+interface Pin {
+  left: number
+  top: number
+}
+
 export interface RulerLayoutOptions {
   /** The numbers' size in px at zoom 1: 11, or 12 on a phone. It grows or shrinks with the zoom (`RulerScale`). */
   fontPx: number
@@ -166,6 +172,9 @@ export interface RulerLayoutOptions {
   expanded?: boolean
   /** The expanded Frame's numbers' size in px (ticket 1194: it grows with the bead); the 100% ones when left out. */
   expandedFontPx?: number
+  /** Where the expanded Frame's room starts on the left and top, in viewport px (ticket 1260): numbers its rows would
+   * carry past there stay at it, over a header that hides the beads under them. */
+  pin?: Pin
   /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
    * beads otherwise. */
   pieces?: RuledPieces
@@ -193,11 +202,14 @@ export interface RulerLayout {
   // The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch;
   // on the same terms as the numbers.
   dots: RulerDot[]
+  /** The paper under the Frame's numbers held at the room's edge, drawn over the beads they run past (ticket 1260). */
+  headers: Region[]
 }
 
 interface BoxLayout {
   labels: RulerLabel[]
   beads: RulerDot[]
+  headers?: Region[]
   /** The Ruler step of the box's coarser ruler, in beads between numbers. */
   step: number
 }
@@ -217,7 +229,7 @@ const TURNED_STEPS: Record<number, [[number, number], [number, number]]> = { 1: 
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; layer: ViewLayer; size?: number; stepped?: boolean; turned?: TurnedOwn }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; layer: ViewLayer; size?: number; stepped?: boolean; turned?: TurnedOwn; pin?: Pin }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
   const turned = place.turned
@@ -296,6 +308,23 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     label.x + label.width / 2 > -margin && label.x - label.width / 2 < viewport.width + margin && label.y + label.height / 2 > -margin && label.y - label.height / 2 < viewport.height + margin
   const dotSeen = (spot: { x: number; y: number }) => spot.x > -margin && spot.x < viewport.width + margin && spot.y > -margin && spot.y < viewport.height + margin
 
+  // How far each header reaches: set by the first number held at the room's edge.
+  const held = { left: 0, top: 0 }
+  /** The numbers and dots of the side along the top. */
+  const onTop = new Set<object>()
+  /** A number's or dot's place, held at the room's left or top edge where its side runs past it (ticket 1260). */
+  const pinned = <T extends { x: number; y: number }>(spot: T, nx: number, ny: number, size: { width: number; height: number }): T => {
+    const pin = place.pin
+    if (!pin) return spot
+    const top = -ny > Math.abs(nx)
+    const least = (top ? pin.top : pin.left) + gap + (top ? size.height : size.width) / 2
+    if ((top ? spot.y : spot.x) >= least) return spot
+    if (top) held.top = Math.max(held.top, least + size.height / 2 + gap)
+    else if (-nx >= Math.abs(ny)) held.left = Math.max(held.left, least + size.width / 2 + gap)
+    else return spot
+    return top ? { ...spot, y: least } : { ...spot, x: least }
+  }
+
   /** One bead of a ruler: its number if the Ruler step reaches it, and its mark. */
   const along = (
     axis: 'row' | 'column',
@@ -321,16 +350,21 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     const { x, y, nx, ny } = outward(gridX, gridY, normal, bead)
 
     const dotAway = box.outset + gap + dotHalf
-    const dot = { x: x + nx * dotAway, y: y + ny * dotAway }
+    const top = -ny > Math.abs(nx)
+    const dot = pinned({ x: x + nx * dotAway, y: y + ny * dotAway }, nx, ny, band)
     if (dotSeen(dot)) {
-      beads.push({ ...dot, fifth: number % 5 === 0, numbered: number % step === 0, kind: box.kind, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
+      const mark = { ...dot, fifth: number % 5 === 0, numbered: number % step === 0, kind: box.kind, axis, index, selection, position, normal: [nx, ny] as [number, number], pitch: column ? columnPitch : rowPitch, half: dotHalf }
+      if (top) onTop.add(mark)
+      beads.push(mark)
     }
     if (number % step === 0) {
       const size = labelBox(text, turned, fontPx)
       const reach = gap + (Math.abs(nx) * (column ? band.width : rowSize.width) + Math.abs(ny) * (column ? band.height : rowSize.height)) / 2
-      const spot = { x: x + nx * (box.outset + reach), y: y + ny * (box.outset + reach), ...size }
+      const spot = pinned({ x: x + nx * (box.outset + reach), y: y + ny * (box.outset + reach), ...size }, nx, ny, column ? columnBand : rowSize)
       if (seen(spot)) {
-        labels.push({ text, ...spot, turned, fifth: number % 5 === 0, kind: box.kind, axis, index, selection, position })
+        const label = { text, ...spot, turned, fifth: number % 5 === 0, kind: box.kind, axis, index, selection, position }
+        if (top) onTop.add(label)
+        labels.push(label)
       }
     }
   }
@@ -363,12 +397,17 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   side([-1, 0], () => rowsAt(start.column, left, [-1, 0]))
   side([0, 1], () => columnsAt(lastRow, bottom, [0, 1]))
   side([1, 0], () => rowsAt(lastColumn, right, [1, 0]))
-  return { labels, beads, step: Math.max(columnStep, rowStep) }
+  const headers: Region[] = []
+  if (held.top) headers.push({ x: 0, y: 0, width: viewport.width, height: held.top })
+  if (held.left) headers.push({ x: 0, y: 0, width: held.left, height: viewport.height })
+  // A number carried under the other side's header is hidden there, not drawn over it.
+  const shown = <T extends { x: number; y: number }>(items: T[]) => (headers.length ? items.filter((item) => (onTop.has(item) ? item.x >= held.left : item.y >= held.top)) : items)
+  return { labels: shown(labels), beads: shown(beads), headers, step: Math.max(columnStep, rowStep) }
 }
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pieces: given }: RulerLayoutOptions, ref: FrameRef): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, expanded = false, expandedFontPx, pin, pieces: given }: RulerLayoutOptions, ref: FrameRef): RulerLayout {
   const pieces = given ?? ruledPieces(undefined, project, { numbers, stroking: false })
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
@@ -389,7 +428,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const laid = boxes.map((box) => ({
     kind: box.kind,
     ...(box.kind === 'frame'
-      ? layBox(box, frameWeave(project, ref), { origin: { x: 0, y: 0 }, layer: ref, size: frameBeadScale(project, ref), stepped: expanded, ...(turnedOwn ? { turned: turnedOwn } : {}) }, surface, viewport, frameScale)
+      ? layBox(box, frameWeave(project, ref), { origin: { x: 0, y: 0 }, layer: ref, size: frameBeadScale(project, ref), stepped: expanded, ...(pin ? { pin } : {}), ...(turnedOwn ? { turned: turnedOwn } : {}) }, surface, viewport, frameScale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   // A Frame's numbers need the room of its sheet's full form; a Piece's follow the Rulers toggle.
@@ -407,6 +446,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     sheetScale: expanded ? (expandedFontPx ?? fontPx) / fontPx : (sheetScale ?? 1),
     labels: everyLabel,
     dots: everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)),
+    headers: laid.flatMap((box) => (box.kind === 'frame' ? (box.headers ?? []) : [])),
   }
 }
 
@@ -428,5 +468,5 @@ export function frameNumberBands(project: RuledProject, fontPx: number, ref: Fra
  * Pieces' on the Canvas's. Only the Frame's mark the current pass. */
 export function rulersOf(layout: RulerLayout, kind: RuledBox['kind']): RulerLayout {
   const own = <T extends { kind: RuledBox['kind'] }>(items: readonly T[]): T[] => items.filter((item) => item.kind === kind)
-  return { ...layout, boxes: own(layout.boxes), labels: own(layout.labels), dots: own(layout.dots), passMark: kind === 'frame' && layout.passMark }
+  return { ...layout, boxes: own(layout.boxes), labels: own(layout.labels), dots: own(layout.dots), headers: kind === 'frame' ? layout.headers : [], passMark: kind === 'frame' && layout.passMark }
 }

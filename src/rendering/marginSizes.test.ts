@@ -44,8 +44,6 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   nameLeast: { none: 'the band’s script fits the name’s chip by it' },
   'nameGap.mouse': { token: 'space-4' },
   'nameGap.touch': { token: 'space-12' },
-  factsRow: { css: '--margin-tool-compact' },
-  footGap: { token: 'space-4' },
   moveWidth: { css: '--frame-handle-hit-width' },
   gap: { token: 'space-4' },
   'icon.full': { none: 'an IconButton’s icon size is a prop, not CSS' },
@@ -55,6 +53,9 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   'expanded.inset.full': { css: '--margin-expanded-inset' },
   'expanded.inset.compact': { css: '--margin-expanded-inset-compact' },
   'expanded.numbers': { none: 'the rulers’ own gap at 100% (rulerScale), drawn by the canvas alone' },
+  'expanded.pitch.wide': { none: 'the view’s fit zooms by it; CSS never reads it' },
+  'expanded.pitch.narrow': { none: 'the view’s fit zooms by it; CSS never reads it' },
+  'expanded.narrowAt': { none: 'a drawing area’s width the fit reads, not a size CSS draws' },
 }
 
 /** Every number in a nested record, by its dotted path. */
