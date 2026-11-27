@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { channelsOf, toCielab } from '../domain/color'
-import { PRINT_THEME, PROJECT_THEMES } from './beadLook'
+import { recordingContext } from '../testUtils/recordingContext'
+import { bodyCorner, PRINT_THEME, PROJECT_THEMES } from './beadLook'
 import { canvasTheme } from './canvasBackgrounds'
-import { gapColorOf, markLookAt, markLookOf, TILE_STEP_L, tileColorOf } from './tonalTiles'
+import { fillTiles, gapColorOf, markLookAt, markLookOf, TILE_STEP_L, tileColorOf } from './tonalTiles'
 
 describe('the tile color', () => {
   it.each([
@@ -42,6 +43,17 @@ describe('markLookOf', () => {
   it("carries whether the theme's round beads touch, so an empty tile takes their shape (ticket 1252)", () => {
     expect(markLookOf(PROJECT_THEMES.dark)).toMatchObject({ ownColorRim: true, touchingRounds: true })
     expect(markLookOf(PRINT_THEME).touchingRounds).toBe(false)
+  })
+
+  it("rounds a round bead's empty tile as the touching bead on screen, and as a pill in high contrast (ticket 1252)", () => {
+    const cornerOfTile = (theme: typeof PRINT_THEME) => {
+      const { context, named } = recordingContext()
+      const mark = markLookOf(theme)
+      fillTiles(context, [{ x: 0, y: 0, width: 20, height: 30, cornerRadius: bodyCorner(10, 20, 30, mark) }], mark.color)
+      return named('arcTo')[0]!.args[4]
+    }
+    expect(cornerOfTile(PROJECT_THEMES.dark)).toBe(6)
+    expect(cornerOfTile(PROJECT_THEMES.contrast)).toBeGreaterThan(9)
   })
 
   it('gives a page laid beside the drawing the marks the renderer draws at its scale', () => {

@@ -1,5 +1,5 @@
 import { beadRoundness, describeWeave, type BeadCell, type Technique, type TechniqueSettings } from '../domain/weave'
-import { BEAD_GAP_PX, bodyCorner, drawsTouching, type DrawingContext, type TouchingShapes } from './beadLook'
+import { BEAD_GAP_PX, bodyCorner, touchesRounds, type DrawingContext, type TouchingShapes } from './beadLook'
 import { cellSizePx, CELL_SIZE_PX } from './cellSize'
 import type { Region } from './surfaceView'
 import { fillTiles } from './tonalTiles'
@@ -97,7 +97,7 @@ function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; key
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
   // The tile's size is in the key too; the roundness is the only part of the cell it doesn't show.
-  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color, !!input.tiles, drawsTouching(1, 2, input)].join('|')
+  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color, !!input.tiles, touchesRounds(input)].join('|')
 
   let tile = tiles.get(key)
   if (tile === undefined) {

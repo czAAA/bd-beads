@@ -1275,6 +1275,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const pointerWeave = isFrameLayer(pointer.layer) ? frameWeave(project, on) : canvasWeaveOf
     // On the Canvas, a Frame's bead is its Bead's size (ticket 0665).
     const scaled = isFrameLayer(pointer.layer) && space.open ? frameScale(project, on) : 1
-    drawPointer(context, pointerWeave.technique, pointerWeave.cell, zoom * scaled, pixelRatio, pointer, theme)
+    drawPointer(context, pointerWeave.technique, pointerWeave.cell, zoom * scaled, pixelRatio, pointer, shapesOf(theme, zoom * scaled * pixelRatio))
   }
 }
