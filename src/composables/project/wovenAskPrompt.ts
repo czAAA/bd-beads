@@ -15,7 +15,7 @@ export interface WovenAskPrompt {
 
 /** The words of the question Rotate Frame or a Technique change asks once a pass is done: the lines named as the way
  * runs as seen (columns left to right and right to left, rows otherwise), the way's name in the sentence, and the
- * title and start-over answer the asking change gives. `startOver` may hold the way's `{way}` blank. */
+ * title and start-over answer the asking change gives. `keep` counts the lines kept; Rotate Frame words its own. */
 export function wovenAskPrompt(t: Translations, locale: Locale, asked: WovenLines, title: string, startOver: string): WovenAskPrompt {
   const words = t.frame.wovenAsk
   const columns = asked.way === 'left' || asked.way === 'right'
@@ -25,7 +25,7 @@ export function wovenAskPrompt(t: Translations, locale: Locale, asked: WovenLine
   return {
     title,
     message: counted(columns ? words.columnsDone : words.rowsDone, { way }),
-    startOver: fillBlanks(startOver, {}, { way }),
+    startOver,
     keep: counted(columns ? words.keepColumns : words.keepRows, {}),
   }
 }

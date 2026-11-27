@@ -23,7 +23,7 @@ describe('MarginFrameTools', () => {
     await wrapper.get('button[data-testid="margin-frame-tools"]').trigger('click')
     await flushPromises()
 
-    await wrapper.get('[data-testid="frame-size-locked-reset"]').trigger('click')
+    await wrapper.get('[data-testid="frame-popover-reset-icon"]').trigger('click')
 
     expect(wrapper.emitted('reset-progress')).toHaveLength(1)
     expect(wrapper.find('[data-testid="frame-popover"]').exists()).toBe(false)

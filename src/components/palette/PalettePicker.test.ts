@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
 import { BUILT_IN_COLORS, addedColorId, defaultPaletteIds } from '../../domain/palette'
@@ -90,7 +90,7 @@ describe('PalettePicker', () => {
     expect(tooltip.get('.app-tooltip__body').text()).toBe(BUILT_IN_COLORS[0]!.hex)
   })
 
-  it('names a swatch picked from the Color catalog by its code and name, its Tooltip by its family and code with its catalog, the hex as body (tickets 0760, 1226)', async () => {
+  it('names a swatch picked from the Color catalog by its code and name, its Tooltip by its family and code, the hex as body (tickets 0760, 1261)', async () => {
     const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
     const beadColors = { catalog: ref(catalog), swatches: ref([]), load: vi.fn() } as unknown as BeadColors
     const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': '49' }, beadColors })
@@ -101,8 +101,30 @@ describe('PalettePicker', () => {
     expect(beadColors.load).toHaveBeenCalled()
     const tooltip = wrapper.findAll('.app-tooltip')[defaultPaletteIds().length]!
     await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
-    expect(tooltip.get('.app-tooltip__name').text()).toBe(`${ru.colorNames.black} · TOHO, код 49`)
+    expect(tooltip.get('.app-tooltip__name').text()).toBe(`${ru.colorNames.black} · 49`)
     expect(tooltip.get('.app-tooltip__body').text()).toBe('#123456')
+  })
+
+  it("names a swatch from another catalog than the Bead's by its family and code too, once that catalog loads (ticket 1261)", async () => {
+    const toho: ColorCatalog = { id: 'toho', codes: [] }
+    const delica: ColorCatalog = { id: 'miyuki-delica', codes: [{ code: 'DB723', family: ['Red'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] }] }
+    const loaded = shallowRef<ColorCatalog>()
+    const load = vi.fn(() => void (loaded.value = delica))
+    const beadColors = { catalog: ref(toho), swatches: ref([]), load: vi.fn(), others: { get: (id: string) => (loaded.value?.id === id ? loaded.value : undefined), load } } as unknown as BeadColors
+    const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': 'DB723' }, catalog: 'miyuki-delica', beadColors })
+    await nextTick()
+
+    expect(load).toHaveBeenCalledWith('miyuki-delica')
+    const tooltip = wrapper.findAll('.app-tooltip')[defaultPaletteIds().length]!
+    await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(tooltip.get('.app-tooltip__name').text()).toBe(`${ru.colorNames.red} · DB723`)
+  })
+
+  it('names a code by itself while its catalog is not at hand (ticket 1261)', async () => {
+    const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': 'DB723' }, catalog: 'miyuki-delica' })
+    const tooltip = wrapper.findAll('.app-tooltip')[defaultPaletteIds().length]!
+    await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(tooltip.get('.app-tooltip__name').text()).toBe('DB723')
   })
 
   it('marks a catalog swatch made from its family and Finish, and names it so; a plain color has no mark (ticket 0905)', () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
+import { catalogOfColor, loadCatalogWhen, loadCatalogsOf, useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMoveColor, useMoveSection, usePalette, usePaletteLetters, useRecentColors, useRemoveAddedColor, useRemoveSection } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
@@ -51,7 +51,8 @@ const closePanel = useClosePopoverOnPick()
 // A swatch picked from the Bead's Color catalog is named from it (ticket 0760), so the catalog loads once one is held.
 const beadColors = useBeadColorsList()
 loadCatalogWhen(beadColors, () => colors.value.some((color) => !!color.code))
-const labelOf = (color: PaletteColor) => colorLabel(t.value, color, beadColors?.catalog.value)
+loadCatalogsOf(beadColors, () => colors.value)
+const labelOf = (color: PaletteColor) => colorLabel(t.value, color, catalogOfColor(beadColors, color))
 /** Whether a swatch of a catalog code is made from its family and Finish (ticket 0905); a plain color has no mark. */
 function approximateOf(color: PaletteColor): boolean | undefined {
   if (!color.code) return undefined
@@ -235,7 +236,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
           <AppSwatch
             :color="color.hex"
             :label="swatchLabel(color, slot)"
-            :tooltip-name="color.code ? codeName(t, color, beadColors?.catalog.value) : undefined"
+            :tooltip-name="color.code ? codeName(t, color, catalogOfColor(beadColors, color)) : undefined"
             :selected="color.id === selectedColorId"
             :approximate="approximateOf(color)"
             :recent="isRecent(color)"

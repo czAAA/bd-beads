@@ -517,6 +517,20 @@ function hitAreas(root: HTMLElement): { name: string; rect: DOMRect }[] {
   })
 }
 
+describe('Row progress\'s round buttons (ticket 1256)', () => {
+  it('draws the compact strip\'s buttons as 24px circles with Row done an arrow', async () => {
+    zoom.value = 0.6
+    columns.value = 40
+    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
+    await settled(root)
+    for (const name of ['previous', 'strip-reset', 'strip-marks', 'next']) {
+      const drawn = root.querySelector<HTMLElement>(`[data-testid="margin-progress-${name}"]`)!
+      expect([drawn.offsetWidth, drawn.offsetHeight], name).toEqual([24, 24])
+      expect(parseFloat(getComputedStyle(drawn).borderRadius), name).toBeGreaterThanOrEqual(12)
+    }
+  })
+})
+
 describe('the Frame\'s bar on a coarse pointer (tickets 0976, 1195)', () => {
   it('keeps every tool that fits on the band and the rest under the Frame tools button, whose 44px hit areas overlap no other, at every zoom and width', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)

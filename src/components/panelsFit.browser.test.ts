@@ -40,13 +40,21 @@ const painted = withLayers(framed, { frame: { ...frameOf(framed)!, name: 'Moth w
 // A Fringe earring's four settings in place of Width and Height (ticket 0597).
 const earringPlaced = changeFrame(project, { custom: { shape: 'fringeEarring', size: 7, centre: { row: 6, column: 6 } } }, frameIdIn(project))
 const earring = earringPlaced.kind === 'changed' ? earringPlaced.project : project
-const showAll = (root: HTMLElement): void => {
+/** Every folded row of the Frame popover opened (ticket 1257): a section's state is kept, so only the shut ones are
+ * pressed. */
+const unfoldAll = async (root: HTMLElement): Promise<void> => {
+  for (const header of root.querySelectorAll<HTMLElement>('.panel-section__heading [aria-expanded="false"]')) header.click()
+  await nextTick()
+}
+const showAll = async (root: HTMLElement): Promise<void> => {
+  await unfoldAll(root)
   const button = root.querySelector<HTMLElement>('[data-testid="quantities-toggle"]')
   if (!button) throw new Error('Beads needed has no Show all button')
   button.click()
 }
 /** A width and a height that each bring up their range line (ticket 0978). */
 const refuseSizes = async (root: HTMLElement): Promise<void> => {
+  await unfoldAll(root)
   for (const side of ['width', 'height']) {
     const field = root.querySelector<HTMLInputElement>(`[data-testid="frame-size-${side}"]`)
     if (!field) throw new Error(`The Frame popover has no ${side} field`)
@@ -73,9 +81,9 @@ const inPanel = (component: Component, props: Record<string, unknown>, width?: s
 const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
 /** The Frame popover's content: `frame-popover-width`, on a phone the screen less the gutters, less its padding and
  * hairline border, so a phone's width is the room its rows really have (tickets 0864, 1222). */
-const framePopover = 'calc(min(var(--frame-popover-width), 100vw - 2 * var(--frame-panel-gap)) - 2 * var(--space-14) - 2px)'
+const framePopover = 'calc(min(var(--frame-popover-width), 100vw - 2 * var(--frame-panel-gap)) - 2 * var(--space-4) - 2px)'
 
-/** The popover's tools as the margin sheet hands them over: every one a Menu item. */
+/** The popover's tools as the margin sheet hands them over: every one a tile. */
 function popoverOf(shown: Project, extra: Record<string, unknown> = {}): [Component, Record<string, unknown>] {
   const frame = frameIdIn(shown)
   const items: FrameToolItem[] = [
@@ -111,12 +119,13 @@ const CASES: FitCase[] = [
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
   ['ProjectPanel (technique locked)', ProjectPanel, { project: moveToRow(project, 1, frameIdIn(project)), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePopover', ...popoverOf(painted)],
+  ['FramePopover (all open)', ...popoverOf(painted), unfoldAll],
   ['FramePopover (all colors shown)', ...popoverOf(painted), showAll],
   ['FramePopover (no name)', ...popoverOf(framed)],
   ['FramePopover (size refused)', ...popoverOf(painted), refuseSizes],
-  ['FramePopover (rows done)', ...popoverOf(moveToRow(painted, 1, frameIdIn(painted)))],
-  ['FramePopover (turned)', ...popoverOf(rotateFrame(painted, undefined, frameIdIn(painted))!)],
-  ['FramePopover (Fringe earring)', ...popoverOf(earring)],
+  ['FramePopover (rows done)', ...popoverOf(moveToRow(painted, 1, frameIdIn(painted))), unfoldAll],
+  ['FramePopover (turned)', ...popoverOf(rotateFrame(painted, undefined, frameIdIn(painted))!), unfoldAll],
+  ['FramePopover (Fringe earring)', ...popoverOf(earring), unfoldAll],
   ['ProjectPanel (two Frames)', ProjectPanel, { project: twoFramed, saveFailed: false, unsaved: false }, unfoldFrames],
   ['ExportPanel', inPanel(ExportPanel, { project: painted }, smallPanel), {}],
   ['ExportPanel (exporting)', inPanel(ExportPanel, { project: framed, exporting: 'pdf' }, smallPanel), {}],

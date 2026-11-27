@@ -36,7 +36,7 @@ describe('AppDialogs', () => {
     const press = async (button: string) => {
       canvas.onRotateFrame()
       await flushPromises()
-      expect(wrapper.get('[data-testid="rotate-frame-modal"]').text()).toContain('Keep the 2 rows')
+      expect(wrapper.get('[data-testid="rotate-frame-modal"]').text()).toContain('Rotate and keep progress')
       await wrapper.get(`[data-testid="confirm-modal-${button}"]`).trigger('click')
     }
     await press('cancel')

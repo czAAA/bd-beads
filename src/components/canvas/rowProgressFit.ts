@@ -1,17 +1,19 @@
 import { ownLength } from '../../composables/ui/cssZoom'
 
 /** The forms of Row progress's strip, best first (MarginSheet card, Several Frames; tickets 1176, 1223): the whole of it;
- * the counter shortened to "5/30"; the track given up; Back a row's words given up; Row done's words too, its arrow left. Row done is never dropped. */
-export const STRIP_FITS = ['whole', 'short', 'trackless', 'arrow', 'icons'] as const
+ * the counter shortened to "5/30"; the track given up; Back a row's words, then Row done's; last the Reset progress and
+ * Show row marks icons (ticket 1256). Row done is never dropped. */
+export const STRIP_FITS = ['whole', 'short', 'trackless', 'arrow', 'icons', 'spare'] as const
 export type StripFit = (typeof STRIP_FITS)[number]
 
 /** What each form hands the strip's controls. */
-export const STRIP_FIT_PROPS: Record<StripFit, { drop: 0 | 1 | 2 | 3; shortCount: boolean }> = {
+export const STRIP_FIT_PROPS: Record<StripFit, { drop: 0 | 1 | 2 | 3 | 4; shortCount: boolean }> = {
   whole: { drop: 0, shortCount: false },
   short: { drop: 0, shortCount: true },
   trackless: { drop: 1, shortCount: true },
   arrow: { drop: 2, shortCount: true },
   icons: { drop: 3, shortCount: true },
+  spare: { drop: 4, shortCount: true },
 }
 
 /** The strip's width in the element's own px as laid out, its track counted at its least, as it fills the rest: `scale`

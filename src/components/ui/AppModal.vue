@@ -11,7 +11,8 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
     title: string
-    size?: 'confirm' | 'panel' | 'narrow'
+    /** `row` is the confirm's width, widened as far as its buttons need to stand in one row. */
+    size?: 'confirm' | 'panel' | 'narrow' | 'row'
     role?: 'dialog' | 'alertdialog'
     /** The id of the text that describes the dialog, for an alert dialog's message. */
     describedby?: string
@@ -195,6 +196,17 @@ onBeforeUnmount(() => {
 
 .app-modal--narrow {
   width: var(--modal-width-narrow);
+}
+
+/* Only the buttons size the dialog past the confirm's width; the title and message wrap to it. */
+.app-modal--row {
+  width: max-content;
+  min-width: min(var(--modal-width), 100%);
+}
+
+.app-modal--row .app-modal__header,
+.app-modal--row .app-modal__body {
+  contain: inline-size;
 }
 
 :root[data-theme='dark'] .app-modal {

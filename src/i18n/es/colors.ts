@@ -37,7 +37,6 @@ export const colors: ColorsTranslations = {
     addTabBead: 'Colores de cuentas',
     addTabCustom: 'Color personalizado',
     codeInCatalog: '{section}, código {code}',
-    codeHead: '{family} · {section}, código {code}',
     nudgeCoded: 'Ya está en {section} como código {code}, así que se añade con un tono de diferencia.',
     nudgeCustom: 'Ya está en Colores personalizados, así que se añade con un tono de diferencia.',
     moveSection: 'Mover la sección {section}',

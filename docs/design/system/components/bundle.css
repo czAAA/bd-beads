@@ -98,7 +98,7 @@
   --filter-badge: 18px; /* BeadColors card: the count badge on the narrow layout's Filters button. */
   --bead-list-height-wide: 24rem; /* BeadColors card: the rows' tallest before they scroll while the list is wide. */
   --palette-swatch-min: 27px; /* PaletteSwatches card: the narrowest swatch in the wide colour popover. */
-  --palette-popover-width: 23rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24): the colour popover once a code is named in its head, "Red · TOHO code 341". */
+  --palette-popover-width: 23rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24): the colour popover once a code was named with its catalog in its head (shorter since ticket 1261). */
   --add-color-popover-width: 35.5rem; /* PaletteSwatches card (ticket 1224, approved 2026-11-24): the Add another color popover beside the Palette. */
   --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
@@ -293,7 +293,9 @@
   --margin-strip: 26px;
   --margin-done: 26px;
   --margin-track: 64px;
-  --frame-popover-width: 21rem;
+  --margin-track-height: 8px; /* MarginSheet card: the Row progress groove's height on the paper (ticket 1256). */
+  --frame-popover-width: 25rem;
+  --frame-popover-tile: calc(var(--panel-row) * 2);
   --margin-pencil: 18px;
   --margin-legend-disc: 14px;
   --margin-edit-width: 260px;

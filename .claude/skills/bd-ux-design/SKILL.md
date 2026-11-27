@@ -1,6 +1,7 @@
 ---
 name: bd-ux-design
-description: "UX/UI design work on this Mac: a brief, the real app measured, 3-4 distinct options side by side on a local canvas with live states, a scripted WebKit audit, comment pins the owner drops in Safari, and a sign-off that updates the design system. Use when the user asks to design or redesign something, for a mockup, a prototype, variants or options of a screen or control, or asks \"how should X look\"."
+description: "UX/UI design work on this Mac: a brief, the real app measured, 3-4 distinct options side by side on a local canvas with live states, a scripted WebKit audit, comment pins the owner drops in Safari, and a sign-off that updates the design system. Use when the user asks to design or redesign something, for a mockup, a prototype, variants or options of a screen or control, or asks \"how should X look\". Takes the screens, languages and themes to draw as arguments, and asks for any that are missing."
+argument-hint: "[screens=desktop,ipad,ipad-portrait,phone] [langs=en,ru,…] [themes=light,dark,contrast] <what to design>"
 ---
 
 Design happens on this Mac and stays there until sign-off. **Never call Artifact, DesignSync or Claude Docs, never
@@ -48,9 +49,8 @@ Pictures you take for yourself go in the session's scratchpad or `$D/crops/`.
 
 **What the owner has already decided.** Read the memory index before the brief and open every memory the topic
 touches; a decision recorded there, in a ticket or in an ADR is not asked again. Standing ones:
-- Which devices a design covers, and which sizes a mockup shows, is in the owner's memory notes: follow them. Unless
-  they say otherwise, an artboard is `desktop` (1710×907, the owner's Safari window) or `ipad` (1366×1024). A
-  sub-agent can't see memory: put what the notes say in its prompt.
+- Which screens, languages and themes a design covers is step 0's scope. `desktop` is the owner's Safari window. A
+  sub-agent can't see memory: put the scope, and what the memory notes say about design, in its prompt.
 - Settings of a drawing tool go in a Tool pill tile with a popover, never a new panel. Panels are for the app and the
   Project. One-shot commands on a fragment go on the Selection bar; view toggles on the Canvas strip.
 - Help read once goes behind an Info button's Tooltip. Inline only what changes: loading, failed, empty, counts. A
@@ -64,7 +64,43 @@ touches; a decision recorded there, in a ticket or in an ADR is not asked again.
 **The design system.** `DESIGN.md` says which source wins. Only role-named tokens: no hardcoded color, font, size,
 radius or shadow (the audit fails a color or shadow that is no token). Icons, logo and cursors come from
 `docs/design/system/assets/` (served at `/_ds/assets/Icons/<name>.svg`), never redrawn. Words come from the glossary
-(`docs/glossary/`) and `writing.md`; every string is drawn in English and Russian.
+(`docs/glossary/`) and `writing.md`; every string is drawn in each language in the scope.
+
+## 0. Scope: screens, languages, themes
+
+Settle this first. Until all three are known, prepare nothing: no dev server, no wireframe, no files. Draw, ground
+and audit only what is in the scope.
+
+**Arguments** (`$ARGUMENTS`) may name them as `screens=… langs=… themes=…` or in plain words, in this message or
+earlier in the chat ("desktop only, dark, english", "all themes"). `all` means every value the app supports. A named
+dimension is settled: don't ask it. A topic that already has a `canvas.html` keeps its `data-sizes`, `data-langs` and
+`data-themes` unless the owner changes them.
+
+**Ask every dimension that isn't named**, all in one `AskUserQuestion`, each `multiSelect: true` (checkboxes). Memory
+and habit only decide which options are marked "(Recommended)"; they never answer for the owner.
+
+Read what the app supports from the repo before asking, so the lists don't go stale:
+
+```bash
+grep -n -A8 '^### 4.1' DESIGN.md                                  # themes
+grep -n '^Devices' docs/design/system/responsive.md               # devices and their sizes
+grep -n -A3 -E 'Locale\b|LOCALES' src/domain/locale.ts | head -30   # languages
+```
+
+The questions, as the app stands now (follow the repo where it differs; a question holds at most four options, so
+group values rather than drop any):
+
+| Question (header) | Options (value) |
+| --- | --- |
+| Screens | Desktop 1710×907 (`desktop`, recommended) · iPad landscape 1366×1024 (`ipad`, recommended) · iPad portrait 1024×1366 (`ipad-portrait`) · Phone 390×844 (`phone`) |
+| Languages | English (`en`, recommended) · Russian (`ru`, recommended) · Ukrainian, Belarusian, Polish (`uk be pl`) · Spanish, Chinese (`es zh`) |
+| Themes | Light (`light`, recommended) · Dark (`dark`, recommended) · High contrast (`contrast`) |
+
+Another size (a 24″ screen, say) comes through "Other" as `WxH`.
+
+Then say the scope in one line (`scope: desktop, ipad · en, ru · light, dark`). It sets `data-sizes`, `data-langs`
+and `data-themes` on the canvas, in that order, the first of each being what opens. Don't add a value outside it; if
+the design seems to need one (a long language, say), say so and ask.
 
 ## 1. Brief
 
@@ -90,8 +126,8 @@ Before drawing, find out what is really on the screen. Never approximate.
 4. Copy the real CSS: find the component (`grep -rln '<class or testid>' src/components`), read its `<style>` block
    with `offset`/`limit`, and paste it into `$D/shared.css` with its tokens and its rem values untouched. The app's
    base font size is 18px and its sizes are in rem, which `shared.css` already sets.
-5. Copy the real strings from `src/i18n/en/<area>.ts` and `src/i18n/ru/<area>.ts` (grep the key). A new string is
-   written by `writing.md`, in both languages.
+5. Copy the real strings from `src/i18n/<lang>/<area>.ts` for each language in the scope (grep the key). A new
+   string is written by `writing.md`, in each of them.
 
 ## 3. Several distinct options
 
@@ -112,8 +148,8 @@ canvas that asks several things puts each question's options in its own `<sectio
 only the alternatives to that one question. Text sits in the flow above its mockup and never lies over it.
 
 Then edit, in place:
-- **`canvas.html`**: the whole canvas is its `<main id="canvas">`. `data-title`, `data-question`, `data-sizes`
-  (`desktop ipad`), `data-themes` (`light dark contrast`: the app has all three), `data-langs` (`en ru`), and one
+- **`canvas.html`**: the whole canvas is its `<main id="canvas">`. `data-title`, `data-question`, `data-sizes`,
+  `data-themes` and `data-langs` (all three from step 0's scope, replacing the scaffold's), and one
   `<section>` per option with `data-name="A · Name"`, `data-idea`, `data-tradeoff`, `data-src`, `data-states`. Each
   option is an artboard per size at the device's real size, scaled down to the page's width; the bar's size switch
   shows one size at a time. Several questions: wrap each one's options in `<section data-group="1"
@@ -128,7 +164,7 @@ Then edit, in place:
 **A Sonnet sub-agent builds the pages** when there are three or more options: one `Agent` call
 (`subagent_type: general-purpose`, `model: sonnet`). Its prompt holds everything it needs, because it sees neither this
 conversation nor memory: the path `$D`, the brief, each option's idea, the `ground.mjs` output, which component files
-to copy CSS from, the strings in both languages, the states (step 4), the sizes, the standing rules above, "edit the
+to copy CSS from, the scope (step 0), the strings in its languages, the states (step 4), the standing rules above, "edit the
 scaffolded files, don't rewrite `canvas.js` or `option.js`", and "finish by running `node $S/audit.mjs $D` and fix
 what it reports; return its last line". Read its result, not its files; then run the audit yourself (step 5).
 
@@ -145,13 +181,13 @@ state, theme and language on `<html>` (`data-state`, `data-theme`, `lang`), so a
 - `data-goto="open"`: a press shows that state, a second press goes back to `default`; Escape does too.
 - `data-show="open long"`: the part exists only in those states. A part that should move in is styled from
   `html[data-state="open"] .popover` instead, with the motion tokens (`grep -n -- '--duration\|--ease' src/styles/design-values.css`).
-- `data-t-ru="…"`: the Russian; the element's own text is the English. `data-t-long` (and `data-t-long-ru`) is the text
-  in the `long` state. Only the element's own text changes, so an icon inside it stays; put the attribute on the
+- `data-t-ru="…"`: the Russian, and likewise `data-t-<lang>` for every other language in the scope; the element's own
+  text is the English. `data-t-long` (and `data-t-long-<lang>`) is the text in the `long` state. Only the element's own text changes, so an icon inside it stays; put the attribute on the
   element that holds the words.
 - Hover: style `.x:hover` and `html[data-state="hover"] .x` in one rule, so the state shows it without a pointer.
 
 States every option lists unless one can't exist: `default`, each open popover or menu, `hover`, `empty`, `long`
-(the longest real name or number), an error or disabled state where there is one. Themes and Russian come from the
+(the longest real name or number), an error or disabled state where there is one. Themes and languages come from the
 canvas's switches, not from states.
 
 ## 5. Audit by script before showing anything
@@ -231,7 +267,8 @@ When the owner picks a direction:
    and `copy/<area>.md` for the strings. A look written before it is built says "approved <date>, not yet in the app"
    and names the ticket that builds it. Run the tests related to the changed files, then `npm run check`.
 3. **The decisions, in tickets.** Write them into the design ticket: what was chosen and why, what was turned down
-   and why, every state, the strings in both languages, the control ids reused. Then the build tickets with
+   and why, every state, the scope drawn, the strings in every app language (one the scope left out is
+   written now, by `writing.md`), the control ids reused. Then the build tickets with
    `/bd-tickets`, each pointing at the card. No ticket whose only work is a person checking something.
 4. **A memory**, so later sessions don't ask again: one file with the date of the sign-off, the choice, the owner's
    own words for each rule they set, the ticket and PR numbers, and "don't re-ask"; add its line to `MEMORY.md`.

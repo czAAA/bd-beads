@@ -124,6 +124,7 @@ describe('Edit Frame', () => {
   it('carries each control of the popover to the Project as one Undo step: an edge, a typed size and Rotate (tickets 471, 473, 1222)', async () => {
     const wrapper = await mountOpen(bigFramedProject())
     await toggleBar(wrapper)
+    await wrapper.get('[data-testid="frame-popover-size"] [aria-expanded]').trigger('click')
     await wrapper.get('[data-testid="frame-edge-right-out"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 6 })

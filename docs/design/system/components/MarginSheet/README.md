@@ -177,6 +177,18 @@ Escape or a press outside closes it; focus goes back to ···. The band's ··�
 - **Keyboard:** one Tab stop with roving focus, as the bar had; Enter and Shift+Enter keep their meaning.
 - **The Homepage too:** the Welcome cuff and What's inside's demo Frame drop their Progress bar and show this strip on their sheet, the app's own (Homepage card; built by 1223).
 
+## Calmer sheet (approved 2026-11-27, ticket 1255; not yet in the app: built by 1256, 1257, 1258, 1259, 1260)
+
+Same controls and the same icons, laid out calmer. Where it differs from the sections above, this section wins once built. Owner's rules: size in beads and cm stand one after another; editable fields show they are editable (a soft `surface` chip with a 12px `pencil`), read-only facts are plain `muted` text; the current done and focused row marks stay as they are.
+
+**1. The sheet (1C, tickets 1256 strip, 1258 band and foot).** The top band holds Expand the Frame, then the Frame's name, Technique, drop and maker as editable chips (name first, ellipsis before it pushes the tools), the Move bar, then the tools. The bottom is one line: size in beads then "≈ cm", the Bead chip, the color legend, Letters with its switch, then Row progress. Row progress gets **Reset progress** and **Show row marks** as 24px icon buttons on the strip (Show row marks filled `ink` while on), and the track always shows its whole groove with the done part filled. **Compact:** the name stays in the band after Expand; the foot keeps legend and Row progress, inset as the band (`--margin-band-inset-compact`); Row done, Back a row, Reset and Show row marks are 24px circles (Back a row: `surface` fill, `line` border); on desktop Row done is icon-only, its words kept for assistive tech; on touch each has a 44px-tall hit area.
+
+**2. The ··· popover (2A, ticket 1257).** 25rem wide (1257 raises `--frame-popover-width` from 21rem, in tokens and `design-values.css`). Head as before, then the tools as a 3 × 2 grid of tiles (20px icon over its word: Mirror, Rotate, Edit, Export, Color, Remove in `danger`), then folded sections that show their summary at the end and open in place: **Names** (Frame name, Maker's name fields), **Bead and Technique** (Brand, Type, Size selects; Technique radios; Drop stepper; locked with the MarkedDoneLine while rows are done), **Size**, **Row progress** (Reset progress always shown as an icon on its folded row; open: Back a row, Row done, the counter, the track, Turn row direction as a dropdown of the four, Show row marks switch, Reset progress), **Beads needed**. Rotate keeps the popover open in place until the turn ends and a press outside.
+
+**3. Expanded (3A, tickets 1260 rails, 1259 Tool pill).** Rows scroll and scrolling along them stays expanded. Left rail: facts and Beads needed. Right rail: the tools with their words; Export and Margin color unfold downward in the rail as plain indented rows (PNG, PDF, File, the file name in mono `muted`, Name on exports, Export settings, which unfolds in place to Export quality and the chart switches), never a popover. No ··· when everything is on screen. Row progress pinned across the bottom. The Tool pill keeps the Canvas's edge on expand, has four reserved places round the Frame shown while dragged, and the Frame fills every place the pill doesn't take; wide, the pill sits between the Frame and Row progress.
+
+Every control is a second trigger of the action it already has (controlRegistry ids), with no code path of its own. Canvas with every state: `../bd-beads-ux/keep-out-margin/`.
+
 ## Touch
 
 On a coarse pointer every control on the sheet has a 44px hit area, centred on its drawn size, and no two on the band overlap. The band's tools are the one width rule of Zoom forms, at the wider spacing (16px apart in the full row, 20px compact and folded, half of it before the first tool so its hit area clears the Move bar's), so fewer fit than with a mouse; the rest are in the **···** Frame tools menu. No tool's hit area overlaps another's, the Move bar's or Expand the Frame's. Bare, the Move bar and the Expand and Frame tools buttons beside it rise by the part of their hit area below them and 16px more, so a finger on the Frame's first row reaches the bead.
@@ -273,3 +285,23 @@ Hand-written from the ticket 0655 design canvas; static rendition.
 - **One rule:** `bandTools` (`src/rendering/marginBand.ts`) decides, from the band's room in drafting px, the pointer and the tools offered, the row, the tools on the band and the tools in the menu; the sheet's widths are worked out from the card's sizes, not measured, so it is the same in the page and in a test. A change of what the band holds (a Frame that cannot be turned or resized) fits again at once.
 - **Touch (ticket 0976) superseded:** the coarse pointer no longer keeps Edit Frame and **···** alone; it only widens the spacing.
 - **Left out:** no one has checked it by hand on a real iPad.
+
+## As built (ticket 1256)
+
+The strip's part of Calmer sheet 1 is in the app; the band and the one-line foot are still 1258's.
+
+- **The icons:** Reset progress (`reset`) and Show row marks (`row-highlight`), after the track and before the divider by Row done, 24px, in every form of the strip. Show row marks is a toggle (`aria-pressed`), filled `ink` with a `canvas` icon while on. They are second triggers: the settings button's list still holds both, and the four directions.
+- **The groove:** `--margin-track-height` (8px), `canvas-bg-1` with a 1px `switch-off` edge, the done part filled inside it, on every strip (the Homepage cuff's too, which has neither icon).
+- **Compact and folded:** Back a row (arrow only, `surface` fill, `line` border), Reset progress, Show row marks and Row done are round. With a mouse Row done is a 24px circle with its arrow, named for assistive tech; on touch it keeps its words where they fit. On touch each button's hit area is 44px tall and as wide as drawn, the strip's parts 8px apart. The track there may be as short as `--margin-track-compact` (40px).
+- **Short of room:** after Row done's words, the two icons are the last the strip gives up (the settings list holds them), so a strip is drawn on the same sheets as before.
+
+## As built (ticket 1257)
+
+The Calmer sheet's ··· popover (point 2). It replaces the popover of "Several Frames" above, and "Rotate Frame waits under the pointer" for the popover: no copy is left there.
+
+- **Values:** `--frame-popover-width` 25rem; a tile's least height `--frame-popover-tile` (two panel rows; on a coarse pointer 44px and 16px). The popover's own padding is 4px, as a menu's; the head and each row's body stand 10px in.
+- **Tiles:** secondary triggers of the band's tools, each a 20px icon over its word, named in full by its action (`aria-label` and Tooltip). One Tab stop, the arrows along them. In a window 380px wide or narrower they stand two by three, so the longest word keeps to one line. Mirror on is `accent` with `on-accent` (`aria-pressed`). A tile closes the popover and does as the band's button does, **Rotate** keeping it open where it is until Escape or a press outside; a Rotate that asks about rows done closes it first. Where the turn takes the sheet's band away (bare), the popover opens again at the same place from the lone ··· button.
+- **Folded rows:** PanelSections, folded until opened, then kept on the device. Names and, closed, Row progress show their summary; a long summary wraps at the end of its row, Names ending in an ellipsis.
+- **Names:** two open fields that save on Enter, on leaving them or as the popover closes; Escape puts the name back.
+- **Bead and Technique:** Brand, Type and Size each under its name, the Technique as a radio list, then the settings its description names. While a row is marked done the Technique and the settings are off, with the Technique's lock line and Reset progress; the Bead pickers stay on, as the legend's pencil does. A Bead pick closes the popover and asks Replace bead?.
+- **Row progress:** the Reset progress icon is on the row, folded or open. Turn row direction is a dropdown (none on a Custom frame).

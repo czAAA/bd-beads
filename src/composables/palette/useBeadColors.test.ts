@@ -37,6 +37,15 @@ describe('useBeadColors', () => {
     expect(catalog.value?.id).toBe('miyuki-delica')
   })
 
+  it("fetches another catalog than the Bead's own for a code's name, and leaves an unknown one out (ticket 1261)", async () => {
+    const { others } = setup(tohoRound)
+    expect(others!.get('miyuki-delica')).toBeUndefined()
+    others!.load('no-such-catalog')
+    others!.load('miyuki-delica')
+    await vi.waitFor(() => expect(others!.get('miyuki-delica')?.id).toBe('miyuki-delica'))
+    expect(others!.get('no-such-catalog')).toBeUndefined()
+  })
+
   it('offers nothing for a Bead with no Color catalog', async () => {
     const { available, load, swatches } = setup(noCatalog)
     await load()
