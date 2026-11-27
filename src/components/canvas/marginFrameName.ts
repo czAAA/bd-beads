@@ -1,8 +1,7 @@
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import type { Translations } from '../../i18n/translations'
 
-/** The Frame's name as a bare EditableLine of the margin sheet (ticket 0657): the title block's name cell and, unnamed,
- * its folded tab (ticket 0803) edit it through the same field. */
+/** The Frame's name as the chip of the margin sheet's band (tickets 0657, 1258). */
 export function frameNameLine(t: Translations, name: string | undefined) {
   return {
     bare: true,

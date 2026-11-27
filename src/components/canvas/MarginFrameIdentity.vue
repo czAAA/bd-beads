@@ -43,7 +43,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const fold = useTitleBlockFold()
-const deps = computed(() => controlDeps({ activeProject: () => props.project }))
+const deps = computed(() => controlDeps({ activeProject: () => props.project, frame: () => props.frame }))
 const techniqueAction = controlAction('change-technique')
 const foldAction = controlAction('fold-title-block')
 const showAction = controlAction('show-title-block')
@@ -105,9 +105,8 @@ const shows = computed(() => ({
       v-if="shows.technique"
       class="margin-identity__part"
       bare
-      chip
       in-shell
-      icon-only="pencil"
+      chip-icon="pencil"
       :model-value="technique"
       :label="t.frame.margin.changeTechnique"
       :options="options"

@@ -85,7 +85,7 @@ const emit = defineEmits<{
   /** A setting of the Frame's Technique, by its id (ticket 0698). */
   'set-setting': [id: string, value: number]
   'save-maker-name': [name: string]
-  /** Replace Bead asked from the roomy title block's Change (ticket 1015): the Frame panel's own question. */
+  /** Replace Bead asked from the foot's Bead chip (ticket 1015): the shell's own question. */
   'replace-bead': [beadId: string]
   'set-letters': [on: boolean]
   /** The settings popover's size, its edge steppers and a Custom frame's own settings (ticket 1222). */
@@ -99,7 +99,7 @@ const emit = defineEmits<{
   'popover-opened': []
   /** Expand the Frame, or Back to the Canvas while expanded (ticket 1169). */
   'toggle-expand': []
-  /** What the slim sheet's row and title block measure, while expanded: the canvas lays the sheet round them. */
+  /** What the slim sheet's row and foot measure, while expanded: the canvas lays the sheet round them. */
   slim: [measures: SlimMeasures]
 }>()
 
@@ -133,7 +133,7 @@ const expandIcon = computed(() => (props.expanded ? 'collapse-frame' : 'expand-f
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
 const fold = useTitleBlockFold()
 /** Unseen until the canvas view is set and two frames after (ticket 0991): the sheet would show at the view's stand-in
- * first, and the band's row and the title block then measure themselves and step down to the forms that fit, which can
+ * first, and the band's chips and the foot then measure themselves and step down to the forms that fit, which can
  * take a frame, so the sheet is first seen where it stays, in the forms it keeps. */
 const arriving = ref(true)
 watch(
@@ -234,6 +234,7 @@ const bandFit = computed<BandFit | undefined>(() =>
     touch: touch.value,
     expanded: !!props.expanded,
     name: titleOn.value,
+    unfold: fold.folded.value,
   }),
 )
 /** Expanded, where no row fits, the folded one with every tool under the menu button: the sheet then widens to it (ticket 1169). */
@@ -261,7 +262,7 @@ const identityRoom = computed(() => (shownFit.value ? bandNameRoom(shownFit.valu
 const small = computed(() => row.value !== 'full')
 const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
 
-// The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498).
+// The band's row and the foot on the canvas box, for what they give way to: a Selection's handles (ticket 498).
 // The Tool pill needs no such rule: it is drawn over the sheet, so it takes its own presses.
 const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
@@ -292,10 +293,10 @@ const footYields = computed(() => footSize.width.value > 0 && yields(footBox.val
 
 /** The folded row's width with the name and the menu button alone: the expanded sheet is never narrower than it
  * (ticket 1169), nor than Row progress's least strip (ticket 1245). */
-const narrowestRow = computed(() => bandRowWidth('folded', [], true, touch.value, true, titleOn.value))
+const narrowestRow = computed(() => bandRowWidth('folded', [], true, touch.value, true, titleOn.value, fold.folded.value))
 // What the slim sheet holds, told to the canvas, which lays it round them.
 watch(
-  () => (props.expanded ? { row: rowHeight.value, title: footSize.height.value, rowWidth: Math.max(narrowestRow.value, leastStripWidth.value) } : undefined),
+  () => (props.expanded ? { row: rowHeight.value, foot: footSize.height.value, rowWidth: Math.max(narrowestRow.value, leastStripWidth.value) } : undefined),
   (measures) => measures && emit('slim', measures),
   { immediate: true, deep: true },
 )
@@ -317,7 +318,7 @@ function onMovePress(event: PointerEvent): void {
 const toolsEl = ref<HTMLElement>()
 /** The Frame tools button beside the lone Move bar (ticket 1164). */
 const handleToolsEl = ref<HTMLElement>()
-/** The tools are one Tab stop too, ←/→ along them (ticket 0857), so the title block's name is the next stop. */
+/** The tools are one Tab stop too, ←/→ along them (ticket 0857). */
 const toolsRoving = useRovingFocus(toolsEl, { selector: '.margin-sheet__tool', axis: () => 'horizontal', managesTabIndex: true })
 const colorOpen = ref(false)
 const colorButton = computed(() =>
@@ -395,7 +396,7 @@ const popoverHandlers = {
   settle: () => emit('settle-settings'),
   opened: () => emit('popover-opened'),
   held: (place: Record<string, string> | undefined) => (popoverHeld.value = place),
-  // The popover's fields and Row progress are second triggers of the title block's and the strip's (ticket 1257).
+  // The popover's fields and Row progress are second triggers of the sheet's chips and strip (ticket 1257).
   rename: (name: string) => emit('rename', name),
   'save-maker-name': (name: string) => emit('save-maker-name', name),
   'set-technique': (technique: Technique) => emit('set-technique', technique),

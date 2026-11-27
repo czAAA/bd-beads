@@ -23,11 +23,12 @@ function fakeHand(controls: string = '') {
   const ring: string[] = []
   /** The Techniques set without a press: where the band's chip is not on the sheet. */
   const techniques: string[] = []
+  const letters: boolean[] = []
   const name = (target: Target) => (typeof target === 'string' ? target : 'control')
   const hand = {
     instant: false,
     root,
-    canvas: { activeProject: ref(undefined), onSetFrameTechnique: (technique: string) => techniques.push(technique), referenceImage: { image: ref(undefined) }, convertSession: ref(undefined), onSelectColor: () => {}, onSelectTool: () => {}, onSetLetters: () => {} },
+    canvas: { activeProject: ref(undefined), onSetFrameTechnique: (technique: string) => techniques.push(technique), referenceImage: { image: ref(undefined) }, convertSession: ref(undefined), onSelectColor: () => {}, onSelectTool: () => {}, onSetLetters: (on: boolean) => letters.push(on) },
     press: async (target: Target) => (presses.push(name(target)), document.createElement('button')),
     pressWith: async (target: Target) => void presses.push(name(target)),
     find: async () => document.createElement('div'),
@@ -45,7 +46,7 @@ function fakeHand(controls: string = '') {
     slideTo: async (_target: Target, ms: number) => void (ring.push('slide'), times.push(ms)),
     closeToolbox: async () => void ring.push('close'),
   }
-  return { hand: hand as unknown as Hand, presses, times, stroked, laid, ring, techniques }
+  return { hand: hand as unknown as Hand, presses, times, stroked, laid, ring, techniques, letters }
 }
 
 describe("What's inside's Technique row (ticket 1222)", () => {
@@ -59,6 +60,20 @@ describe("What's inside's Technique row (ticket 1222)", () => {
     await TOUR_SCRIPTS.techniques(bare.hand)
     expect(bare.presses).toEqual([])
     expect(bare.techniques.at(-1)).toBe('peyote')
+  })
+})
+
+describe("What's inside's Letters row (ticket 1258)", () => {
+  it("presses the sheet's switch, and turns Letters on as it would where the sheet has no room for it", async () => {
+    const shown = fakeHand('<div data-testid="margin-letters"></div>')
+    await TOUR_SCRIPTS.letters(shown.hand)
+    expect(shown.presses).toEqual(['margin-letters'])
+    expect(shown.letters).toEqual([])
+
+    const bare = fakeHand()
+    await TOUR_SCRIPTS.letters(bare.hand)
+    expect(bare.presses).toEqual([])
+    expect(bare.letters).toEqual([true])
   })
 })
 

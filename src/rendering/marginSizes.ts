@@ -6,7 +6,7 @@
  * form too. */
 export const MARGIN_PX = {
   /** The drafting sheet's band, where the scale is 1 (80, ticket 1213; 72 until then), and the scale's bounds (0698). The
-   * least is 1 (0851), where the name tab's 11px and the 24px compact tools, Row done, tab and Move bar are `legible`;
+   * least is 1 (0851), where the smallest words' 11px and the 24px compact tools, chips, Row done and Move bar are `legible`;
    * the Homepage demo's 0.6, as its tour presses the band in a view it cannot grow. */
   scale: { band: 80, min: 1, max: 1.5, demo: 0.6 },
   /** The least the sheet's words and buttons are drawn at on screen (ticket 0851, accessibility.md): smaller, they are
@@ -14,9 +14,8 @@ export const MARGIN_PX = {
   legible: { text: 11, button: 24 },
   /** The band height, at scale 1, from which each form fits (MarginSheet card, Zoom forms; ticket 0682 for folded). */
   band: {
-    /** The full form's title row on Row progress's strip (ticket 1176), its legend in two lines (ticket 1213; 72 until
-     * then), 10px in, clear of the Frame's line and its outset: 10px border, the 38px row, the 26px strip (a rule shared)
-     * and 7px. */
+    /** The full form (ticket 1213): its two-row foot (tickets 1176, 1258), 12px up, the 24px facts and the 26px strip,
+     * stands clear of the Frame's line and its outset. */
     full: 80,
     /** The compact form's two-row foot (tickets 1197, 1258): from here the legend stands over Row progress; under it
      * they share one line. 10px in, the 14px legend, a finger's 8px, the 24px strip and the 7px the Frame's line and its
@@ -57,7 +56,7 @@ export const MARGIN_PX = {
   icon: { full: 16, compact: 14 },
   /** The current pass's mark (ticket 0685): the pill's room round its number, and the tick's thickness. */
   pass: { pillPad: 2, tick: 3 },
-  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet's row and title block in from its edge (`inset`),
+  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet's row and foot in from its edge (`inset`),
    * smaller under bp-tablet, and the room between the row, the numbers and the Frame's line (`numbers`). The sheet
    * meets the screen's edges and the Tool pill with no gap (ticket 1176). */
   expanded: { inset: { full: 6, compact: 4 }, numbers: 3 },

@@ -393,7 +393,7 @@ const arrowDone = computed(() => props.compact === 'mouse' || props.drop >= 3)
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* Squarish, as the title block over it, not the pill a button is elsewhere (ticket 1245). */
+/* Squarish, as the sheet's chips, not the pill a button is elsewhere (ticket 1245). */
 .row-progress :deep(.app-button) {
   height: var(--margin-done-compact);
   border-radius: var(--margin-border-radius);

@@ -38,6 +38,8 @@ export interface BandToolsDeps {
   /** The Frame's name is to stand after Expand (ticket 1258): it counts at its least, so it is cut before a tool leaves
    * and a narrow band sends tools under the menu sooner. */
   name?: boolean
+  /** Folded by hand, the chevron that unfolds stands beside the name, with its room kept. */
+  unfold?: boolean
 }
 
 const TOUCH_TARGET = 44
@@ -61,10 +63,13 @@ function toolsWidth(row: BandRow, shown: readonly BandToolId[], menu: boolean, t
   return items * size + (items - 1) * gap + divider + (touch ? (TOUCH_TARGET - size) / 2 : 0)
 }
 
+/** What stands after Expand at its least: the name, and the unfold chevron where it is there. */
+const leadWidth = (touch: boolean, unfold: boolean) => nameGap(touch) + MARGIN_PX.nameLeast + (unfold ? MARGIN_PX.gap + MARGIN_PX.tab : 0) + nameClear(touch)
+
 /** The band row's width in drafting px with `shown` tools: the Move bar centred, with room on each side for the wider
  * of Expand the Frame (with the name at its least) and the tools; expanded, the two side by side. */
-export function bandRowWidth(row: BandRow, shown: readonly BandToolId[], menu: boolean, touch: boolean, expanded: boolean, name = false): number {
-  const start = toolSize(row) + (name ? nameGap(touch) + MARGIN_PX.nameLeast + nameClear(touch) : 0)
+export function bandRowWidth(row: BandRow, shown: readonly BandToolId[], menu: boolean, touch: boolean, expanded: boolean, name = false, unfold = false): number {
+  const start = toolSize(row) + (name ? leadWidth(touch, unfold) : 0)
   const end = toolsWidth(row, shown, menu, touch)
   if (expanded) return start + end + 2 * MARGIN_PX.gap + (touch ? (TOUCH_TARGET - toolSize(row)) / 2 : 0)
   return MARGIN_PX.moveWidth + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap
@@ -86,10 +91,10 @@ export function bandTools(deps: BandToolsDeps): BandFit | undefined {
   return named ? { ...named, named: true } : fitTools(deps, false)
 }
 
-function fitTools({ tools, rows, room, touch, expanded }: BandToolsDeps, name: boolean): BandFit | undefined {
+function fitTools({ tools, rows, room, touch, expanded, unfold }: BandToolsDeps, name: boolean): BandFit | undefined {
   const all = BAND_ORDER.filter((id) => tools.includes(id))
   // The Frame tools button is always there (ticket 1220), so every row counts it.
-  const fits = (row: BandRow, shown: readonly BandToolId[]) => bandRowWidth(row, shown, true, touch, expanded, name) <= room
+  const fits = (row: BandRow, shown: readonly BandToolId[]) => bandRowWidth(row, shown, true, touch, expanded, name, unfold) <= room
   const whole = rows.find((row) => fits(row, all))
   if (whole) return { row: whole, onBand: all, overflow: [] }
   const row = rows.at(-1)

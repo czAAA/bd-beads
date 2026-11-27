@@ -65,6 +65,14 @@ describe('the Frame\'s name after Expand (MarginSheet card, Calmer sheet; ticket
     expect(fit?.overflow.length).toBeGreaterThan(0)
   })
 
+  it('keeps room for the unfold chevron beside it, so folded details can be brought back', () => {
+    expect(bandRowWidth('folded', ALL, true, false, true, true, true) - bandRowWidth('folded', ALL, true, false, true, true)).toBe(MARGIN_PX.gap + MARGIN_PX.tab)
+    for (let room = 0; room <= 700; room++) {
+      const fit = bandTools(deps(room, { name: true, unfold: true }))
+      if (fit?.named) expect(bandNameRoom(fit, room, false, false)).toBeGreaterThanOrEqual(MARGIN_PX.nameLeast + MARGIN_PX.gap + MARGIN_PX.tab)
+    }
+  })
+
   it('leaves every tool where the tools\' side is already the wider one', () => {
     const room = bandRowWidth('full', ALL, true, false, false)
     expect(bandTools(deps(room, { name: true }))).toEqual({ row: 'full', onBand: ALL, overflow: [], named: true })

@@ -279,6 +279,29 @@ describe('the facts in the sheet\'s bottom-left corner (tickets 1170, 1258)', ()
   })
 })
 
+describe('details folded by hand under a long name (ticket 1258)', () => {
+  it('keeps the chevron that unfolds them beside the name, wherever the name shows', async () => {
+    zoom.value = 1
+    columns.value = 40
+    frameName.value = 'Autumn gerdan for a birthday, second try'
+    useTitleBlockFold().fold()
+    onTestFinished(() => {
+      frameName.value = 'Sun band'
+      useTitleBlockFold().unfold()
+    })
+    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
+    for (const across of [40, 16, 10]) {
+      columns.value = across
+      for (const at of [1.25, 1, 0.7]) {
+        zoom.value = at
+        await settled(root)
+        if (root.querySelector('[data-testid="margin-frame-name"]')) expect(root.querySelector('[data-testid="margin-title-unfold"]'), `${across} at ${at}`).not.toBeNull()
+        expect(problems(root), `${across} at ${at}`).toEqual([])
+      }
+    }
+  })
+})
+
 describe('the foot giving way at the bottom-left (tickets 498, 1170, 1176)', () => {
   it('gives way to a Selection\'s handles that reach under it at the bottom-left, and not to one at the top-right', async () => {
     const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>

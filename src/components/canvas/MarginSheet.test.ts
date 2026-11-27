@@ -635,6 +635,14 @@ describe('the sheet\'s one-line foot (MarginSheet card, Calmer sheet; ticket 125
     expect(wrapper.emitted('set-letters')).toEqual([[true]])
   })
 
+  it('closes the Bead\'s pickers on Escape, asking nothing', async () => {
+    const wrapper = mountSheet()
+    await control(wrapper, 'margin-bead-change').trigger('click')
+    await control(wrapper, 'margin-bead-popover').trigger('keydown', { key: 'Escape' })
+    expect(wrapper.find('[data-testid="margin-bead-popover"]').exists()).toBe(false)
+    expect(wrapper.emitted('replace-bead')).toBeUndefined()
+  })
+
   it('keeps the legend alone compact, and no facts folded', () => {
     const compact = mountSheet({ anchor: anchorAt(0.7), project: painted(3) })
     expect(facts(compact).attributes('data-form')).toBe('legend')
@@ -845,14 +853,14 @@ describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
   it('tells the canvas what its row and its foot measure, so it lays the slim sheet round them', async () => {
     const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
     await nextTick()
-    const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; title: number; rowWidth: number }])[0]
+    const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; foot: number; rowWidth: number }])[0]
     const foot = () => control(wrapper, 'margin-foot').element.getBoundingClientRect().height
     // The narrowest row holds Expand, the name at its least and the Frame tools button.
     const bare = 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap
-    expect(last()).toEqual({ row: MARGIN_PX.tool, title: foot(), rowWidth: bare + MARGIN_PX.nameGap.mouse + MARGIN_PX.nameLeast })
+    expect(last()).toEqual({ row: MARGIN_PX.tool, foot: foot(), rowWidth: bare + MARGIN_PX.nameGap.mouse + MARGIN_PX.nameLeast })
     useCanvasBackground().margin.setTitleBlock(false)
     await nextTick()
-    expect(last()).toMatchObject({ title: foot(), rowWidth: 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap })
+    expect(last()).toMatchObject({ foot: foot(), rowWidth: 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap })
     // The strip stays: Row progress is on the sheet alone while expanded.
     expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
     await wrapper.setProps({ expanded: false })
