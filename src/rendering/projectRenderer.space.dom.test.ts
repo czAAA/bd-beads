@@ -156,7 +156,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
   const frameLook: ProjectTheme = { ...PROJECT_THEMES.dark, canvas: '#3b3e43', background: '#3b3e43', positionMark: '#50545a', emptyBead: '#50545a' }
   const whole = { x: -1000, y: -1000, width: 2000, height: 2000 }
 
-  it('fills the Frame\'s box in its background on the Canvas and draws its beads and marks in its look', () => {
+  it('covers the Frame\'s box in its Background\'s gap color on the Canvas and draws its beads and marks in its look', () => {
     const project = withLayers(framedProject('loom'), { beads: {} })
     const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
 
