@@ -178,6 +178,18 @@ describe('renderOverlay', () => {
       expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[0, 20], [20, 20], [40, 20]])
     })
 
+    it("rings a round bead's empty position in the painted one's shape (ticket 1252)", () => {
+      const made = createProject({ technique: 'loom', beadId: 'toho-round-11-0', size: { width: 3, height: 3, unit: 'beads' } })
+      const project = withLayers(made, { frame: { ...frameOf(made)!, beads: { 1: { 0: '#e63746' } } }, ownProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      const radii = ringRects(calls).map((call) => call.args[4])
+      expect(radii).toHaveLength(3)
+      expect(new Set(radii).size).toBe(1)
+    })
+
     it('marks a pass with no beads (ticket 1251)', () => {
       const project = projectOf('loom', 3, 3, { currentRow: 1 }, 0, false)
       const { context, named } = recordingContext()

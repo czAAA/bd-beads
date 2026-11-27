@@ -312,7 +312,7 @@ function sizeOf(bead: PassCell, side: number): { size: number; width?: number; h
  * bead (ticket 1251). */
 function drawRaisedEmpty(context: DrawingContext, box: PassCell, cornerRadius: number, deviceScale: number, theme: ProjectTheme, tiles: boolean): void {
   const mark = markLookOf(theme, tiles)
-  if (mark.tiles) drawTile(context, { x: box.x, y: box.y, width: box.width, height: box.height, cornerRadius }, mark.color, tileEdgeColorOf(theme.canvas), deviceScale)
+  if (mark.tiles) drawTile(context, { x: box.x, y: box.y, width: box.width, height: box.height, cornerRadius: bodyCorner(cornerRadius, box.width, box.height, theme) }, mark.color, tileEdgeColorOf(theme.canvas), deviceScale)
   else drawFlatBead(context, { x: box.x, y: box.y, ...sizeOf(box, box.width), cornerRadius, color: null, dimmed: false, deviceScale, theme })
 }
 
@@ -468,8 +468,6 @@ function ringPath(context: DrawingContext, bead: PassCell, line: RingLine, radiu
 // on the same px; no line joins them otherwise: each line is one path and one stroke.
 function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], weave: Weave, theme: ProjectTheme): void {
   const corner = drawnCornerOf(weave, RAISE_PX, theme)
-  // An empty position keeps its tile's corner, and so does its ring.
-  const emptyCorner = cornerOf(weave, RAISE_PX)
   const lines = ringLines(theme)
   const beads = inPass.map((bead) => raisedBy(bead, RAISE_PX))
   const upright = beads.filter(({ turned }) => !turned)
@@ -478,7 +476,7 @@ function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], wea
       context.strokeStyle = line.color
       context.lineWidth = line.width
       context.beginPath()
-      for (const bead of upright) ringPath(context, bead, line, bead.color === null ? emptyCorner : corner)
+      for (const bead of upright) ringPath(context, bead, line, corner)
       context.stroke()
     }
   }
@@ -489,7 +487,7 @@ function drawBeadRings(context: DrawingContext, inPass: readonly PassCell[], wea
         context.strokeStyle = line.color
         context.lineWidth = line.width
         context.beginPath()
-        ringPath(context, bead, line, bead.color === null ? bead.turned!.radius : turnedCornerOf(bead, theme))
+        ringPath(context, bead, line, turnedCornerOf(bead, theme))
         context.stroke()
       }
     })
