@@ -4,7 +4,6 @@ import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/us
 import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { frameOf } from '../../domain/layerRecord'
 import { backBeadsAt, pieceFaceOf, wholePieceOf } from '../../domain/pieceFaces'
-import { letterInk } from '../../rendering/beadLook'
 import type { Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
 import { faceInfoWords } from '../../i18n/pieceFaceWords'
@@ -15,6 +14,7 @@ import PanelSection from '../shell/PanelSection.vue'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { LabelledColor } from '../../i18n/colorLabel'
 import ColorLabel from './ColorLabel.vue'
+import LetterDisc from './LetterDisc.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // Beads needed (tickets 146, 178, 555, 0974; BeadsNeeded card): the Frame panel's section under its Export row (0932), the total
@@ -94,7 +94,7 @@ const weighed = computed(() => !props.rail && averageGrams.value !== undefined)
 
 <template>
   <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="total || undefined" keep-summary :closed-first="closedFirst" :folded="folded" :always-open="rail" class="bead-quantities__section" :class="{ 'bead-quantities__section--rail': rail }" data-testid="bead-quantities">
-    <template v-if="!rail && quantities.length > 0 && info" #info>
+    <template v-if="quantities.length > 0 && info" #info>
       <InfoButton :label="info.label" :body="info.body" data-testid="quantities-info" />
     </template>
     <template v-if="quantities.length > 0" #summary><span data-testid="quantity-total">{{ total }}</span></template>
@@ -121,7 +121,7 @@ const weighed = computed(() => !props.rail && averageGrams.value !== undefined)
         <tbody>
           <tr v-for="quantity in shown" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
             <td class="bead-quantities__color">
-              <span v-if="rail" class="bead-quantities__disc" :style="{ backgroundColor: quantity.hex, color: letterInk(quantity.hex) }">{{ project.paletteLetters?.[quantity.hex] ?? '?' }}</span>
+              <LetterDisc v-if="rail" :hex="quantity.hex" :letter="project.paletteLetters?.[quantity.hex]" />
               <span v-else class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
               <ColorLabel :color="colorOf(quantity.colorId, quantity.hex)" :catalog="catalog ?? beadColors?.catalog.value" />
             </td>
@@ -245,19 +245,6 @@ const weighed = computed(() => !props.rail && averageGrams.value !== undefined)
   height: var(--swatch-dot);
   border-radius: var(--radius-2xs);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
-}
-
-/* The rail's disc, as the sheet's legend draws it: the color with its Swatch letter. */
-.bead-quantities__disc {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--margin-legend-disc);
-  height: var(--margin-legend-disc);
-  font: var(--margin-legend-letter);
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 1px var(--swatch-edge);
 }
 
 .bead-quantities__section--rail .bead-quantities__row > td,

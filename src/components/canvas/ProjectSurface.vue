@@ -16,7 +16,7 @@ import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { Size } from '../../rendering/cellSize'
 import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
 import { marginForm, marginScale } from '../../rendering/marginForm'
-import { marginSheetPx, type SlimSheet } from '../../rendering/projectRenderer'
+import { marginSheetPx, type ExpandedPaper } from '../../rendering/projectRenderer'
 import { rulerFontAtFull } from '../../rendering/rulerScale'
 import type { ExpandedContent } from '../../rendering/expandedSheet'
 import type { DrawnReference } from '../../rendering/referenceImage'
@@ -134,7 +134,7 @@ const props = withDefaults(defineProps<{
   /** Whether the Radial toolbox is open: the press it opens on then moves it here (ticket 1147). */
   toolboxOpen?: boolean
   /** What the expanded Frame lies in (MarginSheet card, Expand the Frame; tickets 1169, 1260), none unexpanded: the
-   * sheet is laid round the Frame's line from it, its numbers are the 100% ones, and a press off the Frame is refused. */
+   * paper covers the drawing area, its numbers keep the size the content names, held at the rows' window's edge. */
   expanded?: ExpandedContent
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
@@ -294,7 +294,7 @@ const everyFrame = computed<OtherFrame[]>(() =>
 const PAPER_OVERHANG_PX = 24
 /** The expanded Frame's sheet as the canvas draws it (tickets 1169, 1260): the paper over the whole drawing area, in
  * grid px, the rails laid on it by the page. */
-const slimSheet = computed<SlimSheet | undefined>(() => {
+const expandedPaper = computed<ExpandedPaper | undefined>(() => {
   if (!props.expanded || !frameById(props.project, primary.value)) return undefined
   const { width, height } = tableView.value.drawn
   const corners = [frameSurface.value.pointToGrid({ x: -PAPER_OVERHANG_PX, y: -PAPER_OVERHANG_PX }), frameSurface.value.pointToGrid({ x: width + PAPER_OVERHANG_PX, y: height + PAPER_OVERHANG_PX })]
@@ -306,7 +306,7 @@ const slimSheet = computed<SlimSheet | undefined>(() => {
 /** The Frame's margin sheet in the Frame drawing's grid px, none without a Frame: the one box the sheet is drawn from,
  * placed by and takes no press on. Expanded, the whole paper. Read by `surface` only while the Frame is drawn apart, as
  * `frameSurface` falls back to `surface` otherwise: read it from there and the two cycle. */
-const sheetGrid = computed((): Region | undefined => slimSheet.value?.sheet ?? marginSheetPx(frameProject.value, primary.value)?.sheet)
+const sheetGrid = computed((): Region | undefined => expandedPaper.value?.sheet ?? marginSheetPx(frameProject.value, primary.value)?.sheet)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. Its points are the Canvas drawing's; the Frame layer lies in it by its own transform. */
@@ -399,7 +399,7 @@ function laidFrames(): LaidFrame[] {
       theme: canvasBackground.frameThemeOf(ref),
       surface: view,
       rulers: frameRulersOf.value.get(ref)!,
-      slim: ref === primary.value ? slimSheet.value : undefined,
+      paper: ref === primary.value ? expandedPaper.value : undefined,
       covered: coveredOf(each),
     }
   })

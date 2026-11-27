@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { controlDeps } from '../../composables/shell/controlRegistry'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 import type { RowPress } from '../../composables/project/useRowOps'
@@ -21,6 +21,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import MarginFoot from './MarginFoot.vue'
 import MarginRailFacts from './MarginRailFacts.vue'
 import MarginRailTools from './MarginRailTools.vue'
+import { handBackExpandFocus } from './expandFocus'
 import { useFrameTools } from './frameTools'
 
 // The expanded Frame's sheet (MarginSheet card, Calmer sheet 3; ticket 1260): its facts and Beads needed in the left
@@ -129,17 +130,12 @@ const style = computed(() => {
   return { '--margin-fill': margin.fill, '--margin-line': margin.line, '--margin-edge': margin.edge, '--expanded-around': canvas.background.value?.color ?? 'var(--canvas)' }
 })
 
-// Expand the Frame and Back to the Canvas are one control in two places: the keyboard goes with it.
-const expandSelector = '[data-testid="margin-expand-frame"]'
+// The press that expanded the Frame took its button with it: the focus goes on to Back to the Canvas, and back.
 onMounted(() => {
-  if (document.activeElement === document.body) rootEl.value?.querySelector<HTMLElement>(expandSelector)?.focus({ preventScroll: true })
+  if (document.activeElement === document.body) rootEl.value?.querySelector<HTMLElement>('[data-testid="margin-expand-frame"]')?.focus({ preventScroll: true })
 })
 onBeforeUnmount(() => {
-  const shell = rootEl.value?.parentElement
-  if (!shell || !rootEl.value?.contains(document.activeElement)) return
-  const selector = `[data-testid="margin-sheet"][data-frame="${props.frame}"] ${expandSelector}`
-  // The sheet comes back unseen for two frames while it measures itself (ticket 0991).
-  void nextTick(() => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => shell.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true })))))
+  if (rootEl.value?.contains(document.activeElement)) handBackExpandFocus(props.frame)
 })
 </script>
 
@@ -306,7 +302,7 @@ onBeforeUnmount(() => {
   }
 }
 
-/* The band: the facts' three groups side by side. */
+/* A phone: the tools two by two, an unfolded one across. */
 .margin-rails--narrow :deep(.margin-rail-tools__rows) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -318,6 +314,7 @@ onBeforeUnmount(() => {
   grid-column: 1 / -1;
 }
 
+/* The band: the facts' three groups side by side. */
 .margin-rails--band :deep(.margin-rail-facts) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

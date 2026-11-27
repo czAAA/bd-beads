@@ -440,35 +440,31 @@ export function useCanvasView(
     return cross > PAN_LEAVES_EXPANDED_PX && cross > along
   }
 
-  /** Carries the expanded Frame's rows by a distance on screen, no further than their ends, the Frame staying expanded
-   * and the view following its fit if it did. */
-  function scrollRows(by: number): void {
+  /** The expanded Frame's rows as they stand along the way they run on, none while the whole Frame is in view. */
+  function shownRows(): ExpandedAxis | undefined {
     const project = currentProject()
     const room = options.expanded?.()
     const expanded = project && room && expandedAt(project, room)
-    if (!project || !expanded || !rowsAxis) return
+    if (!project || !expanded || !rowsAxis) return undefined
+    return axisOf(project, expanded.footprint, expanded.room(zoom.value), rowsAxis, scroll.value, zoom.value)
+  }
+
+  /** Carries the expanded Frame's rows by a distance on screen, no further than their ends, the Frame staying expanded
+   * and the view following its fit if it did; where they then are is kept for the next fit to look there again. */
+  function scrollRows(by: number): void {
     // A glide under way lands first, so the rows are scrolled from where they are going.
     const to = glidingView
-    if (to) {
+    if (to && rowsAxis) {
       stopGlide()
       zoom.value = to.zoom
       scroll.value = to.scroll
     }
-    const axis = axisOf(project, expanded.footprint, expanded.room(zoom.value), rowsAxis, scroll.value, zoom.value)
+    const axis = shownRows()
+    if (!axis || !rowsAxis) return
     const carried = carryAlong(axis, by)
     if (carried === 0) return
     scroll.value = { ...scroll.value, [rowsAxis]: scroll.value[rowsAxis] - carried }
-    keepLook()
-  }
-
-  /** Keeps where along the rows the expanded room's middle now looks, for the next fit to look there again. */
-  function keepLook(): void {
-    const project = currentProject()
-    const room = options.expanded?.()
-    const expanded = project && room && expandedAt(project, room)
-    if (!project || !expanded || !rowsAxis) return
-    const axis = axisOf(project, expanded.footprint, expanded.room(zoom.value), rowsAxis, scroll.value, zoom.value)
-    lookingAt = ((axis.room.start + axis.room.end) / 2 - axis.start) / axis.length
+    lookingAt = ((axis.room.start + axis.room.end) / 2 - (axis.start + carried)) / axis.length
   }
 
   /** Moves the canvas as `panBy` does, the Frame staying expanded: the edge scroll a drag near the edge carries. */
@@ -639,13 +635,14 @@ export function useCanvasView(
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
   function pinchStep({ zoom: toZoom, pan: moved, turn, anchor }: PinchStep): void {
     let pan = moved
-    // Fingers carrying an expanded Frame's rows carry them along alone, until they zoom or stray.
+    // Fingers carrying an expanded Frame's rows carry them along alone, no further than their ends, until they zoom or
+    // stray; once they have carried them as far as a pan, their spread's jitter zooms nothing.
     const rows = options.expanded?.() && leaveByFingers(toZoom, pan, turn !== undefined) ? rowsAxis : undefined
-    if (rows && (toZoom === undefined || limitZoom(toZoom) === zoom.value)) {
-      if (pan) scrollRows(pan[rows])
-      return
+    if (rows) {
+      const panning = (pinchOnExpanded?.along ?? 0) > PAN_LEAVES_EXPANDED_PX
+      if (panning || toZoom === undefined || limitZoom(toZoom) === zoom.value) return scrollRows(pan?.[rows] ?? 0)
+      pan = undefined
     }
-    if (rows && pan) pan = rows === 'x' ? { x: pan.x, y: 0 } : { x: 0, y: pan.y }
     stopGlide()
     let at = scroll.value
     const next = toZoom === undefined || pinchOnExpanded?.left ? zoom.value : limitZoom(toZoom)
@@ -670,7 +667,7 @@ export function useCanvasView(
     }
     scroll.value = at
     isAtFit.value = false
-    if (rows) keepLook()
+    if (rows) scrollRows(moved?.[rows] ?? 0)
   }
 
   /** A pinch step on the expanded Frame: a twist of the Table, or fingers that carry it across its rows (any way, where

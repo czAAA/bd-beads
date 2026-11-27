@@ -195,17 +195,17 @@ describe('useFrameExpand (ticket 1169)', () => {
       stop()
     })
 
+    // A drag moves the content with the pointer, a scroll the other way.
     it.each([
-      { move: 'panBy', by: -100 },
-      { move: 'scrollBy', by: 100 },
-    ] as const)('stays expanded on $move along them, no further than the first and last row', ({ move, by }) => {
+      { move: 'panBy', down: -100 },
+      { move: 'scrollBy', down: 100 },
+    ] as const)('stays expanded on $move along them, no further than the first and last row', ({ move, down }) => {
       const { view, expand, stop } = setup(tall())
       expand.toggle()
       const start = view.scroll.value.y
-      const down = move === 'panBy' ? -100 : 100
       view[move](0, down)
       expect(expand.expanded.value).toBe(true)
-      expect(view.scroll.value.y).toBeCloseTo(start - by * (move === 'panBy' ? 1 : -1) * 1, 5)
+      expect(view.scroll.value.y).toBeCloseTo(start + 100, 5)
       view[move](0, down * 100)
       const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
       const end = beadsOnScreen(tall(), view.zoom.value, view.scroll.value)
@@ -254,6 +254,23 @@ describe('useFrameExpand (ticket 1169)', () => {
       expect(view.scroll.value).toEqual({ x, y: y + 80 })
       view.pinchStep({ zoom: view.zoom.value, pan: { x: 80, y: 5 }, anchor: { x: 500, y: 300 } })
       expect(expand.expanded.value).toBe(false)
+      stop()
+    })
+  })
+
+  describe('a two-finger pan whose spread wavers (ticket 1260)', () => {
+    it('scrolls the rows no further than their ends, zooming nothing once it is a pan', () => {
+      const project = framed(20, 120)
+      const { view, expand, stop } = setup(project)
+      expand.toggle()
+      const fit = view.zoom.value
+      const start = view.scroll.value.y
+      view.pinchStep({ zoom: fit, pan: { x: 0, y: -40 }, anchor: { x: 500, y: 300 } })
+      view.pinchStep({ zoom: fit * 1.03, pan: { x: 2, y: 400 }, anchor: { x: 500, y: 700 } })
+      expect(view.zoom.value).toBe(fit)
+      expect(view.scroll.value.y).toBeCloseTo(start, 5)
+      expect(view.isAtFit.value).toBe(true)
+      expect(expand.expanded.value).toBe(true)
       stop()
     })
   })

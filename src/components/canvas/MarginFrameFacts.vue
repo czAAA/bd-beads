@@ -10,7 +10,7 @@ import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { listedColorName } from '../../i18n/colorName'
 import { useI18n } from '../../i18n/useI18n'
-import { letterInk } from '../../rendering/beadLook'
+import LetterDisc from '../palette/LetterDisc.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import MarginBeadCell from './MarginBeadCell.vue'
 import type { FactsForm } from './marginForms'
@@ -56,8 +56,7 @@ const legend = computed(() => {
   const used = computeColorQuantities(props.project, palette, props.frame).sort((a, b) => slot(a.hex) - slot(b.hex))
   return used.map(({ colorId, hex }) => ({
     hex,
-    letter: props.project.paletteLetters?.[hex] ?? '?',
-    ink: letterInk(hex),
+    letter: props.project.paletteLetters?.[hex],
     name: listedColorName(t.value, palette.byId(colorId), hex),
   }))
 })
@@ -109,7 +108,7 @@ defineExpose({ words })
     </span>
     <MarginBeadCell v-if="shows.bead && bead" :bead="bead" @pick="emit('replace-bead', $event)" />
     <span v-if="shownLegend.length" class="margin-facts__legend" role="img" :aria-label="legendLabel" data-testid="margin-legend">
-      <span v-for="color in shownLegend" :key="color.hex" class="margin-facts__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
+      <LetterDisc v-for="color in shownLegend" :key="color.hex" class="margin-facts__disc" :hex="color.hex" :letter="color.letter" aria-hidden="true" />
       <span v-if="moreColors" class="margin-facts__more" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
     </span>
     <span v-if="shows.letters" class="margin-facts__letters">
@@ -145,18 +144,6 @@ defineExpose({ words })
 
 .margin-facts__legend {
   gap: var(--space-4);
-}
-
-/* A 14px disc in the color, its Swatch letter white on a dark bead and `ink` on a light one (Inter 600 8). */
-.margin-facts__disc {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--margin-legend-disc);
-  height: var(--margin-legend-disc);
-  font: var(--margin-legend-letter);
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 1px var(--swatch-edge);
 }
 
 .margin-facts__more {

@@ -53,6 +53,7 @@ describe('the expanded Frame\'s rails (MarginSheet card, Calmer sheet 3; ticket 
     const facts = control(wrapper, 'margin-rail-facts')
     for (const words of ['Sun band', 'Technique', 'Loom', '40 × 11', 'Bead', 'TOHO Cube 1.5mm', 'Beads needed', 'Letters']) expect(facts.text(), words).toContain(words)
     expect(facts.findAll('[data-testid="quantity-row"]')).toHaveLength(1)
+    expect(facts.get('[data-testid="quantity-row"] .letter-disc').text()).toBe(framed().paletteLetters?.['#c83737'] ?? '?')
     expect(has(wrapper, 'margin-frame-tools')).toBe(false)
     expect(has(wrapper, 'frame-move-handle')).toBe(false)
   })

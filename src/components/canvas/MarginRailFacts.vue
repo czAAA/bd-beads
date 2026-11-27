@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { seenSize } from '../../domain/frameOrientation'
-import { settingValuesOf, type FrameSettings } from '../../domain/frameShape'
+import type { FrameSettings } from '../../domain/frameShape'
 import type { FrameEdge } from '../../domain/frame'
 import type { FrameId } from '../../domain/grid'
 import { beadOfLayer, frameById, lettersOn, soloFrame } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
-import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import BeadQuantities from '../palette/BeadQuantities.vue'
@@ -18,7 +16,7 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import FrameSizeSection from './FrameSizeSection.vue'
 import MarginBeadCell from './MarginBeadCell.vue'
 import MarginFrameIdentity from './MarginFrameIdentity.vue'
-import { frameEstimate } from './frameEstimate'
+import { frameEstimate, frameSizeWords } from './frameEstimate'
 
 // The expanded sheet's left rail (MarginSheet card, Calmer sheet 3; ticket 1260): Back to the Canvas, who the Frame is,
 // its facts as editable chips (the size unfolding its fields in place), Beads needed and Letters. It only asks.
@@ -49,15 +47,7 @@ const canvas = useCanvasBackground(() => props.project)
 const named = computed(() => canvas.margin.titleBlock.value)
 const held = computed(() => frameById(props.project, props.frame))
 const bead = computed(() => beadOfLayer(props.project, props.frame).bead)
-/** The size as seen, or a Custom frame's own shape setting. */
-const size = computed(() => {
-  const frame = held.value
-  if (!frame) return ''
-  const first = settingValuesOf(frame)[0]
-  if (first) return plural(locale.value, first.value, t.value.frame.sizeSettings[first.name].summary)
-  const { columns, rows } = seenSize(frame)
-  return `${columns} × ${rows}`
-})
+const size = computed(() => frameSizeWords(t.value, locale.value, props.project, props.frame))
 const estimate = computed(() => frameEstimate(t.value, locale.value, props.project, props.frame))
 const solo = computed(() => soloFrame(props.project, props.frame))
 

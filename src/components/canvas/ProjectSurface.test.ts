@@ -1572,15 +1572,13 @@ describe('ProjectSurface', () => {
         await vi.waitFor(() => expect(dashed()).toBe(true))
       })
 
-      it('lets a press off the expanded Frame and past its margin through, as unexpanded: Expand only enlarges the view (ticket 1176)', async () => {
+      it('takes no press on the expanded Frame\'s paper, which hides the Canvas round it (tickets 1194, 1260)', async () => {
         const project = framed()
         const expanded = { compact: false, chrome: { top: 0, right: 0, bottom: 0, left: 0 }, numbers: { left: 0, top: 0 }, fontPx: 11 }
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'erase' }), expanded })
-        const surface = wrapper.find('[data-testid="project-surface"]')
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can(), expanded })
         // Row 2, column 2 is well outside the 4-position margin round the Frame at rows and columns 10 to 13.
-        await surface.trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
-        expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
-        expect(surface.classes()).not.toContain('project-surface--refused')
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
+        expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
       })
 
       it('keeps its own cursor for Erase, which still works there', async () => {

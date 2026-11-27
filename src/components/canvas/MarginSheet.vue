@@ -21,6 +21,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import IconButton from '../ui/IconButton.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
 import MarginFrameTools from './MarginFrameTools.vue'
+import { takeExpandFocus } from './expandFocus'
 import { useFrameTools } from './frameTools'
 import MarginMoveBar from './MarginMoveBar.vue'
 import MarginFoot from './MarginFoot.vue'
@@ -296,6 +297,14 @@ const colorHangsFrom = computed(() => (!row.value ? 'handle' : onBand('color') ?
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 const sheetEl = ref<HTMLElement>()
+// Back from the expanded rails, the focus returns to Expand the Frame once the sheet is shown (ticket 1260).
+watch(
+  [arriving, sheetEl],
+  ([hidden, sheet]) => {
+    if (!hidden && sheet && takeExpandFocus(own.value) && document.activeElement === document.body) sheet.querySelector<HTMLElement>('[data-testid$="expand-frame"]')?.focus({ preventScroll: true })
+  },
+  { flush: 'post' },
+)
 
 /** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
 const rotateCopy = useRotateCopy({ handOverMs: FRAME_TURN_MS })

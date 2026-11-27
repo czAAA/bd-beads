@@ -280,6 +280,10 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   flex-wrap: wrap;
 }
 
+.export-section__settings :deep(.qs-chosen) {
+  margin-inline-start: auto;
+}
+
 .export-section__settings :deep(.qs-stop > *) {
   max-width: 100%;
   overflow-wrap: anywhere;
