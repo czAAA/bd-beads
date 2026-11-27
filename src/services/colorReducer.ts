@@ -47,3 +47,54 @@ export function createColorReducer(): ColorReducer {
 
   return { reduce, stop }
 }
+
+/** Reduces a picture's colors for several counts without holding the page (ticket 1253): every request is answered, in
+ * the order asked, by one worker where the browser has one, else on the spot. */
+export interface ColorReductionQueue {
+  reduce(request: ReductionRequest): Promise<ReducedColors>
+  /** Drops every request waiting or running: their promises never settle. */
+  clear(): void
+}
+
+export function createColorReductionQueue(): ColorReductionQueue {
+  let worker: Worker | undefined
+  let next = 0
+  const waiting = new Map<number, { request: ReductionRequest; done: (reduced: ReducedColors) => void }>()
+
+  function clear(): void {
+    waiting.clear()
+    worker?.terminate()
+    worker = undefined
+  }
+
+  /** The worker failed: what was waiting is reduced on the spot, and the next request starts a new one. */
+  function fail(): void {
+    const left = [...waiting.values()]
+    clear()
+    for (const { request, done } of left) done(reduceRequested(request))
+  }
+
+  function reduce(request: ReductionRequest): Promise<ReducedColors> {
+    if (typeof Worker === 'undefined') return Promise.resolve(reduceRequested(request))
+    return new Promise((done) => {
+      const id = ++next
+      waiting.set(id, { request, done })
+      try {
+        if (!worker) {
+          worker = new Worker(new URL('../workers/reduceColors.worker.ts', import.meta.url), { type: 'module' })
+          worker.onmessage = ({ data }: MessageEvent<{ id: number; reduced: ReducedColors }>) => {
+            const asked = waiting.get(data.id)
+            waiting.delete(data.id)
+            asked?.done(data.reduced)
+          }
+          worker.onerror = fail
+        }
+        worker.postMessage({ id, request })
+      } catch {
+        fail()
+      }
+    })
+  }
+
+  return { reduce, clear }
+}

@@ -1,4 +1,4 @@
-import { computed, inject, onScopeDispose, provide, readonly, ref, shallowRef, watch, type InjectionKey } from 'vue'
+import { computed, inject, onScopeDispose, provide, readonly, ref, shallowRef, toRaw, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground, type BackgroundMark } from '../../domain/convertBackground'
 import { keptGrid } from '../../domain/convertKeep'
@@ -13,7 +13,6 @@ import {
   matchFoundColors,
   newProjectPalette,
   NO_LEAST_COLOR_BEADS,
-  reduceRequested,
   type ReductionRequest,
   sourceTargets,
   type ColorSource,
@@ -47,12 +46,14 @@ import {
   type PixelData,
 } from '../../domain/imageConversion'
 import { partLattice, type ImageSize } from '../../domain/imageFraming'
+import type { ReducedColors } from '../../domain/imageColors'
 import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { createColorReductionQueue } from '../../services/colorReducer'
 import { useColorReduction } from './useColorReduction'
 import { useConvertCleanUp } from './useConvertCleanUp'
 import { useConvertCrop, type CropBeads } from './useConvertCrop'
@@ -456,15 +457,35 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   // follow the lit beads. Off until the person turns it on.
   const lighting = useConvertLighting(image)
   /** What the reduction is asked for a number of colors, to the codes left where the Finishes leave fewer. */
-  const requestFor = (count: number): ReductionRequest => ({
+  /** What every reduction of the part asks, whatever the count: a new one is a new setup. */
+  const requestBase = computed<Omit<ReductionRequest, 'asked'>>(() => ({
     counts: frameSampled.value?.counts ?? new Map(),
-    asked: shortOf(count) ? finishes.codesLeft.value : count,
     targets: targets.value,
     choices: choices.value,
     leastBeads: kind.value === 'photo' ? LEAST_COLOR_BEADS : NO_LEAST_COLOR_BEADS,
-  })
-  /** The picture reduced for another number of colors, on the spot (the Colors neighbours). */
-  const reducedFor = (count: number) => reduceRequested(requestFor(count))
+  }))
+  const requestFor = (count: number): ReductionRequest => ({ ...requestBase.value, asked: shortOf(count) ? finishes.codesLeft.value : count })
+  // The picture reduced for another number of colors (the Colors reach and neighbours): off the main thread, as a noisy
+  // photo's reduction takes seconds, and each count once per setup, however many ask for it (ticket 1253).
+  const otherCounts = createColorReductionQueue()
+  const reducedAt = new Map<number, Promise<ReducedColors>>()
+  watch(
+    requestBase,
+    () => {
+      reducedAt.clear()
+      otherCounts.clear()
+    },
+    { flush: 'sync' },
+  )
+  onScopeDispose(() => otherCounts.clear())
+  function reducedFor(count: number): Promise<ReducedColors> {
+    const request = requestFor(count)
+    const known = reducedAt.get(request.asked)
+    if (known) return known
+    const reduced = otherCounts.reduce({ ...request, counts: toRaw(request.counts), targets: toRaw(request.targets), choices: toRaw(request.choices) })
+    reducedAt.set(request.asked, reduced)
+    return reduced
+  }
   // The page's own reduction runs off the main thread (ticket 1163); `reducing` shows the loading state meanwhile.
   const { reduced: sampledReduced, reducing } = useColorReduction(() => requestFor(maxColors.value))
   // Clean up (ticket 0906): stray beads and small colors, between the reduction and the beads; the found colors follow.
@@ -681,9 +702,11 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
 
   /** The beads the Project would get at another number of colors, every other setting as it stands (the Colors
    * neighbours, ticket 0904): the page's own path, sampled grid, reduction, Finish cap and Clean up. */
-  function beadsAtColors(count: number): Grid {
+  async function beadsAtColors(count: number): Promise<Grid> {
     if (!frameSampled.value) return []
-    const at = cleanUp.cleanedOf(reducedFor(count))
+    const reduced = await reducedFor(count)
+    if (!frameSampled.value) return []
+    const at = cleanUp.cleanedOf(reduced)
     const beads = convertFrame(at.raw, at.reduced, at.found)
     return kept.value ? keptGrid(beads, kept.value) : beads
   }

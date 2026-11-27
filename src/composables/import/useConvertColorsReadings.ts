@@ -39,13 +39,16 @@ export function useConvertColorsReadings() {
     }
     return fillBlanks(words.value.matchedBead, { bead })
   })
-  /** The Colors value: the count, or with fewer found than asked both numbers ("12 asked · 7 found", ticket 0928). */
-  const colorsValue = computed(() => {
+  /** The Colors value: the count, or with fewer found than asked both numbers, "12 → 7" (tickets 0928, 1253). */
+  const colorsValue = computed(() => colorsReading(words.value.fewerFound.short))
+  /** What the value says to a screen reader: with fewer found than asked, "12 asked · 7 found". */
+  const colorsValueText = computed(() => colorsReading(words.value.fewerFound.asked))
+  function colorsReading(fewer: string) {
     const asked = wizard.maxColors.value
     const found = wizard.foundColorCount.value
     if (found >= asked) return plural(locale.value, asked, words.value.colorsCount)
-    return fillBlanks(words.value.fewerFound.asked, { asked: groupThousands(asked, locale.value), found: groupThousands(found, locale.value) })
-  })
+    return fillBlanks(fewer, { asked: groupThousands(asked, locale.value), found: groupThousands(found, locale.value) })
+  }
   /** The last count that changes the beads (ticket 0928): the track is accent only up to it. */
   const colorsReach = useConvertColorsReach({ count: wizard.maxColors, found: wizard.foundColorCount, beadsAt: wizard.beadsAtColors, beadsShown: wizard.beadsShown })
   /** "40+" where the picture has more colors than the slider reaches, else "max 9" (DS-2). */
@@ -55,5 +58,5 @@ export function useConvertColorsReadings() {
       : fillBlanks(words.value.maxLabel, { value: groupThousands(wizard.colorsMax.value, locale.value) }),
   )
 
-  return { colorsEnd, colorsMarks, matchedLine, colorsValue, colorsReach, colorsMaxLabel }
+  return { colorsEnd, colorsMarks, matchedLine, colorsValue, colorsValueText, colorsReach, colorsMaxLabel }
 }

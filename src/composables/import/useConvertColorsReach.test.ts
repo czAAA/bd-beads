@@ -10,24 +10,23 @@ const beadsFor = (cap: number) => (count: number): Grid => [[{ color: `#${String
 function reachOf({ start = 40, cap = 7 } = {}) {
   const count = ref(start)
   const found = ref(Math.min(start, cap))
-  const beadsAt = vi.fn(beadsFor(cap))
+  const beadsAt = vi.fn(async (at: number) => beadsFor(cap)(at))
   const beadsShown = ref<Grid>(beadsFor(cap)(start))
   const reach = effectScope().run(() => useConvertColorsReach({ count, found, beadsAt, beadsShown }))!
   const set = (next: number, nextCap = cap) => {
     count.value = next
     found.value = Math.min(next, nextCap)
     beadsShown.value = beadsFor(nextCap)(next)
-    beadsAt.mockImplementation(beadsFor(nextCap))
+    beadsAt.mockImplementation(async (at: number) => beadsFor(nextCap)(at))
   }
   return { reach, count, beadsAt, set }
 }
 
-/** Lets the count rest and every step of the search run, each in a task of its own. */
+/** Lets the count rest and every step of the search run, each waiting for its beads. */
 async function rest() {
   await nextTick()
-  vi.advanceTimersByTime(NEIGHBOURS_REST_MS)
-  for (let step = 0; step < 12; step++) vi.advanceTimersByTime(1)
-  await nextTick()
+  await vi.advanceTimersByTimeAsync(NEIGHBOURS_REST_MS)
+  for (let step = 0; step < 12; step++) await vi.advanceTimersByTimeAsync(1)
 }
 
 beforeEach(() => vi.useFakeTimers())
@@ -66,5 +65,17 @@ describe('The last count that changes the beads (ticket 0928)', () => {
     card.set(5, 9)
     await nextTick()
     expect(card.reach.value).toBeUndefined()
+  })
+
+  it('drops a search the count moved away from while its beads were worked out (ticket 1253)', async () => {
+    const card = reachOf({ start: 40, cap: 7 })
+    let release!: () => void
+    card.beadsAt.mockImplementationOnce((at: number) => new Promise((done) => (release = () => done(beadsFor(7)(at)))))
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(NEIGHBOURS_REST_MS)
+    card.set(30, 9)
+    release()
+    await rest()
+    expect(card.reach.value).toBe(9)
   })
 })

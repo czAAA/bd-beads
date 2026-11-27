@@ -50,7 +50,7 @@ describe('The colors asked and the colors found (ticket 0928)', () => {
     await flushPromises()
     const found = wizard.foundColorCount.value
     expect(found).toBeLessThan(13)
-    expect(value(wrapper)).toBe(`13 asked · ${found} found`)
+    expect(value(wrapper)).toBe(`13 → ${found}`)
     expect(wrapper.get('[data-testid="convert-colors-slider-range"]').attributes('aria-valuetext')).toBe(`13 asked · ${found} found`)
     await rest()
     expect(slider(wrapper).classes()).toContain('vs--reach')

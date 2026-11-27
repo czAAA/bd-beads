@@ -106,10 +106,10 @@ describe('Brightness, Contrast and Saturation in the Convert image wizard (ticke
 
   it('reach the Colors neighbours too, which convert the same lit picture (ticket 0904)', async () => {
     const wizard = await convertAt(nightPicture(), 30)
-    const fewer = wizard.beadsAtColors(wizard.maxColors.value - 1)
+    const fewer = await wizard.beadsAtColors(wizard.maxColors.value - 1)
     wizard.lighting.setSlider('brightness', 40)
     await nextTick()
-    expect(wizard.beadsAtColors(wizard.maxColors.value - 1)).not.toEqual(fewer)
+    expect(await wizard.beadsAtColors(wizard.maxColors.value - 1)).not.toEqual(fewer)
   })
 
   it('keep to −50 … +50 in whole steps', async () => {

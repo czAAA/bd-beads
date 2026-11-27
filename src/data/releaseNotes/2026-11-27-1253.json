@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-27",
+  "kind": "fixed",
+  "line": {
+    "en": "The converter no longer freezes on a big photo past 30 colors; with fewer colors found than asked, Colors reads \"36 → 30\" instead of hiding under its button, and the previews of one color more or fewer show only up to 20 colors",
+    "ru": "Конвертер больше не зависает на большом фото, если цветов больше 30; когда найдено меньше цветов, чем запрошено, Цвета показывают «36 → 30», а не прячутся под кнопкой, а превью на цвет больше и меньше видны только до 20 цветов",
+    "uk": "Конвертер більше не зависає на великому фото, якщо кольорів понад 30; коли знайдено менше кольорів, ніж запитано, Кольори показують «36 → 30», а не ховаються під кнопкою, а превʼю на колір більше й менше видно лише до 20 кольорів",
+    "be": "Канвертар больш не завісае на вялікім фота, калі колераў больш за 30; калі знойдзена менш колераў, чым прасілі, Колеры паказваюць «36 → 30», а не хаваюцца пад кнопкай, а прэв'ю на колер больш і менш відаць толькі да 20 колераў",
+    "zh": "转换器处理大照片且颜色超过 30 种时不再卡住；找到的颜色少于所需时，颜色显示为“36 → 30”，不再被按钮挡住；多一种或少一种颜色的预览只在 20 种颜色以内显示",
+    "es": "El conversor ya no se bloquea con una foto grande y más de 30 colores; si se encuentran menos colores de los pedidos, Colores muestra «36 → 30» en vez de quedar bajo su botón, y las vistas previas con un color más o menos solo aparecen hasta 20 colores",
+    "pl": "Konwerter nie zawiesza się już na dużym zdjęciu przy ponad 30 kolorach; gdy znaleziono mniej kolorów, niż zadano, Kolory pokazują „36 → 30” zamiast chować się pod przyciskiem, a podglądy z jednym kolorem więcej i mniej są widoczne tylko do 20 kolorów"
+  }
+}

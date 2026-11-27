@@ -75,8 +75,9 @@ describe('The number of colors with one fewer and one more (ticket 0904)', () =>
     await field.trigger('keydown', { key: 'Enter' })
     expect(wizard.maxColors.value).toBe(64)
     // Clean up joins the stripes' small colors, so fewer are found than asked (ticket 0928).
-    expect(wrapper.get('[data-testid="convert-colors-slider-value"]').text()).toMatch(/^64 asked · \d+ found$/)
-    expect(captions(wrapper)).toEqual(['63 colors', '64 colors', '65 colors'])
+    expect(wrapper.get('[data-testid="convert-colors-slider-value"]').text()).toMatch(/^64 → \d+$/)
+    // Past 20 colors one more or fewer looks the same: the card holds the typed number only (ticket 1253).
+    expect(captions(wrapper)).toEqual([])
 
     await field.trigger('keydown', { key: 'ArrowUp' })
     expect(wizard.maxColors.value).toBe(65)
@@ -88,7 +89,11 @@ describe('The number of colors with one fewer and one more (ticket 0904)', () =>
   })
 
   it('makes a count over the most the picture has the most, its right place "no more"', async () => {
-    const { wizard, wrapper } = await opened(30)
+    const { wizard, wrapper } = await opened(15)
+    // Clean up off, so every stripe is a color found and the card draws its places (ticket 1253).
+    wizard.cleanUp.setOn(false)
+    wizard.setMaxColors(15)
+    await flushPromises()
     range(wrapper).element.focus()
     await flushPromises()
     const field = card(wrapper).get<HTMLInputElement>('[data-testid="convert-colors-count"]')
@@ -96,6 +101,16 @@ describe('The number of colors with one fewer and one more (ticket 0904)', () =>
     await field.trigger('keydown', { key: 'Enter' })
     expect(wizard.maxColors.value).toBe(wizard.colorsMax.value)
     expect(card(wrapper).get('[data-side="more"]').text()).toBe('no more')
+  })
+
+  it('does not open while fewer colors are found than asked (ticket 1253)', async () => {
+    const { wizard, wrapper } = await opened()
+    wizard.setMaxColors(64)
+    await flushPromises()
+    expect(wizard.foundColorCount.value).toBeLessThan(64)
+    range(wrapper).element.focus()
+    await flushPromises()
+    expect(card(wrapper).exists()).toBe(false)
   })
 
   it('closes on Escape with focus back on the slider, and when focus leaves the slider and the card', async () => {
