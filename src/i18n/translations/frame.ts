@@ -139,7 +139,8 @@ export interface FrameTranslations {
       techniqueTitle: string
       rowsDone: PluralForms
       columnsDone: PluralForms
-      startOverWay: string
+      rotateReset: string
+      rotateKeep: string
       startOverTechnique: string
       keepRows: PluralForms
       keepColumns: PluralForms

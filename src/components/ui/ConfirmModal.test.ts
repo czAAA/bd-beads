@@ -123,6 +123,15 @@ describe('ConfirmModal', () => {
     expect(plain.find('[data-testid="confirm-modal-confirm"]').classes()).toContain('app-button--primary')
   })
 
+  it('orders a single row Cancel, side action, confirm (ticket 1254)', () => {
+    const wrapper = mount(ConfirmModal, {
+      props: { title: 'T', message: 'M', confirmLabel: 'Keep', cancelLabel: 'Cancel', extraLabel: 'Reset', singleRow: true },
+      attachTo: document.body,
+    })
+
+    expect(wrapper.findAll('button').map((button) => button.text())).toEqual(['Cancel', 'Reset', 'Keep'])
+  })
+
   it('has no extra action unless one is labelled', () => {
     expect(mountModal().find('[data-testid="confirm-modal-extra"]').exists()).toBe(false)
   })
