@@ -52,16 +52,38 @@ describe('the own-color rim', () => {
     expect(named('fill')[0]!.fillStyle).toBe('#f2c94c')
   })
 
-  it('is not filled round a round bead (Open weave, ticket 1010): its body and light alone, with the ground showing round it', () => {
+  it('is not filled round a round bead (Open weave, ticket 1010): its body and light alone, filling its cell, corners 30% of its short side (ticket 1252)', () => {
     const { context, named } = recordingContext()
 
     // A TOHO Round 11/0 in a 20 wide cell: a half circle for a corner, longer than it is wide.
     drawFlatBead(context, bead({ width: 20, height: 28, cornerRadius: 10, color: '#e63746' }))
 
     expect(named('fillRect')).toHaveLength(0)
-    expect(named('roundRect').map((call) => call.args)).toEqual([[40.5, 20.5, 19, 27, 9.5]])
+    expect(named('roundRect').map((call) => call.args)).toEqual([[40, 20, 20, 28, 6]])
     expect(named('fill')[0]!.fillStyle).toBe('#e63746')
     expect(named('createRadialGradient')).toHaveLength(1)
+    // The light is the body's: centred 50% across and 46% down the whole cell.
+    expect(named('translate').map((call) => call.args)).toEqual([[50, 20 + 28 * 0.46]])
+  })
+
+  it('takes a lying round bead\'s corner from its height, its short side', () => {
+    const { context, named } = recordingContext()
+
+    drawFlatBead(context, bead({ width: 20, height: 14, cornerRadius: 10, color: '#e63746' }))
+
+    expect(named('roundRect')[0]!.args.slice(0, 4)).toEqual([40, 20, 20, 14])
+    expect(named('roundRect')[0]!.args[4]).toBeCloseTo(4.2)
+  })
+
+  it('keeps a round bead the pill it was, a gap in from its cell, in high contrast and exports', () => {
+    // The PDF Cover page draws the own-color look on the print board, with no touching rounds.
+    const cover = { ...PRINT_THEME, ownColorRim: true }
+    for (const theme of [PRINT_THEME, PROJECT_THEMES.contrast, cover]) {
+      const { context, named } = recordingContext()
+      drawFlatBead(context, bead({ width: 20, height: 28, cornerRadius: 10, color: '#e63746', theme }))
+      expect(named('roundRect')[0]!.args).toEqual([40.5, 20.5, 19, 27, 9.5])
+      expect(named('fillRect')).toHaveLength(0)
+    }
   })
 
   it('keeps the rim round a bead whose corner is not a half circle: a Delica\'s and a cube\'s', () => {
@@ -135,7 +157,7 @@ describe('a round bead as light as the piece ground (ticket 1037, BeadBoard card
 
         drawFlatBead(context, roundBead(color, theme))
 
-        expect(named('roundRect').map((call) => call.args)).toEqual([[40.5, 20.5, 19, 27, 9.5], [41.25, 21.25, 17.5, 25.5, 8.75]])
+        expect(named('roundRect').map((call) => call.args)).toEqual([[40, 20, 20, 28, 6], [40.75, 20.75, 18.5, 26.5, 5.25]])
         expect(named('fill').slice(0, 2).map((call) => call.fillStyle)).toEqual([ownRim(color), color])
         const edge = parseColor(ownRim(color))!
         expect(contrastRatio(edge, fromHex(color)!)).toBeGreaterThan(1.3)

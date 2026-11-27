@@ -19,6 +19,7 @@ import {
   drawFlatBead,
   drawSeeThroughBead,
   paintedOnly,
+  bodyCorner,
   type BeadDrawer,
   type DrawingContext,
   type ProjectTheme,
@@ -535,7 +536,7 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, origin: { x:
     const { shown, dimmed } = progressLook(draw, own, painted)
     const sized = box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}
     const bead = { x: origin.x + box.x, y: origin.y + box.y, size: CELL_SIZE_PX, ...sized, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
-    if (painted === null && mark.tiles) drawTile(context, { x: bead.x, y: bead.y, width: box.width, height: box.height, cornerRadius }, mark.color, edge, bead.deviceScale)
+    if (painted === null && mark.tiles) drawTile(context, { x: bead.x, y: bead.y, width: box.width, height: box.height, cornerRadius: bodyCorner(cornerRadius, box.width, box.height, look) }, mark.color, edge, bead.deviceScale)
     else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
     else drawBead(context, bead)
     const letter = painted === null ? undefined : letters?.[painted]
@@ -569,7 +570,7 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, origin: { x: 
     const painted = colorOf(position)
     const { shown, dimmed } = progressLook(draw, position, painted)
     const bead = { ...centred, size: box.width, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
-    if (painted === null && mark.tiles) drawTile(context, { ...centred, cornerRadius }, mark.color, edge, bead.deviceScale)
+    if (painted === null && mark.tiles) drawTile(context, { ...centred, cornerRadius: bodyCorner(cornerRadius, box.width, box.height, look) }, mark.color, edge, bead.deviceScale)
     else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
     else drawBead(context, bead)
     const letter = painted === null ? undefined : letters?.[painted]

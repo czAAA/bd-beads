@@ -18,7 +18,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { beadCell, beadRoundness } from '../../domain/weave'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
-import { BEAD_GAP_PX, LIGHT_THEME } from '../../rendering/beadLook'
+import { BEAD_GAP_PX, bodyCorner, drawsTouching, LIGHT_THEME } from '../../rendering/beadLook'
 import { drawCleanedRings } from '../../rendering/cleanedRings'
 import type { HandleId } from '../../rendering/frameHandles'
 import { reachLimit } from '../../rendering/handleSizes'
@@ -255,16 +255,20 @@ function drawRings(context: CanvasRenderingContext2D, pixelRatio: number) {
   const shown = view.value
   if (!changed || !at || !size || !shown || !paneEl.value) return
   const centre = (row: number, column: number) => shown.beadToPoint({ row: at.frameRow + row, column: at.frameColumn + column })
-  const gap = BEAD_GAP_PX * scale.value
+  const roundness = beadRoundness(wizard.technique.value, cell.value)
+  // Rings are drawn only over the full render, never the draft one, so the beads are the screen's.
+  const touching = drawsTouching(roundness, 1, LIGHT_THEME)
+  const gap = touching ? 0 : BEAD_GAP_PX * scale.value
   const step = { width: Math.abs(centre(0, 1).x - centre(0, 0).x), height: Math.abs(centre(1, 0).y - centre(0, 0).y) }
   const style = getComputedStyle(paneEl.value)
   // The ring is as thick as it stands off the bead (DS-3: 2px, 2 outside).
   const ring = parseFloat(style.getPropertyValue('--convert-cleaned-ring'))
+  const bead = { width: step.width - gap, height: step.height - gap }
   drawCleanedRings(context, {
     changed,
     columns: size.columns,
     centre: ({ row, column }) => centre(row, column),
-    bead: { width: step.width - gap, height: step.height - gap, roundness: beadRoundness(wizard.technique.value, cell.value) },
+    bead: { ...bead, roundness: bodyCorner(roundness * bead.width, bead.width, bead.height, LIGHT_THEME) / bead.width },
     ring,
     gap: ring,
     color: style.getPropertyValue('--marker').trim(),

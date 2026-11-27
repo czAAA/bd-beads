@@ -1,5 +1,5 @@
 import { beadRoundness, describeWeave, type BeadCell, type Technique, type TechniqueSettings } from '../domain/weave'
-import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
+import { BEAD_GAP_PX, bodyCorner, touchesRounds, type DrawingContext, type TouchingShapes } from './beadLook'
 import { cellSizePx, CELL_SIZE_PX } from './cellSize'
 import type { Region } from './surfaceView'
 import { fillTiles } from './tonalTiles'
@@ -12,7 +12,7 @@ const MAX_TILES = 64
 const tiles = new Map<string, CanvasImageSource | null>()
 
 /** What a tile is made from: the Technique's row pitch, how big the grid is on screen, and the mark's color. */
-export interface MarkTileInput {
+export interface MarkTileInput extends TouchingShapes {
   technique: Technique
   /** Its settings (ticket 0625): peyote's or brick stitch's Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
@@ -66,7 +66,8 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile):
     }
   }
   if (input.tiles) {
-    fillTiles(context, squares.map((square) => ({ ...square, cornerRadius: radius })), input.color)
+    // A tile takes the shape of the bead that will lie on it (ticket 1252).
+    fillTiles(context, squares.map((square) => ({ ...square, cornerRadius: bodyCorner(radius, square.width, square.height, input) })), input.color)
     return
   }
   squares.sort((a, b) => a.y - b.y)
@@ -96,7 +97,7 @@ function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; key
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
   // The tile's size is in the key too; the roundness is the only part of the cell it doesn't show.
-  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color, !!input.tiles].join('|')
+  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color, !!input.tiles, touchesRounds(input)].join('|')
 
   let tile = tiles.get(key)
   if (tile === undefined) {
