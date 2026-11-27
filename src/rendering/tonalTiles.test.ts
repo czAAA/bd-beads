@@ -15,7 +15,7 @@ describe('the tile color', () => {
   ] as const)('gives the BeadBoard card\'s tile on %s background %i (%s → %s)', (theme, choice, background, tile) => {
     const look = canvasTheme(theme, choice)
     expect(look.canvas).toBe(background)
-    expect(markLookOf(look)).toEqual({ color: tile, tiles: true })
+    expect(markLookOf(look)).toMatchObject({ color: tile, tiles: true })
   })
 
   it('steps a Custom color by the same rule, toward ink in the look it is drawn in, its hue kept', () => {
@@ -30,13 +30,18 @@ describe('the tile color', () => {
 
 describe('markLookOf', () => {
   it('keeps the Position mark outline in high contrast and exports', () => {
-    expect(markLookOf(PROJECT_THEMES.contrast)).toEqual({ color: PROJECT_THEMES.contrast.positionMark, tiles: false })
-    expect(markLookOf(PRINT_THEME)).toEqual({ color: PRINT_THEME.positionMark, tiles: false })
+    expect(markLookOf(PROJECT_THEMES.contrast)).toMatchObject({ color: PROJECT_THEMES.contrast.positionMark, tiles: false })
+    expect(markLookOf(PRINT_THEME)).toMatchObject({ color: PRINT_THEME.positionMark, tiles: false })
   })
 
   it('keeps the outline in its own color where tiles are not shown: the draft look, a reference image', () => {
     const look = canvasTheme('light', 2)
-    expect(markLookOf(look, false)).toEqual({ color: look.positionMark, tiles: false })
+    expect(markLookOf(look, false)).toMatchObject({ color: look.positionMark, tiles: false })
+  })
+
+  it("carries whether the theme's round beads touch, so an empty tile takes their shape (ticket 1252)", () => {
+    expect(markLookOf(PROJECT_THEMES.dark)).toMatchObject({ ownColorRim: true, touchingRounds: true })
+    expect(markLookOf(PRINT_THEME).touchingRounds).toBe(false)
   })
 
   it('gives a page laid beside the drawing the marks the renderer draws at its scale', () => {

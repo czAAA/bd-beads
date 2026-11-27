@@ -505,15 +505,18 @@ export function isOpenWeave(cornerRadius: number, width: number): boolean {
 /** A round bead's corner on screen, as a share of its short side (ticket 1252). */
 const TOUCHING_CORNER = 0.3
 
+/** What of a theme says its round beads touch (ticket 1252). */
+export type TouchingShapes = Partial<Pick<ProjectTheme, 'ownColorRim' | 'touchingRounds'>>
+
 /** Whether a bead of this corner and width is drawn in `theme` as a touching round one: Open weave on screen, its body
  * filling its cell (ticket 1252). The flat look keeps the pill, a gap in. */
-export function drawsTouching(cornerRadius: number, width: number, theme: ProjectTheme): boolean {
-  return theme.ownColorRim && theme.touchingRounds && isOpenWeave(cornerRadius, width)
+export function drawsTouching(cornerRadius: number, width: number, theme: TouchingShapes): boolean {
+  return !!theme.ownColorRim && !!theme.touchingRounds && isOpenWeave(cornerRadius, width)
 }
 
 /** The corner of a bead's box as `theme` draws it, for what is laid round or over the bead: a touching round bead's own,
  * else the `cornerRadius` it carries. */
-export function bodyCorner(cornerRadius: number, width: number, height: number, theme: ProjectTheme): number {
+export function bodyCorner(cornerRadius: number, width: number, height: number, theme: TouchingShapes): number {
   return drawsTouching(cornerRadius, width, theme) ? touchingCorner(width, height) : cornerRadius
 }
 
