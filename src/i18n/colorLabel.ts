@@ -1,6 +1,6 @@
 import { catalogEntry, type ColorCatalog, type Finish } from '../domain/colorCatalog'
 import { fillBlanks } from '../domain/fillBlanks'
-import { catalogName, familyColorId, familyOf, isAddedColorId, type PaletteColor } from '../domain/palette'
+import { catalogName, familyColorId, isAddedColorId, type PaletteColor } from '../domain/palette'
 import { colorName } from './colorName'
 import type { Translations } from './translations'
 
@@ -42,24 +42,24 @@ export function colorLabel(t: Translations, color: LabelledColor, catalog?: Colo
 
 /** A catalog code's name after its code, its Finish and its color family ("Opaque Black", ticket 0966). */
 function catalogColorName(t: Translations, family: string, finish: Finish): string {
-  const familyWords = colorName(t, { id: familyColorId(family), hex: '' }) || family
-  return fillBlanks(t.palette.catalogColorName, { finish: t.palette.beadColors.finishes[finish], family: familyWords })
+  return fillBlanks(t.palette.catalogColorName, { finish: t.palette.beadColors.finishes[finish], family: familyWords(t, family) })
 }
 
-/** A catalog code with its catalog, "TOHO code 341" (ticket 1226): a list row's first line, and what follows the family in
- * the head and a swatch's Tooltip. */
+/** A color family in words, the catalog's own where the app has none for it. */
+function familyWords(t: Translations, family: string): string {
+  return colorName(t, { id: familyColorId(family), hex: '' }) || family
+}
+
+/** A catalog code with its catalog, "TOHO code 341" (ticket 1226): a list row's first line. */
 export function codeInCatalog(t: Translations, catalog: string, code: string): string {
   return fillBlanks(t.palette.codeInCatalog, { section: catalogName(catalog), code })
 }
 
-/** A swatch's code named with its catalog (ticket 1226): "Red · TOHO code 341" in the head and the Tooltip, the color
- * family first where it is known (a default color's own, or the loaded `catalog`'s entry); a Custom color has no code and
- * keeps its own name. */
+/** A swatch's name in the head and its Tooltip, "Red · DB723" (ticket 1261): the color family where it is known (a default
+ * color's own, or the loaded `catalog`'s entry), else the code alone; a color with no code keeps its own name. */
 export function codeName(t: Translations, color: PaletteColor | undefined, catalog?: ColorCatalog): string {
-  if (!color?.code || !color.catalog) return colorName(t, color)
-  const entry = catalog?.id === color.catalog ? catalogEntry(catalog, color.code) : undefined
-  const family = isAddedColorId(color.id) ? entry?.family[0] : undefined
-  const familyWords = isAddedColorId(color.id) ? family && (colorName(t, { id: familyColorId(family), hex: '' }) || family) : (color.literalName ?? t.colorNames[familyOf(color)])
-  const named = codeInCatalog(t, color.catalog, color.code)
-  return familyWords ? fillBlanks(t.palette.codeHead, { family: familyWords, section: catalogName(color.catalog), code: color.code }) : named
+  if (!color?.code || !isAddedColorId(color.id)) return colorName(t, color)
+  const family = catalog && catalog.id === color.catalog ? catalogEntry(catalog, color.code)?.family[0] : undefined
+  if (!family) return color.code
+  return `${familyWords(t, family)} · ${color.code}`
 }

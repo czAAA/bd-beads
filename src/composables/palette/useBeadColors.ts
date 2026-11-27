@@ -3,7 +3,7 @@ import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead, type Bead } from '../../domain/beads'
 import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import { beadIdOfLayer, beadOfLayer, wovenLayerOf } from '../../domain/layerRecord'
-import { brandColors, type AddUsedColorOutcome, type Palette, type PaletteCode } from '../../domain/palette'
+import { brandColors, isAddedColorId, type AddUsedColorOutcome, type Palette, type PaletteCode, type PaletteColor } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { FeedbackPrefill } from '../shell/useFeedbackFlow'
@@ -69,6 +69,22 @@ function catalogList(bead: Readonly<Ref<Bead | undefined>>, deps: Pick<BeadColor
   return { available: computed(() => !!catalogId.value), state, swatches, load, add, bead, catalog }
 }
 
+/** Color catalogs by id, for naming a code of a catalog the Bead's own list isn't of (ticket 1261): the Palette holds
+ * codes of any (ADR 0103). Each is fetched on its first `load`; one that fails leaves its codes named by the code alone. */
+function catalogStore() {
+  const held = shallowRef<Record<string, ColorCatalog>>({})
+  return {
+    get: (id: string): ColorCatalog | undefined => held.value[id],
+    load: (id: string) =>
+      void loadColorCatalog(id).then(
+        (catalog) => {
+          if (!held.value[id]) held.value = { ...held.value, [id]: catalog }
+        },
+        () => {},
+      ),
+  }
+}
+
 /** The Color catalog of the open Project's Bead as a list of swatches to add to its Palette (ticket 0537, ADR 0072), and
  * `chooser`, the same of any onboarded Bead the Add another color popover's Bead chooser stands on (ticket 1226). */
 export function useBeadColors({ currentProject, palette, addUsed, select, remove, selectedColorId, report }: BeadColorsDeps): BeadColors & { chooser: BeadColorsList; chooseBead: (beadId: string) => void; resetChooser: () => void } {
@@ -108,6 +124,7 @@ export function useBeadColors({ currentProject, palette, addUsed, select, remove
   // state can say which sizes a code exists in (ticket 0713).
   return {
     ...own,
+    others: catalogStore(),
     ...(remove ? { remove } : {}),
     ...(report ? { report: reportColor(own) } : {}),
     chooser: { ...chosen, ...(remove ? { remove } : {}), ...(report ? { report: reportColor(chosen) } : {}) },
@@ -128,6 +145,8 @@ export type BeadColorsList = ReturnType<typeof catalogList> & {
 }
 
 export type BeadColors = BeadColorsList & {
+  /** Catalogs besides the Bead's own, which a Palette color's code may be of (ticket 1261). */
+  others?: ReturnType<typeof catalogStore>
   /** The same of the Bead the Add another color popover's chooser stands on, and how it is picked (ticket 1226). */
   chooser?: BeadColorsList
   chooseBead?: (beadId: string) => void
@@ -147,6 +166,20 @@ export function useBeadColorsList(): BeadColors | undefined {
   return inject(beadColorsKey, undefined)
 }
 
+
+/** The loaded catalog a Palette color's code is from, whichever Bead the layers are in (ticket 1261). */
+export function catalogOfColor(beadColors: BeadColors | undefined, color: PaletteColor | undefined): ColorCatalog | undefined {
+  const own = beadColors?.catalog.value
+  if (!color?.catalog || own?.id === color.catalog) return own
+  return beadColors?.others?.get(color.catalog)
+}
+
+/** Fetches the catalogs that `colors`' names need for their color family (ticket 1261): those of the added codes, as a
+ * default color knows its family itself. */
+export function loadCatalogsOf(beadColors: BeadColors | undefined, colors: () => readonly (PaletteColor | undefined)[]) {
+  const needed = () => [...new Set(colors().flatMap((color) => (color?.code && color.catalog && isAddedColorId(color.id) ? [color.catalog] : [])))].join()
+  watch(needed, (ids) => ids && ids.split(',').forEach((id) => beadColors?.others?.load(id)), { immediate: true })
+}
 
 /** Fetches the Bead's Color catalog once `coded` turns true, for a place that names a color by its code (ticket 0760). */
 export function loadCatalogWhen(beadColors: BeadColors | undefined, coded: () => boolean) {

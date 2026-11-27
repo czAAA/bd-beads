@@ -58,7 +58,7 @@ The Palette's Letters switch reuses the Frame's word, "Letters". A letter anothe
 
 ## The Palette in sections (ticket 1224, approved 2026-11-24, in the app since ticket 1226)
 
-ADR 0103's sections and the one Add another color (PaletteSwatches card). A catalog code is always named with its catalog, so a newcomer reads "TOHO code 1", not a bare "1" (owner, 2026-11-24). Catalog names (TOHO, Miyuki Delica, Miyuki Round) are literals in every language. "Add {bead} colors" and "Default colors can't be removed" go. English and Russian are approved; the other languages are proposals for review with the build (1226).
+ADR 0103's sections and the one Add another color (PaletteSwatches card). A catalog code in the list is named with its catalog, so a newcomer reads "TOHO code 1", not a bare "1" (owner, 2026-11-24); the head and a swatch's Tooltip read "Red · DB723" (owner, 2026-11-27, ticket 1261). Catalog names (TOHO, Miyuki Delica, Miyuki Round) are literals in every language. "Add {bead} colors" and "Default colors can't be removed" go. English and Russian are approved; the other languages are proposals for review with the build (1226).
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
@@ -67,7 +67,6 @@ ADR 0103's sections and the one Add another color (PaletteSwatches card). A cata
 | Bead colors (the popover's first tab) | Цвета бисера | Кольори бісеру | Колеры бісеру | 珠子颜色 | Colores de cuentas | Kolory koralików |
 | Custom color (the popover's second tab) | Свой цвет | Власний колір | Свой колер | 自定义颜色 | Color personalizado | Własny kolor |
 | {section} code {code} (a list row's first line; "TOHO code 1") | {section}, код {code} | {section}, код {code} | {section}, код {code} | {section} 色号 {code} | {section}, código {code} | {section}, kod {code} |
-| {family} · {section} code {code} (the head and a swatch's Tooltip; "Red · TOHO code 341") | {family} · {section}, код {code} | {family} · {section}, код {code} | {family} · {section}, код {code} | {family} · {section} 色号 {code} | {family} · {section}, código {code} | {family} · {section}, kod {code} |
 | Already in {section} as code {code}, so it's added a shade apart. (the nudge Note) | Такой цвет уже есть: {section}, код {code}. Поэтому он добавлен на тон иначе. | Такий колір уже є: {section}, код {code}. Тому його додано на тон інакше. | Такі колер ужо ёсць: {section}, код {code}. Таму ён дададзены на тон інакш. | {section} 色号 {code} 已是此颜色，因此添加时略作区分。 | Ya está en {section} como código {code}, así que se añade con un tono de diferencia. | Ten kolor już jest: {section}, kod {code}, więc dodano go o odcień inaczej. |
 | Already in Custom colors, so it's added a shade apart. | Такой цвет уже есть в своих цветах, поэтому он добавлен на тон иначе. | Такий колір уже є у власних кольорах, тому його додано на тон інакше. | Такі колер ужо ёсць у сваіх колерах, таму ён дададзены на тон інакш. | 自定义颜色中已有此颜色，因此添加时略作区分。 | Ya está en Colores personalizados, así que se añade con un tono de diferencia. | Ten kolor już jest we własnych kolorach, więc dodano go o odcień inaczej. |
 | Move section {section} (a section's label line in Edit palette) | Переставить раздел {section} | Перемістити розділ {section} | Перасунуць раздзел {section} | 移动 {section} 分组 | Mover la sección {section} | Przenieś sekcję {section} |
