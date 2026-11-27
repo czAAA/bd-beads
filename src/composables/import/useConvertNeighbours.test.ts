@@ -103,7 +103,7 @@ describe('The Colors neighbours (ticket 0904)', () => {
     expect(card.beadsAt).not.toHaveBeenCalled()
   })
 
-  it('draws the beads again when the beads shown change at the same count', async () => {
+  it('draws the beads again when the beads shown change at the same count (ticket 1253)', async () => {
     const card = neighbours()
     card.shown.value = true
     await rest()

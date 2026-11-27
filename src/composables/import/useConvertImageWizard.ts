@@ -456,7 +456,6 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   // Auto-fix lighting (ticket 0907): the picture corrected before the sampler reads it, so Clean up and the found colors
   // follow the lit beads. Off until the person turns it on.
   const lighting = useConvertLighting(image)
-  /** What the reduction is asked for a number of colors, to the codes left where the Finishes leave fewer. */
   /** What every reduction of the part asks, whatever the count: a new one is a new setup. */
   const requestBase = computed<Omit<ReductionRequest, 'asked'>>(() => ({
     counts: frameSampled.value?.counts ?? new Map(),
@@ -464,6 +463,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     choices: choices.value,
     leastBeads: kind.value === 'photo' ? LEAST_COLOR_BEADS : NO_LEAST_COLOR_BEADS,
   }))
+  /** What the reduction is asked for a number of colors, to the codes left where the Finishes leave fewer. */
   const requestFor = (count: number): ReductionRequest => ({ ...requestBase.value, asked: shortOf(count) ? finishes.codesLeft.value : count })
   // The picture reduced for another number of colors (the Colors reach and neighbours): off the main thread, as a noisy
   // photo's reduction takes seconds, and each count once per setup, however many ask for it (ticket 1253).

@@ -60,7 +60,7 @@ When fewer colors come out than asked, the result's second line at the column's 
 - A tap takes a neighbour's count and the three shift.
 - At 1 the left place is an empty dashed card "no fewer"; at 256 the right is "no more".
 - A neighbour the codes cap to the same beads is faded and not pressable.
-- The card leaves when focus leaves, on Escape, or on a press outside. It doesn't open while fewer colors are found than asked: every count near it gives the same beads (ticket 1253).
+- The card leaves when focus leaves, on Escape, or on a press outside. It doesn't open while fewer colors are found than asked: every count near it gives the same beads (ticket 1253). The phone's Colors sheet, which always holds it, keeps the field alone then.
 - On a phone it is a sheet holding the slider too (ticket 0911).
 
 **beads from and Finish** (0901), in the Colors popover's head, in place of DS-1's segmented control:
