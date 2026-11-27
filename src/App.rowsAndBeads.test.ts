@@ -122,6 +122,9 @@ describe('App bead quantities', () => {
     const counts = async () => {
       await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')
       await flushPromises()
+      // Folded until it is opened, then kept (ticket 1257).
+      const header = wrapper.get('[data-testid="bead-quantities"] [aria-expanded]')
+      if (header.attributes('aria-expanded') === 'false') await header.trigger('click')
       const read = (id: string) => wrapper.find(`[data-testid="quantity-count-${id}"]`).text()
       const found = [read(defaultColorOf('red').id), read(defaultColorOf('blue').id)]
       await wrapper.get('[data-testid="margin-frame-tools"]').trigger('click')

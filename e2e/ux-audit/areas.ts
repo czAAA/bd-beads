@@ -119,6 +119,13 @@ async function newPatternStops(walk: Walk): Promise<void> {
   })
 }
 
+/** Beads needed in the open Frame popover, unfolded where it is folded. */
+async function openBeadsNeeded(page: Page): Promise<void> {
+  const rows = page.getByTestId('quantity-row')
+  if ((await rows.count()) === 0) await page.getByTestId('bead-quantities').locator('[aria-expanded]').first().click()
+  await rows.first().scrollIntoViewIfNeeded()
+}
+
 /** Opens the Frame's settings popover from its sheet's ··· button (ticket 1222), closing a panel first. */
 async function openFramePopover(page: Page): Promise<void> {
   await closePanel(page)
@@ -286,7 +293,7 @@ const beadIt: AreaWalk = {
     await walk.step('cuff-with-progress-open', async () => openSavedProject(page, 'Loom cuff'))
     await walk.step('frame-popover-open', async () => openFramePopover(page))
     await walk.step('beads-needed', async () => {
-      await page.getByTestId('quantity-row').first().scrollIntoViewIfNeeded()
+      await openBeadsNeeded(page)
     })
     await walk.step('progress-three-rows-on', async () => {
       for (let index = 0; index < 3; index += 1) {
@@ -391,7 +398,7 @@ async function phonePath(walk: Walk): Promise<void> {
   await walk.step('phone-project-panel', async () => openStripPanel(page, 'strip-project'))
   await walk.step('phone-frame-popover-beads-needed', async () => {
     await openFramePopover(page)
-    await page.getByTestId('quantity-row').first().scrollIntoViewIfNeeded()
+    await openBeadsNeeded(page)
   })
   await walk.step('phone-export-panel', async () => {
     await escape(page)

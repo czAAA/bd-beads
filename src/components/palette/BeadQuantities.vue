@@ -26,6 +26,8 @@ const props = defineProps<{
   catalog?: ColorCatalog
   /** Closed every time it opens, kept nowhere (Convert image's Review, ticket 0759). */
   closedFirst?: boolean
+  /** Folded until it is opened, then kept per device (the Frame popover, ticket 1257). */
+  folded?: boolean
 }>()
 
 const { t, locale } = useI18n()
@@ -85,7 +87,7 @@ const shown = computed(() => (expanded.value ? quantities.value : quantities.val
 </script>
 
 <template>
-  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="total || undefined" keep-summary :closed-first="closedFirst" data-testid="bead-quantities">
+  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="total || undefined" keep-summary :closed-first="closedFirst" :folded="folded" data-testid="bead-quantities">
     <template v-if="quantities.length > 0 && info" #info>
       <InfoButton :label="info.label" :body="info.body" data-testid="quantities-info" />
     </template>

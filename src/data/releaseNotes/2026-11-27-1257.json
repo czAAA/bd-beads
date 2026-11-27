@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-27",
+  "kind": "changed",
+  "line": {
+    "en": "The Frame’s ··· popover is calmer: its tools are tiles, and the rest is folded rows that open in place",
+    "ru": "Меню ··· у рамки стало спокойнее: инструменты выстроены плитками, а остальное свёрнуто в строки и открывается на месте",
+    "uk": "Меню ··· біля рамки стало спокійнішим: інструменти стоять плитками, а решта згорнута в рядки й відкривається на місці",
+    "be": "Меню ··· каля рамкі стала спакайнейшым: інструменты стаяць пліткамі, а астатняе згорнута ў радкі і адкрываецца на месцы",
+    "zh": "边框的 ··· 弹窗更清爽了：工具排成方块，其余内容折叠成行，原地展开",
+    "es": "La ventana ··· del marco es más tranquila: las herramientas son fichas y lo demás son filas plegadas que se abren ahí mismo",
+    "pl": "Okienko ··· ramki jest spokojniejsze: narzędzia to kafelki, a reszta to zwinięte wiersze otwierane w miejscu"
+  }
+}

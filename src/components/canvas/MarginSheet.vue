@@ -34,7 +34,7 @@ import { STRIP_FITS, STRIP_FIT_PROPS, stripWidth, type StripFit } from './rowPro
 import type { RowPress } from '../../composables/project/useRowOps'
 import type { FrameId } from '../../domain/grid'
 import { frameById } from '../../domain/layerRecord'
-import { useRotateCopy, type RotateCopyPlace } from '../../composables/ui/useRotateCopy'
+import { useRotateCopy } from '../../composables/ui/useRotateCopy'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
 import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
 import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
@@ -420,17 +420,13 @@ function inParent(x: number, y: number): { left: number; top: number } {
   const at = ownPoint(sheetEl.value, { clientX: x, clientY: y })
   return { left: at.x + props.anchor.sheet.left, top: at.y + props.anchor.sheet.top }
 }
-/** Rotate Frame from the band's button or its menu item: a pointer's press leaves the copy over the button, or a full
- * size one centred where the item was pressed. */
+/** Rotate Frame from the band's button or the popover's tile: a pointer's press on the button leaves the copy over it. */
 function rotateFromBand(): void {
   const press = rotateCopy.takePress()
   emit('rotate')
-  if (!press) return
-  const at = inParent(press.at.x, press.at.y)
-  const place: RotateCopyPlace = press.button
-    ? { ...inParent(press.button.left, press.button.top), scale: scale.value, small: small.value }
-    : { left: at.left - MARGIN_PX.tool / 2, top: at.top - MARGIN_PX.tool / 2, scale: 1, small: false }
-  rotateCopy.pressed(place, press.touch)
+  // The popover's Rotate leaves none: the popover itself stays where it is (ticket 1257).
+  if (!press?.button) return
+  rotateCopy.pressed({ ...inParent(press.button.left, press.button.top), scale: scale.value, small: small.value }, press.touch)
 }
 /** A press on the copy turns the Frame again, as the band's own button does. */
 function rotateFromCopy(): void {
@@ -470,7 +466,9 @@ const allItems = computed(() => toolIds.value.map((id) => toolItems.value[id]))
 /** The ··· popover is always there and holds every tool, the band's own among them as second triggers (ticket 1220, MarginSheet
  * card: the Frame popover). */
 const menuItems = allItems
-const popoverBindings = computed(() => ({ project: props.project, asked: props.popoverAsked }))
+/** Where the popover is held through a turn: a Frame tools button drawn anew (the band's to the bare one) reopens there. */
+const popoverHeld = ref<Record<string, string>>()
+const popoverBindings = computed(() => ({ project: props.project, asked: props.popoverAsked, held: popoverHeld.value, rowHighlight: props.rowHighlight, rowPress: props.rowPress }))
 const popoverHandlers = {
   step: (edge: FrameEdge, step: 1 | -1) => emit('step', edge, step),
   resize: (columns: number, rows: number) => emit('resize', columns, rows),
@@ -478,6 +476,16 @@ const popoverHandlers = {
   'reset-progress': () => emit('reset-progress'),
   settle: () => emit('settle-settings'),
   opened: () => emit('popover-opened'),
+  held: (place: Record<string, string> | undefined) => (popoverHeld.value = place),
+  // The popover's fields and Row progress are second triggers of the title block's and the strip's (ticket 1257).
+  rename: (name: string) => emit('rename', name),
+  'save-maker-name': (name: string) => emit('save-maker-name', name),
+  'set-technique': (technique: Technique) => emit('set-technique', technique),
+  'set-setting': (id: string, value: number) => emit('set-setting', id, value),
+  'replace-bead': (beadId: string) => emit('replace-bead', beadId),
+  'move-row': (delta: number) => emit('move-row', delta),
+  'set-row-direction': (way: SeenWay) => emit('set-row-direction', way),
+  'toggle-row-highlight': () => emit('toggle-row-highlight'),
 }
 </script>
 
