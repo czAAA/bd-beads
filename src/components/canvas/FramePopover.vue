@@ -202,19 +202,33 @@ onBeforeUnmount(() => emit('settle'))
   outline-color: var(--focus-ring-on-accent);
 }
 
-/* A folded row: its name keeps its room, and the summary wraps at the end rather than being cut. */
-.frame-popover :deep(.panel-section__header > .panel-section__label) {
-  flex: 1 0 auto;
+/* A folded row: its name keeps its room, and the summary wraps at the end rather than being cut, onto a line of its own
+ * where not even its longest word fits beside the name. */
+.frame-popover :deep(.panel-section__header),
+.frame-popover :deep(.panel-section__row) {
+  flex-wrap: wrap;
 }
 
+.frame-popover :deep(.panel-section__header > .panel-section__label),
 .frame-popover :deep(.panel-section__row > .panel-section__label) {
   flex: 0 0 auto;
 }
 
-.frame-popover :deep(.panel-section__summary) {
+.frame-popover :deep(.panel-section__header > .panel-section__chevron) {
+  margin-left: auto;
+}
+
+.frame-popover :deep(.panel-section__summary:not(.panel-section__summary--kept)) {
+  flex: 1 1 0;
+  min-width: min-content;
   overflow: visible;
   text-align: right;
   white-space: normal;
+}
+
+/* Names is the maker's own words, cut with an ellipsis instead. */
+.frame-popover :deep(.panel-section__summary:has([data-user-text])) {
+  min-width: 0;
 }
 
 .frame-popover :deep(.frame-popover__body) {
