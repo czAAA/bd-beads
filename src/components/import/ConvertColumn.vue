@@ -61,6 +61,7 @@ const neighbours = useConvertNeighbours({
   count: wizard.maxColors,
   most: wizard.colorsMax,
   shown: neighboursOpen,
+  found: wizard.foundColorCount,
   beadsAt: wizard.beadsAtColors,
   beadsShown: wizard.beadsShown,
 })
@@ -71,6 +72,8 @@ const inNeighbours = (target: EventTarget | null) =>
 let refocusing = false
 function showNeighbours(event: Event) {
   if (refocusing) return
+  // Fewer colors found than asked: one more or fewer gives the same beads, so the card has nothing to show (ticket 1253).
+  if (wizard.foundColorCount.value < wizard.maxColors.value) return
   if (has.value && wizard.popover.value === undefined && inNeighbours(event.target)) neighboursOpen.value = true
 }
 /** A press inside the card, which in Safari takes focus from the slider without giving it to the button pressed. */
@@ -218,6 +221,7 @@ function closeNeighbours(refocus: boolean) {
         v-if="neighboursOpen"
         :fewer="neighbours.fewer.value"
         :more="neighbours.more.value"
+        :previews="neighbours.previews.value"
         :slider="colorsRange"
         :anchor="() => colorsEl"
         @pointerdown.capture="pressCard(true)"

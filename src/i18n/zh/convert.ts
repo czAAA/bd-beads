@@ -213,6 +213,7 @@ export const convert: ConvertTranslations = {
       },
       fewerFound: {
         asked: '要 {asked} · 得 {found}',
+        short: '{asked} → {found}',
         allGiven: '{colors}（这张图片在 {bead} 中只有这么多）',
       },
       backgroundChip: '已找到背景 · 图片的 {n}%',

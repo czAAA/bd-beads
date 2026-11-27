@@ -283,6 +283,9 @@ export interface ConvertTranslations {
        * colors where the picture has no more to give in the colors matched to. */
       fewerFound: {
         asked: string
+        /** The value itself, numbers only so it fits beside More for the colors in every language (ticket 1253); `asked`
+         * is what it says to a screen reader. */
+        short: string
         allGiven: string
       }
       /** The chip over the beads while the background is found and the Background popover is closed (ticket 0930): what

@@ -140,7 +140,7 @@ watch(full, (now) => emit('full', now))
 const dockShown = computed(() => props.layout === 'tablet' || open.value === undefined)
 
 // The Colors sheet's neighbours (DS-2, ticket 0904): the beads at one color fewer, the count and one more, always shown.
-const neighbours = useConvertNeighbours({ count: wizard.maxColors, most: wizard.colorsMax, shown: computed(() => open.value === 'colors-count'), beadsAt: wizard.beadsAtColors, beadsShown: wizard.beadsShown })
+const neighbours = useConvertNeighbours({ count: wizard.maxColors, most: wizard.colorsMax, shown: computed(() => open.value === 'colors-count'), found: wizard.foundColorCount, beadsAt: wizard.beadsAtColors, beadsShown: wizard.beadsShown })
 const colorsRange = () => document.querySelector<HTMLElement>('[data-testid="convert-colors-slider-range"]') ?? undefined
 const resultLine = computed(() => (lines.value ? `${lines.value.grid} · ${lines.value.measured}` : ''))
 const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${lines.value.measured} · ${lines.value.colors}` : ''))
@@ -179,6 +179,7 @@ const phoneFirstLine = computed(() => (lines.value ? `${lines.value.grid} · ${l
         <ConvertColorsNeighbours
           :fewer="neighbours.fewer.value"
           :more="neighbours.more.value"
+          :previews="neighbours.previews.value"
           :slider="colorsRange"
           :anchor="() => undefined"
           @close="closeFromNeighbours"
