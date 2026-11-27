@@ -26,15 +26,16 @@ for (const [zoom, scale] of [[100, 1], [400, 1.5]] as const) {
     await openApp(page, [fixtureProject({ technique: 'loom', columns: 40 })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, zoom)
-    // At 100% the sheet's ··· button is on screen: its popover is 21rem wide, the root font size scaling it.
+    // At 100% the sheet's ··· button is on screen: its popover is 25rem wide, the root font size scaling it.
     if (zoom === 100) {
       await page.getByTestId('margin-frame-tools').first().click()
       await settle(page)
       const rootPx = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize))
-      // Its content stands inside the popover's 14px padding and 1px line.
+      // Its content stands inside the popover's 4px padding and 1px line.
       const inner = (await box(page, 'frame-popover')).width
-      const pad = 2 * (0.875 * rootPx) + 2
-      expect(inner + pad).toBeCloseTo(21 * rootPx, 0)
+      const pad = 2 * (0.25 * rootPx) + 2
+      expect(inner + pad).toBeCloseTo(25 * rootPx, 0)
+      await page.getByTestId('frame-popover-size').locator('[aria-expanded]').click()
       for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
         const step = await box(page, testid)
         // 26px halves as tall as a picker (1.5rem, which the root font size scales).

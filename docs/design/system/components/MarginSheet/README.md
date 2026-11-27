@@ -294,3 +294,14 @@ The strip's part of Calmer sheet 1 is in the app; the band and the one-line foot
 - **The groove:** `--margin-track-height` (8px), `canvas-bg-1` with a 1px `switch-off` edge, the done part filled inside it, on every strip (the Homepage cuff's too, which has neither icon).
 - **Compact and folded:** Back a row (arrow only, `surface` fill, `line` border), Reset progress, Show row marks and Row done are round. With a mouse Row done is a 24px circle with its arrow, named for assistive tech; on touch it keeps its words where they fit. On touch each button's hit area is 44px tall and as wide as drawn, the strip's parts 8px apart. The track there may be as short as `--margin-track-compact` (40px).
 - **Short of room:** after Row done's words, the two icons are the last the strip gives up (the settings list holds them), so a strip is drawn on the same sheets as before.
+
+## As built (ticket 1257)
+
+The Calmer sheet's ··· popover (point 2). It replaces the popover of "Several Frames" above, and "Rotate Frame waits under the pointer" for the popover: no copy is left there.
+
+- **Values:** `--frame-popover-width` 25rem; a tile's least height `--frame-popover-tile` (two panel rows; on a coarse pointer 44px and 16px). The popover's own padding is 4px, as a menu's; the head and each row's body stand 10px in.
+- **Tiles:** secondary triggers of the band's tools, each a 20px icon over its word, named in full by its action (`aria-label` and Tooltip). One Tab stop, the arrows along them. In a window 380px wide or narrower they stand two by three, so the longest word keeps to one line. Mirror on is `accent` with `on-accent` (`aria-pressed`). A tile closes the popover and does as the band's button does, **Rotate** keeping it open where it is until Escape or a press outside; a Rotate that asks about rows done closes it first. Where the turn takes the sheet's band away (bare), the popover opens again at the same place from the lone ··· button.
+- **Folded rows:** PanelSections, folded until opened, then kept on the device. Names and, closed, Row progress show their summary; a long summary wraps at the end of its row, Names ending in an ellipsis.
+- **Names:** two open fields that save on Enter, on leaving them or as the popover closes; Escape puts the name back.
+- **Bead and Technique:** Brand, Type and Size each under its name, the Technique as a radio list, then the settings its description names. While a row is marked done the Technique and the settings are off, with the Technique's lock line and Reset progress; the Bead pickers stay on, as the legend's pencil does. A Bead pick closes the popover and asks Replace bead?.
+- **Row progress:** the Reset progress icon is on the row, folded or open. Turn row direction is a dropdown (none on a Custom frame).

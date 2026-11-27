@@ -294,7 +294,8 @@
   --margin-done: 26px;
   --margin-track: 64px;
   --margin-track-height: 8px; /* MarginSheet card: the Row progress groove's height on the paper (ticket 1256). */
-  --frame-popover-width: 21rem;
+  --frame-popover-width: 25rem;
+  --frame-popover-tile: calc(var(--panel-row) * 2);
   --margin-pencil: 18px;
   --margin-legend-disc: 14px;
   --margin-edit-width: 260px;

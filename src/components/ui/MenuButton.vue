@@ -15,7 +15,7 @@ type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
 // (ui/ imports no feature folder, ADR 0020). It owns `aria-haspopup`, `aria-expanded`, focus return and closing on
 // Escape or an outside press; an icon-only button always has a Tooltip.
 defineOptions({ inheritAttrs: false })
-const emit = defineEmits<{ open: [] }>()
+const emit = defineEmits<{ open: []; close: [] }>()
 const props = withDefaults(
   defineProps<{
     /** The button's text, or its accessible name when `iconOnly`. */
@@ -67,13 +67,17 @@ const listId = useId()
 // A popover with a width of its own is held inside the window's bottom edge, scrolling inside past it.
 const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align, () => 'below', () => (props.popoverWidth ? window.innerHeight : undefined))
 
+/** Where `hold` keeps the popup, whatever its button does since. */
+const pinned = ref<Record<string, string>>()
+
 /** A popover with a width of its own is as tall as the room below it allows (a boxed shell's box too), at most the
  * screen's height less 150px, and scrolls inside past that. */
 const listStyle = computed(() => {
-  if (!props.popoverWidth) return anchored.style.value
+  const place = pinned.value ?? anchored.style.value
+  if (!props.popoverWidth) return place
   const screen = 'calc(100dvh - 150px)'
   const room = anchored.roomBelow.value
-  return { ...anchored.style.value, width: props.popoverWidth, maxHeight: room === undefined ? screen : `min(${screen}, ${room}px)`, overflowY: 'auto' }
+  return { ...place, width: props.popoverWidth, maxHeight: room === undefined ? screen : `min(${screen}, ${room}px)`, overflowY: 'auto' }
 })
 
 const iconVariant = computed(() => props.variant as IconVariant)
@@ -104,15 +108,25 @@ async function show(focus?: 'first' | 'last') {
 function close(returnFocus = true) {
   if (!open.value) return
   open.value = false
+  pinned.value = undefined
   anchored.stop()
   if (returnFocus) trigger()?.focus()
+  emit('close')
+}
+
+/** Keeps the open popup where it is on screen, or at a place held before, while its button moves (the Frame popover
+ * through Rotate Frame, ticket 1257); returns the place. */
+function hold(at?: Record<string, string>) {
+  pinned.value = at ?? pinned.value ?? { ...anchored.style.value }
+  anchored.stop()
+  return pinned.value
 }
 
 /** Crossing 1024px while open swaps the popover for a sheet or back: close rather than keep a stale one. */
 watch(showsSheet, () => close(false))
 
 provide(MENU_CLOSE, () => close())
-defineExpose({ close, show })
+defineExpose({ close, show, hold })
 // A sheet is its own layer; its content may sit outside this button's element.
 useOverlayLayer({ isOpen: () => open.value && !showsSheet.value, root: () => rootEl.value, close: onEscape, onOutsidePress: () => close(false) })
 

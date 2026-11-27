@@ -2,6 +2,7 @@
 import { computed, reactive, ref, useId } from 'vue'
 import MarkedDoneLine from '../project/MarkedDoneLine.vue'
 import FrameShapeSettings from './FrameShapeSettings.vue'
+import { frameEstimate } from './frameEstimate'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
@@ -15,10 +16,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { ownEdge, seenSize } from '../../domain/frameOrientation'
 import { settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import type { FrameId } from '../../domain/grid'
-import { frameById, layerOf } from '../../domain/layerRecord'
+import { frameById } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
 
@@ -153,13 +153,7 @@ function onSizeFocusOut(event: FocusEvent): void {
   if (!(event.relatedTarget instanceof Node && (event.currentTarget as HTMLElement).contains(event.relatedTarget))) commitSize()
 }
 
-/** The Estimated size as "≈ 3.8 × 3.9 cm" (the Bead's size × beads across and down), in the unit the margin's title
- * block gives the same size (cm from 10 mm up, ticket 0992), or nothing for an unknown Bead. */
-const estimate = computed(() => {
-  const bead = layerOf(props.project, props.frame)?.bead
-  const units = { mm: t.value.form.unitMm, cm: t.value.form.unitCm }
-  return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead, frame.value.technique), units, locale.value)}` : ''
-})
+const estimate = computed(() => frameEstimate(t.value, locale.value, props.project, props.frame))
 /** The Tooltip over the off size fields. */
 const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
 

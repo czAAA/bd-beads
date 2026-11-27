@@ -14,6 +14,8 @@ const props = defineProps<{
   candidates: readonly Bead[]
   /** The Bead shown differs from the catalog's of its id (ticket 534): its size shows "(as saved)" beside the catalog's. */
   outdated?: boolean
+  /** Each picker under its name, as the Frame popover draws them (ticket 1257). */
+  labelled?: boolean
 }>()
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
@@ -70,9 +72,18 @@ function pickSize(beadId: string) {
 <template>
   <div class="bead-section" data-testid="bead-section">
     <div v-if="own" class="bead-section__pickers" role="group" :aria-label="t.panels.project.bead">
-      <PanelPicker bare :label="t.panels.project.beadBrand" :model-value="own.brand.id" :options="brands" data-testid="bead-brand" @update:model-value="pickBrand" />
-      <PanelPicker bare :label="t.panels.project.beadType" :model-value="own.formFactor.id" :options="types" data-testid="bead-type" @update:model-value="pickType" />
-      <PanelPicker bare :label="t.panels.project.beadSize" :model-value="sizeShown" :options="sizes" data-testid="bead-size" @update:model-value="pickSize" />
+      <div class="bead-section__field">
+        <span v-if="labelled" class="bead-section__label" aria-hidden="true">{{ t.panels.project.beadBrand }}</span>
+        <PanelPicker bare :label="t.panels.project.beadBrand" :model-value="own.brand.id" :options="brands" data-testid="bead-brand" @update:model-value="pickBrand" />
+      </div>
+      <div class="bead-section__field">
+        <span v-if="labelled" class="bead-section__label" aria-hidden="true">{{ t.panels.project.beadType }}</span>
+        <PanelPicker bare :label="t.panels.project.beadType" :model-value="own.formFactor.id" :options="types" data-testid="bead-type" @update:model-value="pickType" />
+      </div>
+      <div class="bead-section__field">
+        <span v-if="labelled" class="bead-section__label" aria-hidden="true">{{ t.panels.project.beadSize }}</span>
+        <PanelPicker bare :label="t.panels.project.beadSize" :model-value="sizeShown" :options="sizes" data-testid="bead-size" @update:model-value="pickSize" />
+      </div>
     </div>
   </div>
 </template>
@@ -89,6 +100,32 @@ function pickSize(beadId: string) {
 .bead-section__pickers {
   display: flex;
   gap: var(--space-6);
+}
+
+/* A picker's own box lays nothing out unless it holds the picker's name over it. */
+.bead-section__field {
+  display: contents;
+}
+
+.bead-section__field:has(> .bead-section__label) {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.bead-section__field > :deep(.panel-picker) {
+  flex: 1 1 0;
+}
+
+.bead-section__field:has(> .bead-section__label) > :deep(.panel-picker) {
+  flex: none;
+}
+
+.bead-section__label {
+  font: var(--type-small);
+  color: var(--muted);
 }
 
 /* Under 14rem the three pickers stack, so each shows its whole value at a large browser text size (ticket 0941). */

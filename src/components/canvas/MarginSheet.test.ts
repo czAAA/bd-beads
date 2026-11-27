@@ -11,6 +11,7 @@ import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf, withLayer } from '../../domain/layerRecord'
+import { withFrameSheet } from '../../domain/frameSheet'
 import { MARGIN_PX } from '../../rendering/marginSizes'
 import { withLayers } from '../../testUtils/layerFields'
 import { rotateFrame } from '../../domain/rotate'
@@ -61,9 +62,17 @@ function mountSheet(props: Partial<InstanceType<typeof MarginSheet>['$props']> =
   return wrapper
 }
 const control = (wrapper: ReturnType<typeof mountSheet>, testid: string) => wrapper.get(`[data-testid="${testid}"]`)
+/** Opens a folded row of the Frame popover; a row's state is kept, so an open one is left. */
+const unfold = async (wrapper: ReturnType<typeof mountSheet>, testid: string) => {
+  const header = control(wrapper, testid).get('[aria-expanded]')
+  if (header.attributes('aria-expanded') === 'false') await header.trigger('click')
+}
 
 /** Every tool as the Frame tools menu lists it: the band's own among them, as second triggers (ticket 1220). */
 const ALL_TOOLS = ['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame']
+/** The popover's tiles by their accessible names, each its action's, over a short word (ticket 1257). */
+const toolLabels = (wrapper: { findAll: (selector: string) => { attributes: (name: string) => string | undefined }[] }) =>
+  wrapper.findAll('.frame-popover__tile').map((tile) => tile.attributes('aria-label'))
 
 describe('each Frame\'s own sheet (ticket 1220)', () => {
   const named = () => withLayer(withLayer(twoFrames(), firstOf(twoFrames()), { name: 'Gerdan' }), SECOND, { name: 'Earring' })
@@ -378,9 +387,10 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     const items = async () => {
       await control(wrapper, 'margin-frame-tools').trigger('click')
       await nextTick()
-      return wrapper.findAll('[role^="menuitem"]')
+      return wrapper.findAll('.frame-popover__tile')
     }
-    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Margin color', 'Remove Frame'])
+    await items()
+    expect(toolLabels(wrapper)).toEqual(ALL_TOOLS)
     await control(wrapper, 'margin-frame-tools-color').trigger('click')
     await nextTick()
     expect(document.querySelector('[data-testid="margin-color-popover"]')).not.toBeNull()
@@ -419,14 +429,14 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     const items = async () => {
       await menu().trigger('click')
       await nextTick()
-      return wrapper.findAll('[role^="menuitem"]')
+      return wrapper.findAll('.frame-popover__tile')
     }
     expect(control(wrapper, 'margin-band').findAll('.margin-sheet__tools button').map((button) => button.attributes('aria-label'))).toEqual(['Rotate Frame', 'Edit Frame', 'Frame tools'])
-    expect((await items()).map((item) => item.text())).toEqual(ALL_TOOLS)
-    expect(control(wrapper, 'margin-frame-tools-mirror').attributes('role')).toBe('menuitemcheckbox')
-    expect(control(wrapper, 'margin-frame-tools-mirror').attributes('aria-checked')).toBe('false')
+    await items()
+    expect(toolLabels(wrapper)).toEqual(ALL_TOOLS)
+    expect(control(wrapper, 'margin-frame-tools-mirror').attributes('aria-pressed')).toBe('false')
     for (const id of ['mirror', 'export', 'remove']) {
-      if (!wrapper.find('[role^="menuitem"]').exists()) await items()
+      if (!wrapper.find('.frame-popover__tile').exists()) await items()
       await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
     }
     expect(wrapper.emitted('mirror')).toHaveLength(1)
@@ -449,7 +459,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     await wrapper.setProps({ anchor: foldedOfWidth(250) })
     await control(wrapper, 'margin-frame-tools').trigger('click')
     await nextTick()
-    expect(wrapper.findAll('[role^="menuitem"]').map((item) => item.text())).toEqual(ALL_TOOLS)
+    expect(toolLabels(wrapper)).toEqual(ALL_TOOLS)
   })
 
   it('keeps Edit Frame on the band once a row is done, disabled with its reason, and in the menu with the same reason where there is no room (ticket 0975)', async () => {
@@ -458,8 +468,8 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     await wrapper.setProps({ anchor: foldedOfWidth(140) })
     await control(wrapper, 'margin-frame-tools').trigger('click')
     await nextTick()
-    const edit = control(wrapper, 'margin-frame-tools-edit').get('[role="menuitem"]')
-    expect(edit.attributes('disabled')).toBeDefined()
+    const edit = control(wrapper, 'margin-frame-tools-edit')
+    expect(edit.attributes('aria-disabled')).toBe('true')
     expect(wrapper.text()).toContain('Rows are marked done. Reset progress to change the size.')
     await edit.trigger('click')
     expect(wrapper.emitted('toggle-edit')).toBeUndefined()
@@ -486,11 +496,12 @@ describe('the Frame\'s bar on a coarse pointer (ticket 0976)', () => {
     const items = async () => {
       await control(wrapper, 'margin-frame-tools').trigger('click')
       await nextTick()
-      return wrapper.findAll('[role^="menuitem"]')
+      return wrapper.findAll('.frame-popover__tile')
     }
-    expect((await items()).map((item) => item.text())).toEqual(ALL_TOOLS)
+    await items()
+    expect(toolLabels(wrapper)).toEqual(ALL_TOOLS)
     for (const id of ['export', 'remove']) {
-      if (!wrapper.find('[role^="menuitem"]').exists()) await items()
+      if (!wrapper.find('.frame-popover__tile').exists()) await items()
       await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
     }
     expect(wrapper.emitted('export')).toEqual([['margin-frame-tools']])
@@ -696,23 +707,6 @@ describe('Rotate Frame waits under the pointer (ticket 1016)', () => {
     expect(copy(wrapper).exists()).toBe(false)
   })
 
-  it.each([
-    ['folded', foldedOfWidth(140)],
-    ['bare', anchorAt(0.2)],
-  ])('pressed from the %s Frame tools menu, closes it and stands where the item was pressed (ticket 1164)', async (_form, at) => {
-    const wrapper = mountSheet({ anchor: at })
-    await control(wrapper, 'margin-frame-tools').trigger('click')
-    await nextTick()
-    const item = control(wrapper, 'margin-frame-tools-rotate')
-    await item.trigger('pointerdown', { pointerType: 'mouse', clientX: 200, clientY: 30 })
-    await item.trigger('click')
-    await nextTick()
-    expect(wrapper.find('[role^="menuitem"]').exists()).toBe(false)
-    expect(wrapper.emitted('rotate')).toHaveLength(1)
-    // A full-size button centred where the item was pressed.
-    expect(copy(wrapper).attributes('style')).toContain(`left: ${200 - MARGIN_PX.tool / 2}px`)
-    expect(copy(wrapper).attributes('style')).toContain(`top: ${30 - MARGIN_PX.tool / 2}px`)
-  })
 })
 
 describe('Edit Frame on a turned Frame (ticket 1016)', () => {
@@ -800,7 +794,8 @@ describe('the Frame settings popover and the Margin color popover\'s Background 
     expect(popover.attributes('data-frame')).toBe(SECOND)
     expect(control(wrapper, 'frame-popover-name').text()).toBe('Earring')
     expect(control(wrapper, 'frame-popover-meta').text()).toBe('Loom · 4 × 6')
-    expect(popover.findAll('[role^="menuitem"]').map((item) => item.text())).toEqual(ALL_TOOLS)
+    expect(toolLabels(wrapper)).toEqual(ALL_TOOLS)
+    await unfold(wrapper, 'frame-popover-size')
     expect(control(wrapper, 'frame-size-width').element).toHaveProperty('value', '4')
     expect(wrapper.find('[data-testid="bead-quantities"]').exists()).toBe(true)
   })
@@ -808,6 +803,7 @@ describe('the Frame settings popover and the Margin color popover\'s Background 
   it('hands a typed size and an edge step to its own Frame, and a stepper settles once it closes', async () => {
     const wrapper = mountSheet({ project: named(), frame: SECOND })
     await open(wrapper)
+    await unfold(wrapper, 'frame-popover-size')
     await control(wrapper, 'frame-size-width').setValue('8')
     await control(wrapper, 'frame-size-width').trigger('keydown', { key: 'Enter' })
     await control(wrapper, 'frame-edge-top-out').trigger('click')
@@ -822,6 +818,7 @@ describe('the Frame settings popover and the Margin color popover\'s Background 
     const turned = rotateFrame(named(), undefined, SECOND)!
     const wrapper = mountSheet({ project: turned, frame: SECOND })
     await open(wrapper)
+    await unfold(wrapper, 'frame-popover-size')
     expect((control(wrapper, 'frame-size-width').element as HTMLInputElement).value).toBe('6')
     await control(wrapper, 'frame-edge-top-out').trigger('click')
     expect(wrapper.emitted('step')).toEqual([['top', 1]])
@@ -847,5 +844,148 @@ describe('the Frame settings popover and the Margin color popover\'s Background 
     popover.querySelector<HTMLElement>('[data-testid="margin-title-block-switch"]')!.click()
     await nextTick()
     expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
+  })
+})
+
+describe('the calmer Frame popover (MarginSheet card, Calmer sheet; ticket 1257)', () => {
+  const woven = () => moveToRow(framed(), 1, frameIdIn(framed()))
+  const open = async (project: Project = framed(), props: Record<string, unknown> = {}) => {
+    const wrapper = mountSheet({ project, ...props })
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    return wrapper
+  }
+  const header = (wrapper: ReturnType<typeof mountSheet>, testid: string) => control(wrapper, testid).get('[aria-expanded]')
+  const SECTIONS = ['frame-popover-names', 'frame-popover-bead', 'frame-popover-size', 'frame-popover-row-progress', 'bead-quantities']
+  const isOpen = (wrapper: ReturnType<typeof mountSheet>) => wrapper.find('[data-testid="frame-popover"]').exists()
+
+  it('draws each tool as a tile with a short word, and every other part folded with its summary', async () => {
+    const named = withLayer({ ...framed(), makerName: 'Olga' }, frameIdIn(framed()), { name: 'Gerdan' })
+    const wrapper = await open(named)
+    expect(wrapper.findAll('.frame-popover__tile').map((tile) => tile.text())).toEqual(['Mirror', 'Rotate', 'Edit', 'Export', 'Color', 'Remove'])
+    for (const section of SECTIONS) expect(header(wrapper, section).attributes('aria-expanded'), section).toBe('false')
+    expect(control(wrapper, 'frame-popover-names').text()).toContain('Gerdan · by Olga')
+    expect(control(wrapper, 'frame-popover-bead').text()).toContain('TOHO Cube 1.5mm · Loom')
+    expect(control(wrapper, 'frame-popover-size').text()).toContain('40 × 11 · ≈')
+    expect(control(wrapper, 'frame-popover-row-progress').text()).toContain('Row 1 of 11')
+    // Reset progress is on the folded row, off until a row is done.
+    expect(control(wrapper, 'frame-popover-reset-icon').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('saves the Frame\'s and the maker\'s name as the title block does, on Enter, leaving or closing; Escape puts it back', async () => {
+    const wrapper = await open()
+    await unfold(wrapper, 'frame-popover-names')
+    await control(wrapper, 'frame-popover-frame-name').setValue('  Moth  ')
+    await control(wrapper, 'frame-popover-frame-name').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('rename')).toEqual([['Moth']])
+    const maker = control(wrapper, 'frame-popover-maker-name')
+    await maker.setValue('Ada')
+    ;(maker.element as HTMLInputElement).focus()
+    await maker.trigger('keydown', { key: 'Escape' })
+    expect((maker.element as HTMLInputElement).value).toBe('')
+    expect(wrapper.emitted('save-maker-name')).toBeUndefined()
+    await maker.setValue('Ada')
+    await control(wrapper, 'margin-frame-tools').trigger('click')
+    await nextTick()
+    expect(wrapper.emitted('save-maker-name')).toEqual([['Ada']])
+  })
+
+  it('asks the Bead and Technique through the sheet\'s own events', async () => {
+    const wrapper = await open()
+    await unfold(wrapper, 'frame-popover-bead')
+    await control(wrapper, 'frame-popover-technique-peyote').trigger('click')
+    expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
+    expect(wrapper.find('[data-testid="frame-popover-technique-locked"]').exists()).toBe(false)
+    // A Bead pick closes the popover, so nothing is over Replace bead?.
+    await control(wrapper, 'bead-brand').get('button').trigger('click')
+    await nextTick()
+    await wrapper.get('[data-value="miyuki"]').trigger('click')
+    await nextTick()
+    expect(wrapper.emitted('replace-bead')).toHaveLength(1)
+    expect(isOpen(wrapper)).toBe(false)
+  })
+
+  it('steps a setting of the Technique through the sheet\'s own event', async () => {
+    const wrapper = await open(withFrameSheet(framed(), { ...frameOf(framed())!, technique: 'peyote' }, { frame: frameIdIn(framed()) }))
+    await unfold(wrapper, 'frame-popover-bead')
+    await wrapper.get('[data-testid$="drop-more"]').trigger('click')
+    expect(wrapper.emitted('set-setting')).toHaveLength(1)
+  })
+
+  it('refuses a name over the limit with a line saying so, saving nothing', async () => {
+    const wrapper = await open(withLayer(framed(), frameIdIn(framed()), { name: 'x'.repeat(80) }))
+    await unfold(wrapper, 'frame-popover-names')
+    await control(wrapper, 'frame-popover-frame-name').setValue('y'.repeat(70))
+    await control(wrapper, 'frame-popover-frame-name').trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('rename')).toBeUndefined()
+    expect(control(wrapper, 'frame-popover-names').text()).toContain('40')
+  })
+
+  it('locks the Technique and its settings while a row is marked done, saying why and offering Reset progress', async () => {
+    const wrapper = await open(withFrameSheet(woven(), { ...frameOf(woven())!, technique: 'peyote' }, { frame: frameIdIn(woven()) }))
+    await unfold(wrapper, 'frame-popover-bead')
+    const radio = control(wrapper, 'frame-popover-technique-loom')
+    expect(radio.attributes('aria-disabled')).toBe('true')
+    await radio.trigger('click')
+    expect(wrapper.emitted('set-technique')).toBeUndefined()
+    expect(wrapper.get('[data-testid$="drop-more"]').attributes('aria-disabled')).toBe('true')
+    expect(control(wrapper, 'frame-popover-technique-locked').text()).toBe('Rows are marked done. Reset progress to change the Technique.')
+    await control(wrapper, 'frame-popover-technique-locked-reset').trigger('click')
+    expect(wrapper.emitted('reset-progress')).toHaveLength(1)
+    expect(isOpen(wrapper)).toBe(false)
+  })
+
+  it('runs Row progress from its row: Row done, Back a row, the way from a dropdown and Show row marks', async () => {
+    const wrapper = await open(woven(), { rowHighlight: true })
+    await unfold(wrapper, 'frame-popover-row-progress')
+    expect(control(wrapper, 'frame-popover-position').text()).toBe('Row 2 of 11')
+    await control(wrapper, 'frame-popover-next').trigger('click')
+    await control(wrapper, 'frame-popover-previous').trigger('click')
+    expect(wrapper.emitted('move-row')).toEqual([[1], [-1]])
+    await control(wrapper, 'frame-popover-direction').get('button').trigger('click')
+    await nextTick()
+    await wrapper.get('[data-value="up"]').trigger('click')
+    expect(wrapper.emitted('set-row-direction')).toEqual([['up']])
+    await control(wrapper, 'frame-popover-row-marks').trigger('click')
+    expect(wrapper.emitted('toggle-row-highlight')).toHaveLength(1)
+    expect(isOpen(wrapper)).toBe(true)
+  })
+
+  it('stays open, where it is, through Rotate Frame, and closes for the other tools', async () => {
+    const wrapper = await open()
+    const place = () => wrapper.get('.menu-button__list').attributes('style')
+    const before = place()
+    await control(wrapper, 'margin-frame-tools-rotate').trigger('pointerdown', { pointerType: 'mouse', clientX: 200, clientY: 30 })
+    await control(wrapper, 'margin-frame-tools-rotate').trigger('click')
+    await wrapper.setProps({ anchor: anchorAt(1.2) })
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(isOpen(wrapper)).toBe(true)
+    expect(place()).toBe(before)
+    expect(wrapper.find('[data-testid="margin-rotate-copy"]').exists()).toBe(false)
+    await control(wrapper, 'margin-frame-tools-mirror').trigger('click')
+    expect(isOpen(wrapper)).toBe(false)
+  })
+
+  it('opens again where it was when a turn leaves the sheet bare, its button drawn anew', async () => {
+    const wrapper = await open()
+    const place = () => wrapper.get('.menu-button__list').attributes('style')
+    const before = place()
+    await control(wrapper, 'margin-frame-tools-rotate').trigger('click')
+    await wrapper.setProps({ anchor: anchorAt(0.2) })
+    await nextTick()
+    await nextTick()
+    expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
+    expect(isOpen(wrapper)).toBe(true)
+    expect(place()).toBe(before)
+    // A second turn from the button drawn anew leaves it there too.
+    await control(wrapper, 'margin-frame-tools-rotate').trigger('click')
+    expect(place()).toBe(before)
+  })
+
+  it('closes for a Rotate Frame that asks about the rows done first, so nothing is over the question', async () => {
+    const wrapper = await open(woven())
+    await control(wrapper, 'margin-frame-tools-rotate').trigger('click')
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    expect(isOpen(wrapper)).toBe(false)
   })
 })
