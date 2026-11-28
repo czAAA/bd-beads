@@ -265,11 +265,13 @@ test('the Add another color popover beside a right-hand pill stands beside the P
   expect(await scroller.evaluate((el) => el.scrollHeight > el.clientHeight), 'the popover scrolls').toBe(true)
   const shown = await box(page, 'add-color-popover')
   expect(shown.y + shown.height).toBeLessThanOrEqual(short)
-  await scroller.evaluate((el) => (el.scrollTop = el.scrollHeight))
+  // The tab is as tall as the Bead colors list, so its own last control isn't at the scroll's end.
+  const last = page.getByTestId('basic-color').last()
+  await last.scrollIntoViewIfNeeded()
   await settle(page)
-  const hex = await box(page, 'custom-color-hex')
-  expect(hex.y, 'the hex field is scrolled into view').toBeGreaterThanOrEqual(shown.y)
-  expect(hex.y + hex.height).toBeLessThanOrEqual(shown.y + shown.height)
+  const reached = (await last.boundingBox())!
+  expect(reached.y, 'the last basic color is scrolled into view').toBeGreaterThanOrEqual(shown.y)
+  expect(reached.y + reached.height).toBeLessThanOrEqual(shown.y + shown.height)
   await context.close()
 })
 

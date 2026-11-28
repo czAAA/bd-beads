@@ -84,7 +84,6 @@ describe('labels fit their room', () => {
 /** The groups of translations that no mounted component reads, each with how its texts are checked instead. A group
  * in neither place is a text with no declared room: the check below reports it (ticket 552). */
 const CHECKED_ELSEWHERE: Record<string, string> = {
-  colorNames: 'Palette color names show in swatch Tooltips and the color popover head, which statesFit.browser.test.ts and the Tooltip checks mount',
   tools: 'tool names are registry Tooltips and menu rows, tried by tooltips.browser.test.ts',
   techniques: 'read through techniqueName(), which this search does not follow, by NewProjectForm and the Project panel, which panelsFit.browser.test.ts mounts',
   weaveSettings: 'read through weaveSettingWords(), which this search does not follow, by SettingStepper, which panelsFit.browser.test.ts mounts in the Project panel for brick stitch',
