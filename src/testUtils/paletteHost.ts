@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { computed, defineComponent, h, ref, type Component, type Ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createProject } from '../domain/createProject'
-import { provideColorNudge, provideColorPick, provideMoveColor, provideMoveSection, providePaletteLetters, provideRemoveAddedColor, provideRemoveSection, useProjectPalette } from '../composables/tools/usePalette'
+import { provideAddAllColors, provideColorNudge, provideColorPick, provideMoveColor, provideMoveSection, providePaletteLetters, provideRemoveAddedColor, provideRemoveSection, useProjectPalette } from '../composables/tools/usePalette'
 import { provideBeadColors, type BeadColors } from '../composables/palette/useBeadColors'
 import { lettersOfPalette } from '../domain/paletteEdits'
 import { editHarness } from './editHarness'
@@ -30,6 +30,7 @@ export function mountWithPalette(component: Component, ids: string[], props: Rec
       provideMoveColor(palette.moveColor)
       provideMoveSection(palette.moveSection)
       provideColorNudge(palette.nudge, palette.clearNudge)
+      provideAddAllColors(palette.addAll)
       provideColorPick({ picking: ref(false), toggle: () => {} })
       if (options.beadColors) provideBeadColors(options.beadColors)
       const shown = options.letters

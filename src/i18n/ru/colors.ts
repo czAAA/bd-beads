@@ -36,6 +36,8 @@ export const colors: ColorsTranslations = {
     addAnotherColor: 'Добавить ещё цвет',
     addTabBead: 'Цвета бисера',
     addTabCustom: 'Свой цвет',
+    basicColors: 'Основные цвета',
+    addAllColors: 'Добавить все',
     codeInCatalog: '{section}, код {code}',
     nudgeCoded: 'Такой цвет уже есть: {section}, код {code}. Поэтому он добавлен на тон иначе.',
     nudgeCustom: 'Такой цвет уже есть в своих цветах, поэтому он добавлен на тон иначе.',

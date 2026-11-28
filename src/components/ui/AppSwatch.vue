@@ -17,8 +17,11 @@ const props = withDefaults(
     selected?: boolean
     /** The Tooltip's key chip, e.g. `Shift+1`. */
     hotkey?: string
-    /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
-    role?: 'button' | 'radio'
+    /** How the swatch is exposed: a toggle button (the default), a radio of a radiogroup, or a plain button that does
+     * something and is never pressed. */
+    role?: 'button' | 'radio' | 'action'
+    /** The Palette holds this color already (a basic color): a centered check. */
+    held?: boolean
     /** Edit palette: a press removes it, so it shows the ×. */
     removable?: boolean
     /** The Tooltip's name in place of "Color", e.g. the margin picker's Canvas color swatch (ticket 0684). */
@@ -31,7 +34,7 @@ const props = withDefaults(
     /** Its Swatch letter, drawn on the chip while the Palette's Letters is on (ticket 1092). */
     letter?: string
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removable: false, tooltipName: undefined, recent: false, approximate: undefined, letter: undefined },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, tooltipName: undefined, recent: false, approximate: undefined, letter: undefined, held: false },
 )
 const emit = defineEmits<{
   select: []
@@ -65,6 +68,7 @@ const tooltip = computed(() => {
           @click="emit('select')"
         >
           <span v-if="letter && !removable" class="swatch__letter" :class="`swatch__mark--${mark}`" aria-hidden="true" data-testid="palette-swatch-letter">{{ letter }}</span>
+          <AppIcon v-if="held" :class="`swatch__held swatch__mark--${mark}`" name="check" :size="14" data-testid="swatch-held" />
           <slot />
         </button>
       </template>
@@ -184,6 +188,10 @@ const tooltip = computed(() => {
 .swatch__mark--light {
   --mark: var(--swatch-mark-light);
   --mark-halo: var(--swatch-mark-dark);
+}
+
+.swatch__held {
+  color: var(--mark);
 }
 
 /* The Swatch letter (ticket 1092): centered on the chip in the mark's color, as on a bead. */

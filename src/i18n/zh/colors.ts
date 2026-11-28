@@ -36,6 +36,8 @@ export const colors: ColorsTranslations = {
     addAnotherColor: '添加其他颜色',
     addTabBead: '珠子颜色',
     addTabCustom: '自定义颜色',
+    basicColors: '基本颜色',
+    addAllColors: '全部添加',
     codeInCatalog: '{section} 色号 {code}',
     nudgeCoded: '{section} 色号 {code} 已是此颜色，因此添加时略作区分。',
     nudgeCustom: '自定义颜色中已有此颜色，因此添加时略作区分。',

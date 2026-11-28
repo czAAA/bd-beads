@@ -36,6 +36,8 @@ export const colors: ColorsTranslations = {
     addAnotherColor: 'Añadir otro color',
     addTabBead: 'Colores de cuentas',
     addTabCustom: 'Color personalizado',
+    basicColors: 'Colores básicos',
+    addAllColors: 'Añadir todos',
     codeInCatalog: '{section}, código {code}',
     nudgeCoded: 'Ya está en {section} como código {code}, así que se añade con un tono de diferencia.',
     nudgeCustom: 'Ya está en Colores personalizados, así que se añade con un tono de diferencia.',

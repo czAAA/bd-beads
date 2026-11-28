@@ -39,7 +39,7 @@ Swaps a layer's Bead for a different catalog entry, from that layer's Layer sett
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
-A paint color chosen freely with the Custom color picker, a wheel, a brightness slider and a hex field the app draws in the Add another color popover's Custom color tab (ticket 1226). Its + (or Enter in the hex field) adds the color to the Custom colors section as a new swatch (unless its hex is already a swatch; there is no cap) and the popover stays open for the next; from then on it is an ordinary Palette swatch. Cells keep the hex, so a Project opens with its colors on a device that lacks the swatch.
+A paint color chosen freely with the Custom color picker, a wheel, a brightness slider and a hex field the app draws in the Add another color popover's Custom color tab (ticket 1226). Its + (or Enter in the hex field) adds the color to the Custom colors section as a new swatch (unless its hex is already a swatch; there is no cap) and the popover stays open for the next. Under the picker that tab offers the **basic colors**, the twelve built-in ones whatever the Bead, one by one (a press does what the + does) or with Add all (the missing ones, one Undo step, the paint color kept); they join Custom colors and are not the Palette's default colors. From then on it is an ordinary Palette swatch. Cells keep the hex, so a Project opens with its colors on a device that lacks the swatch.
 _Avoid_: user color, extra palette color, one-off color
 
 **Selection**:

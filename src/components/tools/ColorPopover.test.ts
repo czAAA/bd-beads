@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import { findBead } from '../../domain/beads'
-import { addedColorId, defaultPaletteIds } from '../../domain/palette'
+import { addedColorId, BUILT_IN_COLORS, defaultPaletteIds } from '../../domain/palette'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { en } from '../../i18n/en'
 import { mountWithPalette } from '../../testUtils/paletteHost'
@@ -231,6 +231,51 @@ describe('ColorPopover, Add another color (ticket 1226)', () => {
     expect(wrapper.find('[data-testid="add-color-popover"]').exists()).toBe(false)
     expect(wrapper.findComponent(ColorPopover).emitted('close')).toBeUndefined()
     wrapper.unmount()
+  })
+
+  const openCustom = async (host: ReturnType<typeof withCatalog>) => {
+    await host.add()
+    await host.wrapper.get('[data-testid="add-color-tabs"] [data-value="custom"]').trigger('click')
+  }
+
+  it('keeps the tab not shown in place and inert, the Custom color tab taking the focus on its wheel', async () => {
+    const host = withCatalog()
+    await openCustom(host)
+    const bead = host.wrapper.get('[data-testid="add-color-panel-bead"]')
+    expect(bead.attributes('inert')).toBeDefined()
+    expect(bead.find('[data-testid="bead-colors"]').exists()).toBe(true)
+    expect(host.wrapper.get('[data-testid="add-color-panel-custom"]').attributes('inert')).toBeUndefined()
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('custom-color-wheel')
+    host.wrapper.unmount()
+  })
+
+  it('offers the twelve basic colors, a press taking one as the wheel\'s + does', async () => {
+    const host = withCatalog()
+    await openCustom(host)
+    const swatches = host.wrapper.findAll('[data-testid="basic-color"]')
+    expect(swatches).toHaveLength(12)
+    // The twelve of this Palette are held already; the check says so.
+    expect(swatches[0]!.find('[data-testid="swatch-held"]').exists()).toBe(true)
+    expect(swatches[0]!.attributes('aria-label')).toBe(fillBlanks(en.palette.beadColors.heldLabel, { name: en.colorNames.black! }))
+    await swatches[0]!.trigger('click')
+    expect(host.wrapper.findComponent(ColorPopover).emitted('select-custom-color')).toEqual([[BUILT_IN_COLORS[0]!.hex]])
+    expect(host.wrapper.get('[data-testid="basic-colors-add-all"]').attributes('aria-disabled')).toBe('true')
+    host.wrapper.unmount()
+  })
+
+  it('adds every basic color the Palette lacks in one Edit, taking none as the paint color', async () => {
+    const host = withCatalog()
+    for (const color of BUILT_IN_COLORS.slice(0, 3)) host.palette.removeAdded(color.id)
+    await openCustom(host)
+    await host.wrapper.get('[data-testid="basic-colors-add-all"]').trigger('click')
+
+    const held = host.palette.palette.value.colors.map((color) => color.hex)
+    expect(held).toEqual(expect.arrayContaining(BUILT_IN_COLORS.map((color) => color.hex)))
+    expect(new Set(held).size).toBe(held.length)
+    expect(host.wrapper.findComponent(ColorPopover).emitted('select-custom-color')).toBeUndefined()
+    host.harness.history.onUndo()
+    expect(host.palette.palette.value.colors).toHaveLength(held.length - 3)
+    host.wrapper.unmount()
   })
 
   it('tells a hex clash once, with the section and code it is a shade apart from, until the next add', async () => {

@@ -36,6 +36,8 @@ export const colors: ColorsTranslations = {
     addAnotherColor: 'Add another color',
     addTabBead: 'Bead colors',
     addTabCustom: 'Custom color',
+    basicColors: 'Basic colors',
+    addAllColors: 'Add all',
     codeInCatalog: '{section} code {code}',
     nudgeCoded: "Already in {section} as code {code}, so it's added a shade apart.",
     nudgeCustom: "Already in Custom colors, so it's added a shade apart.",

@@ -78,7 +78,7 @@ import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { provideBetaFeedback } from '../ui/betaFeedback'
 import { useArmedToolToasts } from '../tools/useArmedToolToasts'
 import { usePillTileNames } from '../tools/usePillTileNames'
-import { provideColorNudge, provideColorPick, provideMoveColor, provideMoveSection, providePaletteLetters, provideRemoveAddedColor, provideRemoveSection, useProjectPalette } from '../tools/usePalette'
+import { provideAddAllColors, provideColorNudge, provideColorPick, provideMoveColor, provideMoveSection, providePaletteLetters, provideRemoveAddedColor, provideRemoveSection, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
@@ -361,8 +361,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
-  const { palette, addUsed, nudge, clearNudge, removeAdded, removeSection, paintedBeads, moveColor, moveSection, setLetter } = useProjectPalette({ currentProject, edit })
+  const { palette, addUsed, addAll, nudge, clearNudge, removeAdded, removeSection, paintedBeads, moveColor, moveSection, setLetter } = useProjectPalette({ currentProject, edit })
   provideColorNudge(nudge, clearNudge)
+  provideAddAllColors(addAll)
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs, accountEmail: () => accountFlow.account.value?.email })
   const beadColors = useBeadColors({ currentProject, palette, addUsed, select: (colorId) => onSelectColor(colorId), remove: (colorId) => removeColor.onRemoveAddedColorOrAsk(colorId), selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback })

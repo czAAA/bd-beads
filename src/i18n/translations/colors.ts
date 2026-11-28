@@ -22,6 +22,9 @@ export interface ColorsTranslations {
     /** The popover's two tabs. */
     addTabBead: string
     addTabCustom: string
+    /** The twelve colors under the Custom color picker, and the button that adds the ones the Palette lacks. */
+    basicColors: string
+    addAllColors: string
     /** A code with its catalog, "TOHO code 1": a list row's first line; `{section}` is the catalog's own name. */
     codeInCatalog: string
     /** The note that a color already in the Palette was added a shade apart. */
