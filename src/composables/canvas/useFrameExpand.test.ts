@@ -8,6 +8,7 @@ import { coversOf } from '../../domain/sheets'
 import type { FrameRef } from '../../domain/grid'
 import { canvasOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
+import { NO_INSETS } from '../../domain/toolPill'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
 import { withLayers } from '../../testUtils/layerFields'
@@ -57,23 +58,25 @@ function beadsOnScreen(project: Project, zoom: number, scroll: { x: number; y: n
 const pitchOf = (zoom: number) => beadsOnScreen(framed(1, 1), zoom, { x: 0, y: 0 }).height
 
 describe('useFrameExpand (ticket 1169)', () => {
-  it('fits the Frame into the drawing area clear of the Tool pill, which stays, and its slim sheet, with no gap round it (ticket 1176)', () => {
+  it('fits the Frame into the room the sheet leaves, the Tool pill\'s place counted there and not what it covers on the Canvas (tickets 1176, 1259)', async () => {
     const project = framed(20, 12)
     const { view, expand, stop } = setup(project)
     const before = view.zoom.value
     expect(expand.toggle()).toBe(true)
+    expand.measured({ ...NO_INSETS, left: 60 }, NO_INSETS)
+    await nextTick()
     expect(expand.expanded.value).toBe(true)
     expect(view.zoom.value).toBeGreaterThan(before)
     const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
     const beads = beadsOnScreen(project, view.zoom.value, view.scroll.value)
-    // Across, the width is what binds: the beads end where the pill and the sheet's sides leave off, to a
-    // rounding.
-    const pill = 120
-    expect(beads.x).toBeGreaterThanOrEqual(pill + room.left - 1)
+    // Across, the width is what binds: the beads end where the pill's place and the sheet's sides leave off, to a
+    // rounding. The 120px the pill covers on the Canvas is not counted a second time.
+    expect(beads.x).toBeGreaterThanOrEqual(room.left - 1)
+    expect(beads.x).toBeLessThan(room.left + 10)
     expect(beads.x + beads.width).toBeLessThanOrEqual(1000 - room.right + 1)
     expect(beads.y).toBeGreaterThanOrEqual(room.top - 1)
     expect(beads.y + beads.height).toBeLessThanOrEqual(600 - room.bottom + 1)
-    expect(Math.min(beads.x - pill - room.left, 1000 - room.right - beads.x - beads.width)).toBeLessThan(10)
+    expect(Math.min(beads.x - room.left, 1000 - room.right - beads.x - beads.width)).toBeLessThan(10)
     stop()
   })
 
@@ -129,8 +132,8 @@ describe('useFrameExpand (ticket 1169)', () => {
     expect(view.isAtFit.value).toBe(true)
     const beads = beadsOnScreen(framed(20, 12), view.zoom.value, view.scroll.value)
     const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
-    // Centred in the room the Tool pill, 120px along the left, and the numbers leave.
-    expect(beads.x + beads.width / 2).toBeCloseTo(120 + room.left + (1400 - 120 - room.left - room.right) / 2, 0)
+    // Centred in the room the sheet leaves.
+    expect(beads.x + beads.width / 2).toBeCloseTo(room.left + (1400 - room.left - room.right) / 2, 0)
     stop()
   })
 
@@ -139,7 +142,7 @@ describe('useFrameExpand (ticket 1169)', () => {
     expand.toggle()
     await nextTick()
     const wide = view.zoom.value
-    expand.measured({ top: 0, right: 150, bottom: 40, left: 150 })
+    expand.measured({ top: 0, right: 150, bottom: 40, left: 150 }, NO_INSETS)
     await nextTick()
     expect(view.zoom.value).toBeLessThan(wide)
     stop()

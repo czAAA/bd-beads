@@ -589,7 +589,16 @@ function frameViewOf(frame: FrameId) {
   const other = otherFrames.value.find((each) => each.ref === frame)
   return other && { surface: other.view, rotation: other.drawing.rotation }
 }
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, pickChipEl, size, surface, tableView, frameViewOf, marksShown, refuse: marginCue.refuse })
+/** Whether a point on screen lies under the expanded sheet (ticket 1259): outside its rows' window, or on the paper
+ * under the numbers held at the window's edge, where the beads run on unseen. */
+function underSheet({ x, y }: { x: number; y: number }): boolean {
+  const chrome = props.expanded?.chrome
+  if (!chrome) return false
+  const { width, height } = size.value
+  if (x < chrome.left || y < chrome.top || x > width - chrome.right || y > height - chrome.bottom) return true
+  return frameRulers.value.headers.some((held) => x >= held.x && y >= held.y && x < held.x + held.width && y < held.y + held.height)
+}
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, pickChipEl, size, surface, tableView, frameViewOf, marksShown, refuse: marginCue.refuse, underSheet })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip, opensToolbox } = pointer
 const { t } = useI18n()
 const beadColors = useBeadColorsList()

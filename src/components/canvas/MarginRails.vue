@@ -13,7 +13,7 @@ import { canvasWeave } from '../../domain/layerWeave'
 import type { Background, Project } from '../../domain/project'
 import type { SeenWay } from '../../domain/rowProgress'
 import { coversOf } from '../../domain/sheets'
-import type { Insets } from '../../domain/toolPill'
+import type { Insets, PillPosition } from '../../domain/toolPill'
 import type { Technique } from '../../domain/weave'
 import { cellSizePx } from '../../rendering/cellSize'
 import { expandedLayout } from '../../rendering/expandedSheet'
@@ -43,6 +43,8 @@ const props = defineProps<{
   exporting?: ExportChoice
   /** The save ring stands at the drawing area's top-right, over the right rail's start. */
   underRing?: boolean
+  /** The side of the rows the Tool pill stands on (ticket 1259): paper is kept there for it, none on the others. */
+  pillEdge?: PillPosition
 }>()
 
 const emit = defineEmits<{
@@ -70,8 +72,9 @@ const emit = defineEmits<{
   'export-png': [part: Project]
   'export-pdf': [typedName: undefined, part: Project]
   'save-project-file': []
-  /** What the rails and Row progress take from each side of the drawing area: the canvas fits the rows into the rest. */
-  measured: [chrome: Insets]
+  /** What the rails and Row progress take from each side of the drawing area, with the Tool pill's place (`chrome`:
+   * the canvas fits the rows into the rest) and without it (`round`: the pill docks round the rest). */
+  measured: [chrome: Insets, round: Insets]
 }>()
 
 const canvas = useCanvasBackground(() => props.project)
@@ -90,6 +93,7 @@ const tools = useFrameTools(() => props.project, () => props.frame, {
 })
 
 const rootEl = ref<HTMLElement>()
+const areaEl = ref<HTMLElement>()
 const windowEl = ref<HTMLElement>()
 const footEl = ref<HTMLElement>()
 const rootSize = useElementSize(rootEl)
@@ -107,14 +111,20 @@ const shape = computed(() => {
 })
 const layout = computed(() => expandedLayout(shape.value, { width: rootSize.width.value, height: rootSize.height.value }))
 
+/** What lies between each side of the sheet and a part of it. */
+function insetsOf(root: HTMLElement, { offsetLeft: left, offsetTop: top, offsetWidth, offsetHeight }: HTMLElement): Insets {
+  return { left, top, right: Math.max(0, root.clientWidth - left - offsetWidth), bottom: Math.max(0, root.clientHeight - top - offsetHeight) }
+}
+
 watch(
-  [rootSize.width, rootSize.height, windowSize.width, windowSize.height, layout],
+  // The pill's side too: moved across, the rows' window keeps its size and only its place changes.
+  [rootSize.width, rootSize.height, windowSize.width, windowSize.height, layout, () => props.pillEdge],
   () => {
     const root = rootEl.value
+    const area = areaEl.value
     const window = windowEl.value
-    if (!root || !window || !window.offsetWidth) return
-    const { offsetLeft: left, offsetTop: top } = window
-    emit('measured', { left, top, right: Math.max(0, root.clientWidth - left - window.offsetWidth), bottom: Math.max(0, root.clientHeight - top - window.offsetHeight) })
+    if (!root || !area || !window || !window.offsetWidth) return
+    emit('measured', insetsOf(root, window), insetsOf(root, area))
   },
   { flush: 'post' },
 )
@@ -160,7 +170,11 @@ onBeforeUnmount(() => {
         @settle-settings="emit('settle-settings')"
       />
     </div>
-    <div ref="windowEl" class="margin-rails__window" data-testid="margin-rails-window" />
+    <div ref="areaEl" class="margin-rails__area" :class="pillEdge && `margin-rails__area--${pillEdge}`">
+      <!-- The Tool pill's place (ticket 1259): paper, so no bead lies under the pill. -->
+      <div v-if="pillEdge" class="margin-rails__pill-place" data-testid="margin-rails-pill-place" />
+      <div ref="windowEl" class="margin-rails__window" data-testid="margin-rails-window" />
+    </div>
     <div class="margin-rails__tools" :class="{ 'margin-rails__tools--under-ring': underRing }" data-wrap-ok>
       <MarginRailTools
         :project="project"
@@ -254,7 +268,8 @@ onBeforeUnmount(() => {
 
 .margin-rails__facts,
 .margin-rails__tools,
-.margin-rails__progress {
+.margin-rails__progress,
+.margin-rails__pill-place {
   min-width: 0;
   min-height: 0;
   background: var(--margin-fill);
@@ -281,8 +296,35 @@ onBeforeUnmount(() => {
   padding-top: calc(var(--touch-target) + var(--space-16));
 }
 
-.margin-rails__window {
+.margin-rails__area {
+  display: flex;
   grid-area: window;
+  min-width: 0;
+  min-height: 0;
+}
+
+.margin-rails__area--left {
+  flex-direction: row;
+}
+
+.margin-rails__area--right {
+  flex-direction: row-reverse;
+}
+
+.margin-rails__area--top {
+  flex-direction: column;
+}
+
+.margin-rails__area--bottom {
+  flex-direction: column-reverse;
+}
+
+.margin-rails__pill-place {
+  flex: 0 0 var(--pill-room);
+}
+
+.margin-rails__window {
+  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
 }

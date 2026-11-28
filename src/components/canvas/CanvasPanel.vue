@@ -34,7 +34,8 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { expandedPillPosition, litPillTool, NO_INSETS, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { litPillTool, type Insets, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { expandedSides } from '../../rendering/expandedSheet'
 import { useShellScope } from '../../composables/ui/shellScope'
 import { selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
@@ -435,40 +436,48 @@ useDrawingScrollGuard(drawingEl)
 /** A move of the pill while the Frame is expanded: kept until Back to the Canvas, the device's edge left as it is. */
 const expandedPillMove = ref<PillPosition>()
 watch(frameExpanded, (expanded) => expanded || (expandedPillMove.value = undefined))
-/** Where the pill stands: its own edge, or while the Frame is expanded the edge that leaves the rows the most room
- * (ticket 1176), by the Frame's shape against the window's between the rails. */
+/** Where the pill stands: its own edge, which it keeps when the Frame is expanded (ticket 1259), until moved there. */
 const shownPillPosition = computed<PillPosition>({
-  get: () => {
-    const box = frameAnchor.value?.box
-    const chrome = expandedContent.value?.chrome
-    if (!chrome || !box) return toolPillPosition.value
-    const area = { width: drawingSize.width.value - chrome.left - chrome.right, height: drawingSize.height.value - chrome.top - chrome.bottom }
-    return expandedPillMove.value ?? expandedPillPosition(toolPillPosition.value, box, area)
-  },
+  get: () => expandedPillMove.value ?? toolPillPosition.value,
   set: (position) => {
     if (frameExpanded.value) expandedPillMove.value = position
     else toolPillPosition.value = position
   },
 })
-/** The pill docks round the expanded rows, inside the rails and over Row progress (ticket 1260). */
-const pillInsetStyle = computed(() => {
-  const chrome = expandedContent.value?.chrome
-  return chrome ? { top: `${chrome.top}px`, right: `${chrome.right}px`, bottom: `${chrome.bottom}px`, left: `${chrome.left}px` } : undefined
+const insetStyle = (sides: Insets | undefined) => (sides ? { top: `${sides.top}px`, right: `${sides.right}px`, bottom: `${sides.bottom}px`, left: `${sides.left}px` } : undefined)
+/** The expanded rows' window, which the bars are placed in: inside the rails, over Row progress and clear of the Tool
+ * pill's place (tickets 1259, 1260). */
+const rowsInsetStyle = computed(() => insetStyle(expandedContent.value?.chrome))
+/** The box the pill docks round while expanded: the rows' window and its own place in it. */
+const pillInsetStyle = computed(() => insetStyle(expandedContent.value?.round))
+/** How far in from that box's left and right the expanded Frame and its numbers begin: a pill on a side stands beside
+ * a narrow Frame, not out at the rails (ticket 1259). */
+const pillFlank = computed(() => {
+  const content = expandedContent.value
+  const box = frameAnchor.value?.box
+  if (!content || !box) return undefined
+  const { left, right } = expandedSides(content)
+  const end = drawingSize.width.value - content.round.right
+  return { left: Math.max(0, box.left - left - content.round.left), right: Math.max(0, end - (box.left + box.width + right)) }
 })
-/** The pill as it last measured itself, in the room it docks round. */
+/** The pill as it last measured itself, in the box it docks round. */
 const pillPlaced = ref<PillRect>()
-/** The Tool pill where it now stands: a Fit keeps clear of it (ticket 0850), by what it takes of the room it docks
- * round, and the Selection bar too, in the drawing area's px. */
+/** The Tool pill where it now stands: the Selection bar keeps clear of it, and so does a Fit on the Canvas (ticket
+ * 0850); an expanded Frame's sheet keeps its place for it itself. */
 function onPillRect(rect: PillRect | undefined) {
   pillPlaced.value = rect
-  const chrome = expandedContent.value?.chrome ?? NO_INSETS
-  pillRect.value = rect && { ...rect, left: rect.left + chrome.left, top: rect.top + chrome.top }
+  const round = expandedContent.value?.round
+  pillRect.value = rect && round ? { ...rect, left: rect.left + round.left, top: rect.top + round.top } : rect
   const el = drawingEl.value
-  if (el) onToolPillPlaced(rect, { width: el.clientWidth - chrome.left - chrome.right, height: el.clientHeight - chrome.top - chrome.bottom }, shownPillPosition.value)
+  if (el && !round) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, shownPillPosition.value)
 }
 /** The Tool pill as the bars keep clear of it, in their box's px. */
-const barObstacle = computed(() => (expandedContent.value ? pillPlaced.value : pillRect.value))
-// The rails measure themselves after the pill does: its place is counted again round them.
+const barObstacle = computed(() => {
+  const rect = pillRect.value
+  const chrome = expandedContent.value?.chrome
+  return rect && chrome ? { ...rect, left: rect.left - chrome.left, top: rect.top - chrome.top } : rect
+})
+// The rails measure themselves after the pill does: its place is counted again in them.
 watch(pillInsetStyle, () => onPillRect(pillPlaced.value), { flush: 'post' })
 const selectionLayerStyle = computed(() => {
   const el = drawingEl.value
@@ -757,6 +766,7 @@ const drawingStyle = computed(() => {
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
             :style="pillInsetStyle"
+            :flank="pillFlank"
             @rect="onPillRect"
           />
           <!-- The Radial toolbox (ticket 1064) sits in the app shell as the pill's popovers do (StackingOrder card):
@@ -820,7 +830,7 @@ const drawingStyle = computed(() => {
         -->
         <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer" data-zooms-table @wheel="onTableWheel">
           <!-- The bars' box: the drawing area's, or, the Frame expanded, the window its rows are seen in (ticket 1260). -->
-          <div class="app-shell__bars" :style="pillInsetStyle">
+          <div class="app-shell__bars" :style="rowsInsetStyle">
           <!--
             The Selection bar (tickets 168, 415, 0808, 0812; ContextBar card): above a rectangle Selection's Area sheet, its
             move grip handing a press on to the canvas; above a Piece's shape it floats too, clamped inside the canvas box while
@@ -898,6 +908,7 @@ const drawingStyle = computed(() => {
             :placing="!viewPlaced"
             :exporting="expandedFrame === id ? exporting : undefined"
             :under-ring="expandedFrame === id ? ringShown : undefined"
+            :pill-edge="expandedFrame === id ? shownPillPosition : undefined"
             :popover-asked="framePopoverAsked === id"
             @step="(edge, step) => onStepFrameEdge(edge, step, id)"
             @resize="(columns, rows) => onResizeFrame(columns, rows, id)"

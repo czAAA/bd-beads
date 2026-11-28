@@ -37,6 +37,9 @@ const props = withDefaults(defineProps<{
   /** Whether Pick color from canvas waits for a bead: no tool tile is lit then (ticket 0845). */
   picking?: boolean
   position: PillPosition
+  /** How far in from the drawing area's left and right an expanded Frame begins (ticket 1259): a pill on a side, and
+   * its place while dragged, stand beside the Frame there, never further in than that. None on the Canvas. */
+  flank?: { left: number; right: number }
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
   colorName?: string
@@ -116,7 +119,18 @@ const roving = useRovingFocus(pillEl, { selector: '.tool-pill__grip, .tool-pill_
 /** The button of an IconButton, for a popover to be placed against. */
 const buttonOf = (component: unknown) => (component as { $el?: HTMLElement } | null)?.$el?.querySelector('button') ?? undefined
 
+const zonesEl = ref<HTMLElement>()
+/** The box the four places stand round, on screen: the layer's, drawn in on a side to the place standing beside a
+ * narrow expanded Frame (ticket 1259), so the pill snaps to the place it is dragged to. */
+function placesBox(layer: DOMRect): PillRect {
+  const [left, right, top] = ['left', 'right', 'top'].map((edge) => zonesEl.value?.querySelector(`.tool-pill-zone--${edge}`)?.getBoundingClientRect())
+  if (!left?.width || !right?.width || !top) return layer
+  const gap = top.top - layer.top
+  return { left: left.left - gap, top: layer.top, width: right.right - left.left + 2 * gap, height: layer.height }
+}
+
 const drag = useToolPillDrag(pillEl, layerEl, gripEl, {
+  area: placesBox,
   onStart: () => emit('update:popoverOpen', false),
   onDrop: (position) => emit('update:position', position),
 })
@@ -196,15 +210,20 @@ watch(
   { immediate: true, flush: 'post' },
 )
 watch(
-  [pillSize.width, pillSize.height, layerSize.width, layerSize.height, () => props.position],
+  [pillSize.width, pillSize.height, layerSize.width, layerSize.height, () => props.position, () => props.flank?.left, () => props.flank?.right],
   () => void nextTick(() => emit('rect', measure())),
   { immediate: true },
 )
 </script>
 
 <template>
-  <div ref="layerEl" class="tool-pill-layer" data-testid="tool-pill-layer">
-    <div v-if="drag.showsZones.value" class="tool-pill-zones" aria-hidden="true" data-testid="tool-pill-zones">
+  <div
+    ref="layerEl"
+    class="tool-pill-layer"
+    :style="flank && { '--pill-flank-left': `${flank.left}px`, '--pill-flank-right': `${flank.right}px` }"
+    data-testid="tool-pill-layer"
+  >
+    <div v-if="drag.showsZones.value" ref="zonesEl" class="tool-pill-zones" aria-hidden="true" data-testid="tool-pill-zones">
       <span
         v-for="edge in PILL_POSITIONS"
         :key="edge"
@@ -368,6 +387,9 @@ watch(
   --pill-pad: var(--space-4);
   --pill-between: var(--space-2);
   --pill-icon: calc(var(--space-20) + var(--space-2));
+  /* Where a pill on a side stands: at the layer's edge, or its room short of where an expanded Frame begins. */
+  --pill-off-left: max(0px, var(--pill-flank-left, 0px) - var(--pill-room));
+  --pill-off-right: max(0px, var(--pill-flank-right, 0px) - var(--pill-room));
   position: absolute;
   inset: 0;
   z-index: var(--z-canvas-overlay);
@@ -465,11 +487,11 @@ watch(
 }
 
 .tool-pill--left {
-  left: var(--pill-gap);
+  left: calc(var(--pill-off-left) + var(--pill-gap));
 }
 
 .tool-pill--right {
-  right: var(--pill-gap);
+  right: calc(var(--pill-off-right) + var(--pill-gap));
 }
 
 /* Lifted: it follows the pointer from its own top-left corner, with a deeper shadow, taking no fixed edge. */
@@ -669,11 +691,11 @@ watch(
 }
 
 .tool-pill-zone--left {
-  left: var(--pill-gap);
+  left: calc(var(--pill-off-left) + var(--pill-gap));
 }
 
 .tool-pill-zone--right {
-  right: var(--pill-gap);
+  right: calc(var(--pill-off-right) + var(--pill-gap));
 }
 
 .tool-pill-zone--near {

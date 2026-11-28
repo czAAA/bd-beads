@@ -41,6 +41,13 @@ const press = async (wrapper: ReturnType<typeof mountRails>, testid: string) => 
 }
 
 describe('the expanded Frame\'s rails (MarginSheet card, Calmer sheet 3; ticket 1260)', () => {
+  it('keeps paper for the Tool pill on the side it is on, and none without a pill (ticket 1259)', async () => {
+    const wrapper = mountRails({ pillEdge: 'left' })
+    expect(has(wrapper, 'margin-rails-pill-place')).toBe(true)
+    await wrapper.setProps({ pillEdge: undefined })
+    expect(has(wrapper, 'margin-rails-pill-place')).toBe(false)
+  })
+
   it('goes back to the Canvas from the left rail\'s first row', async () => {
     const wrapper = mountRails()
     expect(control(wrapper, 'margin-expand-frame').text()).toBe('Back to the Canvas')

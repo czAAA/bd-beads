@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expandedPillPosition, nearestPillEdge, pillInsets, pillPositionForKey, popoverPlacement, pushRecentColor, recentsBeside } from './toolPill'
+import { nearestPillEdge, pillInsets, pillPositionForKey, popoverPlacement, pushRecentColor, recentsBeside } from './toolPill'
 
 describe('pushRecentColor (ticket 439)', () => {
   it('puts a colour at the front, moves a repeat to the front and keeps eight', () => {
@@ -82,27 +82,5 @@ describe('pillInsets (ticket 0850)', () => {
     expect(pillInsets({ left: 300, top: 8, width: 400, height: 56 }, area, 'top')).toEqual({ top: 64, right: 0, bottom: 0, left: 0 })
     expect(pillInsets({ left: 8, top: 200, width: 56, height: 400 }, area, 'left')).toEqual({ top: 0, right: 0, bottom: 0, left: 64 })
     expect(pillInsets({ left: 936, top: 200, width: 56, height: 400 }, area, 'right')).toEqual({ top: 0, right: 64, bottom: 0, left: 0 })
-  })
-})
-
-describe('expandedPillPosition (ticket 1176)', () => {
-  const landscape = { width: 1400, height: 800 }
-  it('puts the pill on a side for a Frame the height binds, keeping its own side', () => {
-    const tall = { width: 300, height: 600 }
-    expect(expandedPillPosition('bottom', tall, landscape)).toBe('left')
-    expect(expandedPillPosition('top', tall, landscape)).toBe('left')
-    expect(expandedPillPosition('right', tall, landscape)).toBe('right')
-  })
-
-  it('puts it on the bottom for a Frame the width binds, keeping its own top or bottom', () => {
-    const wide = { width: 1000, height: 200 }
-    expect(expandedPillPosition('left', wide, landscape)).toBe('bottom')
-    expect(expandedPillPosition('right', wide, landscape)).toBe('bottom')
-    expect(expandedPillPosition('top', wide, landscape)).toBe('top')
-  })
-
-  it('goes by the Frame against the area, not by the Frame alone: a wide Frame on a wider screen is height-bound', () => {
-    expect(expandedPillPosition('bottom', { width: 500, height: 400 }, { width: 1710, height: 820 })).toBe('left')
-    expect(expandedPillPosition('bottom', { width: 500, height: 400 }, { width: 390, height: 700 })).toBe('bottom')
   })
 })

@@ -315,6 +315,27 @@ describe('the Tool pill’s arrows follow its axis (ticket 563, ADR 0075)', () =
 })
 
 describe('dragging the Tool pill (ticket 439)', () => {
+  it('snaps to the place standing beside a narrow expanded Frame, not by the drawing area\'s own side (ticket 1259)', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, flank: { left: 400, right: 400 } }, attachTo: document.body })
+    const rect = (left: number, top: number, width: number, height: number) => () => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) })
+    const layer = wrapper.get('[data-testid="tool-pill-layer"]').element as HTMLElement
+    layer.getBoundingClientRect = rect(0, 0, 1100, 700)
+    expect(layer.style.getPropertyValue('--pill-flank-left')).toBe('400px')
+    await wrapper.get('[data-testid="tool-pill"]').trigger('pointerdown', { button: 0, clientX: 550, clientY: 680, pointerId: 1 })
+    move(550, 600)
+    await wrapper.vm.$nextTick()
+    // The places as the page lays them: 6px in, the side ones 330px further in beside the Frame.
+    const places = { left: rect(336, 215, 56, 270), right: rect(708, 215, 56, 270), top: rect(415, 6, 270, 56) }
+    for (const [edge, box] of Object.entries(places)) wrapper.get(`[data-testid="tool-pill-zone-${edge}"]`).element.getBoundingClientRect = box
+    // 450px from the area's left and 350 from its top, but 120 from the left place's side: left, not top.
+    move(450, 350)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('[data-testid="tool-pill-zone-left"]').classes()).toContain('tool-pill-zone--near')
+    move(450, 350, 'pointerup')
+    expect(wrapper.emitted('update:position')).toEqual([['left']])
+    wrapper.unmount()
+  })
+
   function area(wrapper: ReturnType<typeof mount>) {
     // jsdom lays nothing out: give the drawing area a size so the nearest edge means something.
     wrapper.get('[data-testid="tool-pill-layer"]').element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 400, height: 300, right: 400, bottom: 300, x: 0, y: 0, toJSON: () => ({}) })
