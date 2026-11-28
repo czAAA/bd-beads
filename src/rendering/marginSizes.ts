@@ -39,9 +39,6 @@ export const MARGIN_PX = {
    * (ticket 1258). */
   nameLeast: 80,
   nameGap: { mouse: 4, touch: 12 },
-  /** The foot's facts row and what parts it from Row progress's strip (ticket 1258). */
-  factsRow: 24,
-  footGap: 4,
   /** A tool in the full form's row, and that row's height. */
   tool: 28,
   /** The Move bar outside the full form, and the compact and folded row's height. */
@@ -56,8 +53,8 @@ export const MARGIN_PX = {
   icon: { full: 16, compact: 14 },
   /** The current pass's mark (ticket 0685): the pill's room round its number, and the tick's thickness. */
   pass: { pillPad: 2, tick: 3 },
-  /** Expand the Frame (MarginSheet card, ticket 1169): the slim sheet's row and foot in from its edge (`inset`),
-   * smaller under bp-tablet, and the room between the row, the numbers and the Frame's line (`numbers`). The sheet
-   * meets the screen's edges and the Tool pill with no gap (ticket 1176). */
-  expanded: { inset: { full: 6, compact: 4 }, numbers: 3 },
+  /** Expand the Frame (MarginSheet card, tickets 1169, 1260): the room round its line where no numbers stand
+   * (`inset`, smaller under bp-tablet), the room between the numbers and the line (`numbers`), and the bead pitch its
+   * rows are woven at, smaller in a drawing area up to `narrowAt` wide. */
+  expanded: { inset: { full: 6, compact: 4 }, numbers: 3, pitch: { wide: 28, narrow: 26 }, narrowAt: 1500 },
 } as const

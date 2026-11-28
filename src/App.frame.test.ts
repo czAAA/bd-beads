@@ -385,7 +385,7 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="margin-progress-compact-position"] .row-progress__count-short').text()).toBe('2/2')
   })
 
-  it('expands the Frame from its first button, the surface slim, the Tool pill kept and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
+  it('expands the Frame from its first button, into two rails, the Tool pill kept and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
     const wrapper = await mountOpen(sheetProject())
     const surface = () => wrapper.findComponent(ProjectSurface)
     await wrapper.get('[data-testid="margin-expand-frame"]').trigger('click')
@@ -393,13 +393,14 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Frame expanded')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="tool-pill-layer"]').attributes('inert')).toBeUndefined()
-    // The sheet measured itself, and the surface lays the slim sheet by what it told: no foot height in jsdom.
-    expect(surface().props('slim')).toMatchObject({ foot: 0 })
+    // The rails stand in the sheet's place, and the surface draws the paper under them.
+    expect(wrapper.find('[data-testid="margin-rails"]').exists()).toBe(true)
+    expect(surface().props('expanded')).toBeDefined()
     await key({ key: 'Escape' })
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
     expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
-    expect(surface().props('slim')).toBeUndefined()
+    expect(surface().props('expanded')).toBeUndefined()
   })
 
   it('opens the Export panel from the Frame tools menu where its sheet is too narrow for the Export button (ticket 1195)', async () => {

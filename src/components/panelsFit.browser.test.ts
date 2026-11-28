@@ -10,6 +10,7 @@ import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
 import ExportPanel from './canvas/ExportPanel.vue'
 import FramePopover from './canvas/FramePopover.vue'
+import MarginRails from './canvas/MarginRails.vue'
 import type { FrameToolItem } from './canvas/framePopoverTools'
 import { controlAction, controlDeps } from '../composables/shell/controlRegistry'
 import { twoFrames } from '../testUtils/twoFrames'
@@ -68,6 +69,22 @@ const unfoldProjectExport = async (root: HTMLElement): Promise<void> => {
   root.querySelector<HTMLElement>('[data-testid="project-export"]')?.click()
 }
 
+/** The expanded Frame's rails (ticket 1260) over a drawing area of a tablet's height. */
+const rails = (project: Project): Component =>
+  defineComponent({
+    setup: () => () => h('div', { style: { position: 'relative', height: '900px' } }, [h(MarginRails, { project, frame: frameIdIn(project), editing: false })]),
+  })
+/** Every row of the rails unfolded: Export with its settings and Name on exports, Margin color and the size's fields. */
+const unfoldRails = async (root: HTMLElement): Promise<void> => {
+  const press = async (testid: string) => {
+    const row = root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)
+    if (!row) throw new Error(`The rails have no ${testid}`)
+    if (row.getAttribute('aria-expanded') !== 'true') row.click()
+    await nextTick()
+  }
+  for (const testid of ['margin-rail-export', 'export-maker-row', 'export-settings-row', 'margin-rail-color', 'margin-rail-size']) await press(testid)
+}
+
 /** A component inside a panel shell's context, as the Menu panel needs; given a width, as wide as that panel's content
  * (the Export panel's small one, ticket 0652). */
 const inPanel = (component: Component, props: Record<string, unknown>, width?: string): Component =>
@@ -104,6 +121,8 @@ const unfoldFrames = (root: HTMLElement): void => {
 }
 
 const CASES: FitCase[] = [
+  ['Expanded rails', rails(painted), {}],
+  ['Expanded rails unfolded', rails(painted), {}, unfoldRails],
   ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
   ['CanvasStrip (in its shell)', inShell(CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }), {}],
   // Menu's widest Subpanel (ticket 1159): `panel-width-wide`, or the window less its gutters, less the panel's edges.

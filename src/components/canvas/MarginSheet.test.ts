@@ -810,63 +810,17 @@ describe('Edit Frame on a turned Frame (ticket 1016)', () => {
 })
 
 describe('Expand the Frame (MarginSheet card, ticket 1169)', () => {
-  /** The slim sheet at 300%: 20px beads times 3, a few px of sheet round the line. */
-  const expandedAnchor: FrameAnchor = { box: { left: 30, top: 60, width: 2414, height: 674 }, sheet: { left: 0, top: 0, width: 2450, height: 800 }, band: 240, viewport: { width: 2500, height: 900 } }
-
-  it('asks to expand, its name and Tooltip Back to the Canvas while expanded, with no aria-pressed', async () => {
+  it('asks to expand, with no aria-pressed: the expanded sheet is `MarginRails`', async () => {
     const wrapper = mountSheet()
     const button = control(wrapper, 'margin-expand-frame')
     expect(button.attributes('aria-label')).toBe('Expand the Frame')
     expect(button.attributes('aria-pressed')).toBeUndefined()
     await button.trigger('click')
     expect(wrapper.emitted('toggle-expand')).toHaveLength(1)
-    await wrapper.setProps({ expanded: true, anchor: expandedAnchor })
-    expect(control(wrapper, 'margin-expand-frame').attributes('aria-label')).toBe('Back to the Canvas')
-    expect(control(wrapper, 'margin-expand-frame').attributes('aria-pressed')).toBeUndefined()
   })
 
-  it('draws no Move bar while expanded, which is then no Tab stop, and its row and foot 6px in at scale 1', async () => {
-    const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
-    await nextTick()
-    expect(wrapper.find('[data-testid="frame-move-handle"]').exists()).toBe(false)
-    expect(names(wrapper)).not.toContain('Move Frame')
-    expect(styleOf(wrapper, 'margin-band')).toContain('top: 6px')
-    expect(styleOf(wrapper, 'margin-band')).toContain('scale(1)')
-    expect(styleOf(wrapper, 'margin-foot')).toContain('left: 6px')
-    expect(styleOf(wrapper, 'margin-foot')).toContain('bottom: 6px')
-  })
-
-  it('holds Row progress in the foot, its Row done the one filled button (tickets 1176, 1223)', async () => {
-    const wrapper = mountSheet()
-    expect(control(wrapper, 'margin-progress-next').classes()).toContain('app-button--primary')
-    await wrapper.setProps({ expanded: true, anchor: expandedAnchor })
-    expect(control(wrapper, 'margin-progress-next').classes()).toContain('app-button--primary')
-  })
-
-  it('holds every chip and fact, however large the band', async () => {
-    const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
-    await nextTick()
-    expect(control(wrapper, 'margin-identity').attributes('data-form')).toBe('all')
-    expect(control(wrapper, 'margin-facts').attributes('data-form')).toBe('all')
-  })
-
-  it('tells the canvas what its row and its foot measure, so it lays the slim sheet round them', async () => {
-    const wrapper = mountSheet({ expanded: true, anchor: expandedAnchor })
-    await nextTick()
-    const last = () => (wrapper.emitted('slim')!.at(-1)! as [{ row: number; foot: number; rowWidth: number }])[0]
-    const foot = () => control(wrapper, 'margin-foot').element.getBoundingClientRect().height
-    // The narrowest row holds Expand, the name at its least and the Frame tools button.
-    const bare = 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap
-    expect(last()).toEqual({ row: MARGIN_PX.tool, foot: foot(), rowWidth: bare + MARGIN_PX.nameGap.mouse + MARGIN_PX.nameLeast })
-    useCanvasBackground().margin.setTitleBlock(false)
-    await nextTick()
-    expect(last()).toMatchObject({ foot: foot(), rowWidth: 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap })
-    // The strip stays: Row progress is on the sheet alone while expanded.
-    expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
-    await wrapper.setProps({ expanded: false })
-    const count = wrapper.emitted('slim')!.length
-    await wrapper.setProps({ anchor })
-    expect(wrapper.emitted('slim')).toHaveLength(count)
+  it('holds Row progress in the foot, its Row done the one filled button (tickets 1176, 1223)', () => {
+    expect(control(mountSheet(), 'margin-progress-next').classes()).toContain('app-button--primary')
   })
 })
 

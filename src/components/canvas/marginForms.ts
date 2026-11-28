@@ -5,6 +5,9 @@
  * name alone. */
 export type IdentityForm = 'all' | 'noMaker' | 'noSettings' | 'name' | 'alone'
 
+/** The chips the expanded sheet's rail picks from the band's (ticket 1260). */
+export type IdentityPart = 'name' | 'technique' | 'maker'
+
 /** The foot's facts: all of them; without the size in cm; without the size in beads too; without the Bead; the legend
  * alone. */
 export type FactsForm = 'all' | 'noEstimate' | 'noSize' | 'noBead' | 'legend'

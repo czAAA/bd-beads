@@ -16,10 +16,9 @@ import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { Size } from '../../rendering/cellSize'
 import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
 import { marginForm, marginScale } from '../../rendering/marginForm'
-import { marginSheetPx, type SlimSheet } from '../../rendering/projectRenderer'
-import { MARGIN_PX } from '../../rendering/marginSizes'
+import { marginSheetPx, type ExpandedPaper } from '../../rendering/projectRenderer'
 import { rulerFontAtFull } from '../../rendering/rulerScale'
-import { slimSheetSides, type SlimContent } from '../../rendering/slimSheet'
+import type { ExpandedContent } from '../../rendering/expandedSheet'
 import type { DrawnReference } from '../../rendering/referenceImage'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
@@ -105,7 +104,7 @@ const props = withDefaults(defineProps<{
   frameTooltips?: Readonly<Record<string, string>>
   /** The Frames whose handles are on (Edit Frame, ticket 1220), each its own. */
   settingFrames?: readonly FrameId[]
-  /** The Frame that is expanded (ticket 1220): the one `slim` is laid round, which the surface draws as its own Frame
+  /** The Frame that is expanded (ticket 1220): the one `expanded` is about, which the surface draws as its own Frame
    * layer; the first when none is. */
   expandedFrame?: FrameId
   /** The size beside a hot corner of the Selection and of the Mirror's Canvas Area (ticket 0807), as their bars read. */
@@ -134,9 +133,9 @@ const props = withDefaults(defineProps<{
   holdEnds?: number
   /** Whether the Radial toolbox is open: the press it opens on then moves it here (ticket 1147). */
   toolboxOpen?: boolean
-  /** What the expanded Frame's slim sheet holds (MarginSheet card, Expand the Frame; ticket 1169), none unexpanded: the
-   * sheet is laid round the Frame's line from it, its numbers are the 100% ones, and a press off the Frame is refused. */
-  slim?: SlimContent
+  /** What the expanded Frame lies in (MarginSheet card, Expand the Frame; tickets 1169, 1260), none unexpanded: the
+   * paper covers the drawing area, its numbers keep the size the content names, held at the rows' window's edge. */
+  expanded?: ExpandedContent
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -224,7 +223,7 @@ function viewProps(view: { project: Project; zoom: number; scroll: Scroll }): ty
 const drawnProps = viewProps({ get project() { return drawnProject.value }, get zoom() { return props.zoom }, get scroll() { return drawnScroll.value } })
 
 /** The Frame the Frame surface draws as its own, the others laid onto it (ticket 1219): the expanded one, else the first
- * (ticket 1220), so the slim sheet and everything laid by the Frame's line follow the Frame expanded. */
+ * (ticket 1220), so the expanded sheet and everything laid by the Frame's line follow the Frame expanded. */
 const primary = computed<FrameId>(() => (props.expandedFrame && frameById(props.project, props.expandedFrame) ? props.expandedFrame : firstFrameId(props.project)))
 
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
@@ -291,29 +290,23 @@ const everyFrame = computed<OtherFrame[]>(() =>
   }),
 )
 
-/** The expanded Frame's slim sheet in the view's px (ticket 1169): round the Frame's line by what it holds. */
-const slimBox = computed(() => {
-  const frame = frameById(props.project, primary.value)
-  if (!props.slim || !frame) return undefined
-  const line = frameSurface.value.frameBox(frame)
-  const sides = slimSheetSides(props.slim, line.width, line.height)
-  return { x: line.x - sides.left, y: line.y - sides.top, width: line.width + sides.left + sides.right, height: line.height + sides.top + sides.bottom }
-})
-/** The slim sheet as the canvas draws it: its box in grid px, its corners in screen px. */
-const slimSheet = computed<SlimSheet | undefined>(() => {
-  const box = slimBox.value
-  if (!box || !props.slim) return undefined
-  const corners = [frameSurface.value.pointToGrid({ x: box.x, y: box.y }), frameSurface.value.pointToGrid({ x: box.x + box.width, y: box.y + box.height })]
+/** How far past the drawing area the expanded sheet's paper reaches, so its edge is never seen. */
+const PAPER_OVERHANG_PX = 24
+/** The expanded Frame's sheet as the canvas draws it (tickets 1169, 1260): the paper over the whole drawing area, in
+ * grid px, the rails laid on it by the page. */
+const expandedPaper = computed<ExpandedPaper | undefined>(() => {
+  if (!props.expanded || !frameById(props.project, primary.value)) return undefined
+  const { width, height } = tableView.value.drawn
+  const corners = [frameSurface.value.pointToGrid({ x: -PAPER_OVERHANG_PX, y: -PAPER_OVERHANG_PX }), frameSurface.value.pointToGrid({ x: width + PAPER_OVERHANG_PX, y: height + PAPER_OVERHANG_PX })]
   const x = Math.min(corners[0]!.x, corners[1]!.x)
   const y = Math.min(corners[0]!.y, corners[1]!.y)
-  const sheet = { x, y, width: Math.abs(corners[1]!.x - corners[0]!.x), height: Math.abs(corners[1]!.y - corners[0]!.y) }
-  return { sheet, radius: props.slim.compact ? MARGIN_PX.sheetRadius.compact : MARGIN_PX.sheetRadius.full }
+  return { sheet: { x, y, width: Math.abs(corners[1]!.x - corners[0]!.x), height: Math.abs(corners[1]!.y - corners[0]!.y) }, radius: 0 }
 })
 
 /** The Frame's margin sheet in the Frame drawing's grid px, none without a Frame: the one box the sheet is drawn from,
- * placed by and takes no press on. Expanded, the slim sheet. Read by `surface` only while the Frame is drawn apart, as
+ * placed by and takes no press on. Expanded, the whole paper. Read by `surface` only while the Frame is drawn apart, as
  * `frameSurface` falls back to `surface` otherwise: read it from there and the two cycle. */
-const sheetGrid = computed((): Region | undefined => slimSheet.value?.sheet ?? marginSheetPx(frameProject.value, primary.value)?.sheet)
+const sheetGrid = computed((): Region | undefined => expandedPaper.value?.sheet ?? marginSheetPx(frameProject.value, primary.value)?.sheet)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. Its points are the Canvas drawing's; the Frame layer lies in it by its own transform. */
@@ -321,7 +314,7 @@ const surface = computed((): SurfaceView => {
   const canvas = canvasDrawn.value
   const frame = frameDrawn.value
   // Its margin sheet, as its own surface draws it, takes no press whatever lies under it (ticket 1188).
-  // Expanded, that is the slim sheet drawn in its place, not the 4-position one (a Canvas turned apart from the Frame).
+  // Expanded, that is the paper drawn in its place, not the 4-position one (a Canvas turned apart from the Frame).
   const sheet = sheetGrid.value
   // The other Frames are hit as the first is (ticket 1219), each through its own drawing where it has one.
   const others = otherFrames.value.map(({ ref, drawing, project }) => ({
@@ -355,7 +348,8 @@ const sheetLook = computed(() => sheetLookOf(frameProject.value, primary.value))
 const rulersIn = (view: SurfaceView, project: Project = props.project, ref: FrameRef = primary.value) => {
   const first = ref === primary.value
   const look = first ? sheetLook.value : sheetLookOf(project, ref)
-  return rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...look, expanded: first && !!props.slim, expandedFontPx: first ? props.slim?.fontPx : undefined, pieces: pieces.value }, ref)
+  const expanded = first ? props.expanded : undefined
+  return rulerLayout(project, view, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...look, expanded: !!expanded, expandedFontPx: expanded?.fontPx, pin: expanded?.chrome, pieces: pieces.value }, ref)
 }
 const rulers = computed(() => rulersIn(surface.value))
 /** The Frame's rulers lie on its own surface (ticket 1187), laid out in its drawing's view. */
@@ -392,7 +386,9 @@ function coveredOf({ ref, project, view }: OtherFrame): Region {
 /** The Frames as the shared surface lays them (tickets 1219, 1239): each drawing's points carried onto the Canvas's. */
 function laidFrames(): LaidFrame[] {
   if (everyFrame.value.length === 0) return NO_OTHERS
-  return everyFrame.value.map((each) => {
+  // The expanded Frame is drawn last, its paper over every other Frame (ticket 1260).
+  const frames = props.expanded ? [...everyFrame.value].sort((a, b) => Number(a.ref === primary.value) - Number(b.ref === primary.value)) : everyFrame.value
+  return frames.map((each) => {
     const { ref, drawing, project, view } = each
     return {
       ref,
@@ -403,7 +399,7 @@ function laidFrames(): LaidFrame[] {
       theme: canvasBackground.frameThemeOf(ref),
       surface: view,
       rulers: frameRulersOf.value.get(ref)!,
-      slim: ref === primary.value ? slimSheet.value : undefined,
+      paper: ref === primary.value ? expandedPaper.value : undefined,
       covered: coveredOf(each),
     }
   })

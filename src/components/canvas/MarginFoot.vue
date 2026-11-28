@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import type { RowPress } from '../../composables/project/useRowOps'
@@ -30,6 +30,7 @@ const props = defineProps<{
   scale: number
   /** The sheet's form; the expanded sheet's is `full`. */
   sheetForm: MarginForm
+  /** Pinned across the expanded sheet's bottom (ticket 1260): Row progress alone, the facts standing in its rails. */
   expanded?: boolean
   /** Whether the band holds two rows. */
   stacks: boolean
@@ -42,8 +43,6 @@ const emit = defineEmits<{
   'toggle-row-highlight': []
   'replace-bead': [beadId: string]
   'set-letters': [on: boolean]
-  /** The strip's least width as laid out, in drafting px (0 until it has shown), for the expanded sheet. */
-  'least-strip': [width: number]
 }>()
 
 const { t, locale } = useI18n()
@@ -56,7 +55,7 @@ const ALL_FACTS: readonly FactsForm[] = ['all', 'noEstimate', 'noSize', 'noBead'
 /** The facts the foot may hold: none folded (by hand or by the zoom) or with Name and size on the margin off; compact,
  * the legend alone. */
 const factForms = computed<readonly FactsForm[]>(() => {
-  if (!canvas.margin.titleBlock.value || fold.folded.value) return []
+  if (props.expanded || !canvas.margin.titleBlock.value || fold.folded.value) return []
   if (props.sheetForm === 'full') return ALL_FACTS
   return props.sheetForm === 'compact' ? ['legend'] : []
 })
@@ -85,19 +84,12 @@ const stripLabels = computed(() => {
   return JSON.stringify([locale.value, t.value.rowProgress, columnsAsSeen(props.project, props.frame), current, total, touch.value, !!props.expanded, compactStrip.value])
 })
 
-/** The least form's width as last laid out. */
-const leastStripWidth = ref(0)
-// A width learnt for other words is forgotten, as the fitting's are.
-watch(stripLabels, () => (leastStripWidth.value = 0))
-watch(leastStripWidth, (width) => emit('least-strip', width), { immediate: true })
-
 const fitting = useFittingForm<FootForm>({
   forms: () => footForms.value,
   room: () => props.room,
   measure: () => {
     const strip = stripWidth(progressEl.value?.firstElementChild as HTMLElement | null | undefined, props.scale)
     if (!strip) return 0
-    if (shown.value?.fit === STRIP_FITS.at(-1)) leastStripWidth.value = strip
     const beside = shown.value?.layout === 'line' ? rootEl.value?.querySelector<HTMLElement>('.margin-facts')?.offsetWidth : 0
     if (!beside) return strip
     return strip + beside + (Number.parseFloat(getComputedStyle(rootEl.value!).columnGap) || 0)
@@ -106,7 +98,7 @@ const fitting = useFittingForm<FootForm>({
   labels: () => JSON.stringify([stripLabels.value, facts.value?.words]),
 })
 /** The layout and the strip's form shown. Where none fits, and bare, the strip is not drawn, so Row done never stands
- * outside the margin (ticket 1245); expanded it stays at its least, and the sheet widens to it. */
+ * outside the margin (ticket 1245); expanded it stays at its least. */
 const shown = computed<{ layout: Layout; fit: StripFit } | undefined>(() => {
   const form = fitting.value ?? (props.expanded ? footForms.value.at(-1) : undefined)
   if (!form) return undefined

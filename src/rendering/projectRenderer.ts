@@ -120,10 +120,9 @@ export interface RenderInput {
   // How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults
   // to `MARGIN`.
   margin?: number
-  /** The expanded Frame's slim sheet (MarginSheet card, Expand the Frame; ticket 1169): its box in grid px and its
-   * corners in screen px, drawn at scale 1 with no inner border in place of the 4-position sheet. The keep-out margin
-   * is unchanged. */
-  slimSheet?: SlimSheet
+  /** The expanded Frame's paper (MarginSheet card, Expand the Frame; tickets 1169, 1260): its box in grid px, drawn at
+   * scale 1 with no inner border in place of the 4-position sheet. The keep-out margin is unchanged. */
+  expandedPaper?: ExpandedPaper
   // How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows,
   // zoom, rotation or what is on screen.
   drawBead?: BeadDrawer
@@ -214,14 +213,14 @@ function frameGroundBox(project: DrawnProject, ref: FrameRef): readonly [number,
 
 /** The box of the Frame's margin sheet in grid px: left, top, right, bottom. What the Frame's own surface covers
  * (ticket 1187). */
-function sheetBoxOf(project: DrawnProject, ref: FrameRef, margin: number, slim?: SlimSheet): readonly [number, number, number, number] {
+function sheetBoxOf(project: DrawnProject, ref: FrameRef, margin: number, slim?: ExpandedPaper): readonly [number, number, number, number] {
   const sheet = slim?.sheet ?? marginSheetPx(project, ref, margin)!.sheet
   return [sheet.x, sheet.y, sheet.x + sheet.width, sheet.y + sheet.height]
 }
 
 /** The margin sheets a layer's surface lays the reference image round (ticket 1219): a Frame's own, none on the Canvas's, which
  * has no Frame's px. */
-function sheetBoxesOf(project: DrawnProject, layer: ViewLayer, margin: number, slim?: SlimSheet): (readonly [number, number, number, number])[] {
+function sheetBoxesOf(project: DrawnProject, layer: ViewLayer, margin: number, slim?: ExpandedPaper): (readonly [number, number, number, number])[] {
   return isFrameLayer(layer) && frameById(project, layer) ? [sheetBoxOf(project, layer, margin, slim)] : []
 }
 
@@ -744,28 +743,28 @@ export function marginSheetPx(project: DrawnProject, ref: FrameRef, margin = MAR
   return { sheet, footprint, band: Math.round(narrowest * 1e6) / 1e6 }
 }
 
-/** The expanded Frame's slim sheet as drawn (ticket 1169): its box in grid px and its outer corners in screen px. */
-export interface SlimSheet {
+/** The expanded Frame's sheet as drawn (tickets 1169, 1260): its box in grid px, square-cornered, as the page rounds
+ * what is seen of it. */
+export interface ExpandedPaper {
   sheet: Region
-  radius: number
 }
 
 /** The keep-out margin as drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the Frame's
  * footprint left out, a hairline edge and an inner border; folded, no border; none bare, which keeps only the Move bar and
  * the Frame tools button (tickets 0682, 1164). In grid space: its `MARGIN_PX` at the sheet's scale (ticket 0698), over the zoom. */
-function drawMarginSheet(context: DrawingContext, project: DrawnProject, ref: FrameRef, margin: number, zoom: number, look: MarginLook, slim?: SlimSheet): void {
+function drawMarginSheet(context: DrawingContext, project: DrawnProject, ref: FrameRef, margin: number, zoom: number, look: MarginLook, slim?: ExpandedPaper): void {
   const kept = marginSheetPx(project, ref, margin)!
   const { footprint } = kept
   const sheet = slim?.sheet ?? kept.sheet
   const gridBand = slim ? Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height) : kept.band
   const band = gridBand * zoom
-  // Expanded, the sheet is full at scale 1 at every zoom, with no inner border.
+  // Expanded, the paper is at scale 1 at every zoom, with no inner border.
   const form = slim ? 'slim' : marginForm(band, look.leastScale)
   if (form === 'bare') return
   const px = slim ? 1 / zoom : marginScale(band, look.leastScale) / zoom
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(slim ? slim.radius / zoom : MARGIN_PX.sheetRadius[drawn] * px, gridBand)
+  const radius = slim ? 0 : Math.min(MARGIN_PX.sheetRadius[drawn] * px, gridBand)
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -835,7 +834,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       : undefined
   // A Frame's own surface holds every Frame (ticket 1219): a band of one, or one drawn alone, is cut to its sheet, so
   // the others stay as they were drawn.
-  const sheetCut = isFrameLayer(layer) && space.open && frame ? onSurface(sheetBoxOf(project, ref, margin, input.slimSheet), extent, region, zoom, rotation, pixelRatio) : undefined
+  const sheetCut = isFrameLayer(layer) && space.open && frame ? onSurface(sheetBoxOf(project, ref, margin, input.expandedPaper), extent, region, zoom, rotation, pixelRatio) : undefined
   const wanted = input.alone ? (sheetCut ?? NOTHING) : cut ? (sheetCut ? overlapOf(cut, sheetCut) : cut) : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
   const cleared = input.within ? overlapOf(wanted, input.within) : wanted
   const clipped = band || strip || input.within
@@ -892,7 +891,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       drawCanvasLayer(context, draw, space)
     }
     if (frame && frameBox && layer !== 'canvas') {
-      drawMarginSheet(context, project, ref, margin, zoom, theme.margin, input.slimSheet)
+      drawMarginSheet(context, project, ref, margin, zoom, theme.margin, input.expandedPaper)
       drawFrameGround(context, { project, box: frameBox, area, zoom, pixelRatio, frameLook: frameTheme, reference: under, tiles }, ref)
       const origin = { x: 0, y: 0 }
       const sheet = spaceOf(project, false, ref)
@@ -925,7 +924,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
   // Drawn one layer at a time, each lays it on its own part: the Frame on its sheet's box, the Canvas round it.
-  if (drawn?.over) drawReferenceCut(context, drawn, layer ? sheetBoxesOf(project, layer, margin, input.slimSheet) : [], isFrameLayer(layer) ? 'inside' : 'outside')
+  if (drawn?.over) drawReferenceCut(context, drawn, layer ? sheetBoxesOf(project, layer, margin, input.expandedPaper) : [], isFrameLayer(layer) ? 'inside' : 'outside')
 
   if (clipped) {
     context.restore()

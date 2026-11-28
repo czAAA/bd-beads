@@ -99,3 +99,5 @@ Every string is the Frame's: Export, Picture, Printable chart, Export quality, S
 **From the margin too (ticket 0655; MarginSheet card):** the Frame's margin carries an Export button (`export`, ticket 0847) in its top band. It opens this same panel, hanging 4px under that button with right edges aligned, kept inside the screen.
 
 Hand-written from the ticket 0652 design canvas; static rendition.
+
+**In the expanded sheet's rail (ticket 1260; MarginSheet card, As built 1260):** the same rows unfold under the rail's Export as plain indented panel rows, never a popover: PNG, PDF, File, the file name read only (mono, `muted`), Name on exports and Export settings, which unfolds in place.

@@ -10,7 +10,7 @@ import { weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { canvasBlits, recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
-import { renderProject, type RenderInput, type SlimSheet } from './projectRenderer'
+import { renderProject, type RenderInput, type ExpandedPaper } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
@@ -48,7 +48,7 @@ const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknow
     .filter((call) => typeof call.fillStyle === 'object')
     .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
-function render(project: Project, open: boolean, extra: { layer?: RenderInput['layer']; region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme; opaque?: boolean; slimSheet?: SlimSheet } = {}) {
+function render(project: Project, open: boolean, extra: { layer?: RenderInput['layer']; region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme; opaque?: boolean; expandedPaper?: ExpandedPaper } = {}) {
   const beads: BeadShape[] = []
   const { context, calls, named } = recordingContext()
   renderProject(context, {
@@ -60,7 +60,7 @@ function render(project: Project, open: boolean, extra: { layer?: RenderInput['l
     theme: extra.theme,
     frameTheme: extra.frameTheme,
     opaque: extra.opaque,
-    slimSheet: extra.slimSheet,
+    expandedPaper: extra.expandedPaper,
     layer: extra.layer,
     drawBead: (_c, bead) => beads.push(bead),
   })
@@ -298,13 +298,13 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
       expect(drawn(true, 0.39).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
     })
 
-    it('is drawn slim while the Frame is expanded: its own box, corners at scale 1 at any zoom, no inner border (ticket 1169)', () => {
-      // The Frame's beads are x 0 to 60, y 0 to 80; the slim sheet a few px round them, at 300% and at 150%.
+    it('is drawn over the box asked for while the Frame is expanded, square-cornered, with no inner border (tickets 1169, 1260)', () => {
+      // The Frame's beads are x 0 to 60, y 0 to 80; the paper a box round them, at 300% and at 150%.
       for (const zoom of [3, 1.5]) {
         const project = withLayers(framedProject('loom'), { frame })
-        const slimSheet = { sheet: { x: -20, y: -30, width: 100, height: 130 }, radius: 12 }
-        const { calls } = render(project, true, { region: around(zoom), zoom, theme, slimSheet })
-        expect(near(roundRects(calls), [-20, -30, 100, 130, 12 / zoom]), `${zoom}`).toBe(true)
+        const expandedPaper = { sheet: { x: -20, y: -30, width: 100, height: 130 } }
+        const { calls } = render(project, true, { region: around(zoom), zoom, theme, expandedPaper })
+        expect(near(roundRects(calls), [-20, -30, 100, 130, 0]), `${zoom}`).toBe(true)
         expect(strokedIn(calls, '#fedcba'), `${zoom}`).toHaveLength(1)
         expect(strokedIn(calls, '#abcdef'), `${zoom}`).toHaveLength(0)
       }

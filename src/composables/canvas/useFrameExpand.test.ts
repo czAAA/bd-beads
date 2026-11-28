@@ -2,6 +2,7 @@ import { frameIdIn } from '../../testUtils/frameId'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
+import { moveToRow } from '../../domain/rowProgress'
 import { MAX_ZOOM } from '../../domain/grid'
 import { coversOf } from '../../domain/sheets'
 import type { FrameRef } from '../../domain/grid'
@@ -31,7 +32,7 @@ function setup(project: Project) {
   const scope = effectScope()
   const { view, expand } = scope.run(() => {
     const view = useCanvasView(() => current.value, viewport, { covered, expanded: () => room?.(), expandedFrame: () => made?.expandedFrame.value, fitted: (pitch) => fitted(pitch), leaveExpanded: () => leave() })
-    const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, compact, covered, fit: view.fit, showView: view.showView })
+    const expand = useFrameExpand({ currentProject: () => current.value, viewport, zoom: view.zoom, scroll: view.scroll, isAtFit: view.isAtFit, compact, fit: view.fit, showView: view.showView })
     made = expand
     room = () => (expand.expanded.value ? expand.room : undefined)
     fitted = expand.fitted
@@ -57,7 +58,7 @@ const pitchOf = (zoom: number) => beadsOnScreen(framed(1, 1), zoom, { x: 0, y: 0
 
 describe('useFrameExpand (ticket 1169)', () => {
   it('fits the Frame into the drawing area clear of the Tool pill, which stays, and its slim sheet, with no gap round it (ticket 1176)', () => {
-    const project = framed(60, 20)
+    const project = framed(20, 12)
     const { view, expand, stop } = setup(project)
     const before = view.zoom.value
     expect(expand.toggle()).toBe(true)
@@ -104,13 +105,6 @@ describe('useFrameExpand (ticket 1169)', () => {
     stop()
   })
 
-  it('fills the whole room: the sheet takes the area less the pill, the Frame centred in it (ticket 1194)', () => {
-    const { expand, stop } = setup(framed(6, 6))
-    expand.toggle()
-    expect(expand.content.value!.fill).toEqual({ width: 880, height: 600 })
-    stop()
-  })
-
   it('goes back to the view as it was, the second press or Escape', () => {
     const { view, expand, stop } = setup(framed(60, 20))
     view.setZoom(0.7)
@@ -127,27 +121,27 @@ describe('useFrameExpand (ticket 1169)', () => {
   })
 
   it('fits again when the window is resized, moved by hand or not', async () => {
-    const { view, expand, viewport, stop } = setup(framed(60, 20))
+    const { view, expand, viewport, stop } = setup(framed(20, 12))
     expand.toggle()
     view.carryBy(40, 0)
     viewport.value = { width: 1400, height: 600 }
     await nextTick()
     expect(view.isAtFit.value).toBe(true)
-    const beads = beadsOnScreen(framed(60, 20), view.zoom.value, view.scroll.value)
+    const beads = beadsOnScreen(framed(20, 12), view.zoom.value, view.scroll.value)
     const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
-    // Centred in the room the Tool pill, 120px along the left, and the sheet leave.
+    // Centred in the room the Tool pill, 120px along the left, and the numbers leave.
     expect(beads.x + beads.width / 2).toBeCloseTo(120 + room.left + (1400 - 120 - room.left - room.right) / 2, 0)
     stop()
   })
 
-  it('fits the sheet anew as it measures itself, while the view follows the fit', async () => {
-    const { view, expand, stop } = setup(framed(40, 40))
+  it('fits the room anew as the rails measure themselves, while the view follows the fit', async () => {
+    const { view, expand, stop } = setup(framed(20, 12))
     expand.toggle()
     await nextTick()
-    const tall = view.zoom.value
-    expand.measured({ row: 24, foot: 0, rowWidth: 0 })
+    const wide = view.zoom.value
+    expand.measured({ top: 0, right: 150, bottom: 40, left: 150 })
     await nextTick()
-    expect(view.zoom.value).toBeGreaterThan(tall)
+    expect(view.zoom.value).toBeLessThan(wide)
     stop()
   })
 
@@ -173,6 +167,112 @@ describe('useFrameExpand (ticket 1169)', () => {
     const narrow = expand.room(1, 30)
     expect(wide.right - narrow.right).toBe(6 - 4)
     stop()
+  })
+
+  describe('rows that run on (ticket 1260)', () => {
+    /** A 20 × 120 loom Frame: too long for the room at the pitch it is woven by. */
+    const tall = () => framed(20, 120)
+
+    it('is fitted at 26px a bead from its first row, its rows running on below the room', () => {
+      const { view, expand, stop } = setup(tall())
+      expand.toggle()
+      expect(pitchOf(view.zoom.value)).toBeCloseTo(26, 0)
+      const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
+      const beads = beadsOnScreen(tall(), view.zoom.value, view.scroll.value)
+      expect(beads.y).toBeCloseTo(room.top, 0)
+      expect(beads.y + beads.height).toBeGreaterThan(600)
+      stop()
+    })
+
+    it('opens on the current row once rows are done', () => {
+      const project = moveToRow(tall(), 60, frameIdIn(tall()))
+      const { view, expand, stop } = setup(project)
+      expand.toggle()
+      const beads = beadsOnScreen(project, view.zoom.value, view.scroll.value)
+      const row = beads.y + (60.5 / 120) * beads.height
+      expect(row).toBeGreaterThan(200)
+      expect(row).toBeLessThan(400)
+      stop()
+    })
+
+    // A drag moves the content with the pointer, a scroll the other way.
+    it.each([
+      { move: 'panBy', down: -100 },
+      { move: 'scrollBy', down: 100 },
+    ] as const)('stays expanded on $move along them, no further than the first and last row', ({ move, down }) => {
+      const { view, expand, stop } = setup(tall())
+      expand.toggle()
+      const start = view.scroll.value.y
+      view[move](0, down)
+      expect(expand.expanded.value).toBe(true)
+      expect(view.scroll.value.y).toBeCloseTo(start + 100, 5)
+      view[move](0, down * 100)
+      const room = expand.room(view.zoom.value, pitchOf(view.zoom.value))
+      const end = beadsOnScreen(tall(), view.zoom.value, view.scroll.value)
+      expect(end.y + end.height).toBeCloseTo(600 - room.bottom, 0)
+      view[move](0, -down * 200)
+      expect(view.scroll.value.y).toBeCloseTo(start, 5)
+      stop()
+    })
+
+    it('keeps to the rows while a drag along them wavers, and goes back on a move across them', () => {
+      const { view, expand, stop } = setup(tall())
+      expand.toggle()
+      const x = view.scroll.value.x
+      view.panBy(8, -60)
+      view.panBy(12, -60)
+      expect(expand.expanded.value).toBe(true)
+      expect(view.scroll.value.x).toBe(x)
+      vi.spyOn(performance, 'now').mockReturnValue(performance.now() + 1000)
+      view.panBy(60, 0)
+      expect(expand.expanded.value).toBe(false)
+      vi.restoreAllMocks()
+      stop()
+    })
+
+    it('looks at the same rows when it is fitted again', () => {
+      const { view, expand, viewport, stop } = setup(tall())
+      expand.toggle()
+      view.scrollBy(0, 1000)
+      const middle = () => {
+        const beads = beadsOnScreen(tall(), view.zoom.value, view.scroll.value)
+        return (viewport.value.height / 2 - beads.y) / beads.height
+      }
+      const looked = middle()
+      view.fit()
+      expect(middle()).toBeCloseTo(looked, 2)
+      stop()
+    })
+
+    it('stays on a two-finger pan along them, and goes back on one across them', () => {
+      const { view, expand, stop } = setup(tall())
+      expand.toggle()
+      const { x, y } = view.scroll.value
+      view.pinchStep({ zoom: view.zoom.value, pan: { x: 5, y: -80 }, anchor: { x: 500, y: 300 } })
+      view.endTwist({ x: 505, y: 220 })
+      expect(expand.expanded.value).toBe(true)
+      expect(view.scroll.value).toEqual({ x, y: y + 80 })
+      view.pinchStep({ zoom: view.zoom.value, pan: { x: 80, y: 5 }, anchor: { x: 500, y: 300 } })
+      expect(expand.expanded.value).toBe(false)
+      stop()
+    })
+  })
+
+  describe('a two-finger pan whose spread wavers (ticket 1260)', () => {
+    it('scrolls the rows no further than their ends, zooming nothing once it is a pan', () => {
+      const project = framed(20, 120)
+      const { view, expand, stop } = setup(project)
+      expand.toggle()
+      const fit = view.zoom.value
+      const start = view.scroll.value.y
+      view.pinchStep({ zoom: fit, pan: { x: 0, y: -40 }, anchor: { x: 500, y: 300 } })
+      view.pinchStep({ zoom: fit * 1.03, pan: { x: 2, y: 400 }, anchor: { x: 500, y: 700 } })
+      expect(view.zoom.value).toBe(fit)
+      expect(view.scroll.value.y).toBeCloseTo(start, 5)
+      expect(view.isAtFit.value).toBe(true)
+      expect(expand.expanded.value).toBe(true)
+      stop()
+    })
   })
 
   describe('zooming out (ticket 1194)', () => {
@@ -222,10 +322,10 @@ describe('useFrameExpand (ticket 1169)', () => {
     })
   })
 
-  describe('moving the view by hand', () => {
+  describe('moving the view by hand, the whole Frame in view', () => {
     /** Expanded from a view of its own, kept to come back to. */
     function expandedFrom() {
-      const made = setup(framed(60, 20))
+      const made = setup(framed(20, 12))
       made.view.setZoom(0.5)
       made.view.panBy(30, 10)
       const was = { zoom: made.view.zoom.value, scroll: { ...made.view.scroll.value } }

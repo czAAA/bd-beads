@@ -30,9 +30,6 @@ const rows = ref(11)
 /** Brick stitch gives the band a Drop chip (ticket 0698). */
 const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
-const expanded = ref(false)
-/** The least width the expanded sheet last asked the canvas for. */
-const slimRowWidth = ref(0)
 /** The Frame's name: empty, its chip invites one (ticket 0803). */
 const frameName = ref('Sun band')
 /** How many of the Palette's colors the Frame's first row is painted in, at most. */
@@ -73,7 +70,7 @@ const Host = defineComponent({
     // Bare, the Move bar stands above the sheet's top edge (ticket 0682): the host leaves it room.
     return () =>
       h('div', { style: { position: 'relative', margin: '48px 16px 16px', height: `${anchorAt(zoom.value, columns.value).sheet.height}px` }, 'data-testid': 'under-sheet' }, [
-        h(MarginSheet, { ...ownProject(projectOf(columns.value)), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, expanded: expanded.value, onMovePress: () => movePresses.value++, onSlim: (measures: { rowWidth: number }) => (slimRowWidth.value = measures.rowWidth) }),
+        h(MarginSheet, { ...ownProject(projectOf(columns.value)), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, onMovePress: () => movePresses.value++ }),
       ])
   },
 })
@@ -389,22 +386,6 @@ describe('Row progress\'s strip inside the margin (ticket 1245)', () => {
       expect(found).toEqual([])
     }, 60_000)
   }
-})
-
-describe('Row progress\'s strip on a narrow expanded sheet (ticket 1245)', () => {
-  it('stays, and asks for a sheet no narrower than its shortest form', async () => {
-    zoom.value = 0.5
-    columns.value = 1
-    expanded.value = true
-    onTestFinished(() => {
-      expanded.value = false
-    })
-    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
-    await settled(root)
-    const buttons = [...root.querySelectorAll('[data-testid="margin-progress-strip"] button')].map((button) => button.getBoundingClientRect())
-    expect(buttons.length).toBeGreaterThan(0)
-    expect(slimRowWidth.value).toBeGreaterThanOrEqual(buttons.at(-1)!.right - buttons[0]!.left)
-  })
 })
 
 describe('the band\'s row after a label changes (ticket 0851)', () => {

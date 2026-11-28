@@ -58,6 +58,8 @@ The Homepage's What's inside demo Frame shows the same strip, Back a row include
 
 ## Expand the Frame (tickets 1168, 1169)
 
+How the expanded sheet is laid out, what a move by hand does and what the press fits are ticket 1260's (As built, at the end), which wins over the bullets below where they differ.
+
 Signed off 2026-11-20 (design canvas "Expand Frame to the screen", icon A, link on ticket 1168). For weaving from the screen: the Frame as large as the screen allows. Changed by ticket 1176: it only enlarges the Frame, the Tool pill and drawing staying as they are, and the Progress bar steps aside, the sheet's Row progress strip standing in for it.
 
 - **The Progress bar steps aside** (ticket 1176): nothing of it is drawn but the room a home indicator's safe-area inset keeps; the sheet's Row progress strip is the one on screen, its Row done filled (ProgressBar card).
@@ -177,7 +179,7 @@ Escape or a press outside closes it; focus goes back to ···. The band's ··�
 - **Keyboard:** one Tab stop with roving focus, as the bar had; Enter and Shift+Enter keep their meaning.
 - **The Homepage too:** the Welcome cuff and What's inside's demo Frame drop their Progress bar and show this strip on their sheet, the app's own (Homepage card; built by 1223).
 
-## Calmer sheet (approved 2026-11-27, ticket 1255; built by 1256, 1257 and 1258, with 1259 and 1260 not yet in the app)
+## Calmer sheet (approved 2026-11-27, ticket 1255; built by 1256, 1257, 1258 and 1260, with 1259 not yet in the app)
 
 Same controls and the same icons, laid out calmer. Where it differs from the sections above (the top band, the Row progress strip, the title block and the zoom forms they describe), this section and its As built notes below win once built. Owner's rules: size in beads and cm stand one after another; editable fields show they are editable (a soft `surface` chip with a 12px `pencil`), read-only facts are plain `muted` text; the current done and focused row marks stay as they are.
 
@@ -318,4 +320,18 @@ The Calmer sheet's band and foot (point 1). It replaces the Title block section,
 - **Gone:** the two-row, one-row and roomy title blocks with their color counts (Beads needed holds the counts), the name tab (Row progress no longer takes its room before it is measured), and `--margin-title-row`, `--margin-legend-row`, `--margin-band-legend`, `--margin-band-roomy`, `--margin-roomy-row`, `--margin-key-disc`, `--margin-key-letter`, `--margin-tab-name`.
 - **Left as it was:** the inner border; the Homepage cuff's strip, with its paper and rules.
 - **Left out:** no one has checked it by hand on a real iPad.
+
+## As built (ticket 1260)
+
+The Calmer sheet's expanded view (point 3), but for the Tool pill's four places (1259). It replaces the slim sheet of "Expand the Frame" above: its row, its one-line foot inside it, its "sheet fills the room" and its "any move goes back".
+
+- **Layout:** the sheet covers the whole drawing area, `space-4` in from its edges with the sheet's corners and edge, the paper in the margin color. **Rails:** facts left, the rows' window, tools right, each rail `--margin-rail` wide (300px; `--margin-rail-compact`, 232px, in a window up to 1500px), Row progress across the bottom. **Band:** for a Frame wider for its height than the drawing area, or an area under 800px, the facts (three columns) and the tools stand along the top, at most 45% of the height. Under 600px (a phone) the facts and the tools are one under the other, each at most a quarter. A rail or band that is too long scrolls by itself. No ···, no Move bar, no other Frame's sheet.
+- **Left rail:** Back to the Canvas (`collapse-frame`, with its words); the name and "by {maker}" chips; Technique with its settings, Size, Bead, each under its label, as the band's and foot's chips. The **size chip** unfolds the popover's size fields in place, its edge steppers one under another. Beads needed with every color, each a lettered disc and its count (no weights column), then Letters. Name and size on the margin off leaves Beads needed and Letters. There is no fold.
+- **Right rail:** "Frame tools", then each tool as a panel row with its words: Mirror (accent while on, "Mirror off"), Rotate Frame, Edit Frame (`ink` while on; off with its reason once a row is done), Export, Margin color, a rule, Remove Frame. **Export** unfolds indented rows: PNG, PDF, File, the PDF's file name (mono, `muted`, read only: it is renamed in the Export panel), Name on exports (unfolds the maker's chip) and Export settings (unfolds in place to Export quality and the chart switches; the same kept fold as the panel's). **Margin color** unfolds its two swatch rows and the Name and size switch. Neither is a popover.
+- **Rows:** the fit is the whole Frame where that draws a bead 28px or larger (26px in a drawing area up to 1500px); else that pitch, never more than the shorter way holds, the rows running on along the longer. It starts at the first row, or with the current pass in the middle once a row is done, and a later fit looks where the maker had scrolled. The numbers across the rows stay at the window's edge on the paper, over the beads that pass under them.
+- **Moves:** a drag, wheel, trackpad scroll or two-finger pan along the longer way scrolls the rows, stopping at the first and last, and stays expanded. A move that goes more than 24px across them (any move, where the whole Frame is in view), a twist or Rotate canvas goes back, as before. Zooming is unchanged.
+- **Tool pill:** it docks round the rows' window, on the edge "The Tool pill stays" gives; the Selection and Mirror bars are placed in the window too.
+- **Row progress:** the strip as on the sheet, alone, across the bottom, with its settings button.
+- **Keyboard:** each row, chip and switch is a Tab stop in the order left rail, right rail, Row progress; the focus goes with Expand the Frame to Back to the Canvas and back.
+- **Left out:** no one has checked it by hand on a real iPad. The save ring, while shown, stands over the right rail's top, which leaves it room.
 
