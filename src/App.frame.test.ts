@@ -385,7 +385,7 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="margin-progress-compact-position"] .row-progress__count-short').text()).toBe('2/2')
   })
 
-  it('expands the Frame from its first button, into two rails, the Tool pill kept and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
+  it('expands the Frame from its first button, into two rails, the Tool pill kept on its edge and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176, 1259)', async () => {
     const wrapper = await mountOpen(sheetProject())
     const surface = () => wrapper.findComponent(ProjectSurface)
     await wrapper.get('[data-testid="margin-expand-frame"]').trigger('click')
@@ -393,6 +393,12 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Frame expanded')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="tool-pill-layer"]').attributes('inert')).toBeUndefined()
+    const pill = () => wrapper.get('[data-testid="tool-pill"]').attributes('data-position')
+    expect(pill()).toBe('bottom')
+    // A move while expanded holds until Back to the Canvas, the device's own edge left as it was.
+    await wrapper.get('[data-testid="tool-pill-grip"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(pill()).toBe('right')
+    expect(wrapper.get('.margin-rails__area').classes()).toContain('margin-rails__area--right')
     // The rails stand in the sheet's place, and the surface draws the paper under them.
     expect(wrapper.find('[data-testid="margin-rails"]').exists()).toBe(true)
     expect(surface().props('expanded')).toBeDefined()
@@ -401,6 +407,7 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
     expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
     expect(surface().props('expanded')).toBeUndefined()
+    expect(pill()).toBe('bottom')
   })
 
   it('opens the Export panel from the Frame tools menu where its sheet is too narrow for the Export button (ticket 1195)', async () => {

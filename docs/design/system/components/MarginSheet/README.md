@@ -64,7 +64,7 @@ Signed off 2026-11-20 (design canvas "Expand Frame to the screen", icon A, link 
 
 - **The Progress bar steps aside** (ticket 1176): nothing of it is drawn but the room a home indicator's safe-area inset keeps; the sheet's Row progress strip is the one on screen, its Row done filled (ProgressBar card).
 - **The press** fits the Frame with its sheet into the room under the Canvas strip, down to the screen's bottom, clear of the Tool pill as Fit is, centred there. The sheet fills the whole room on every side, so no Canvas shows at the fit (ticket 1194; until then a small Frame stopped at the 400% ceiling and left Canvas at the sides): the room the Frame leaves on the axis that does not bind is shared by the top band (at least what its row and numbers need) and the bottom strip. The zoom is the largest at which it fits, with no ceiling; Fit's 48px bead cap (`LARGEST_FIT_BEAD_PX`) does not hold here either (tickets 1176, 1194). A zoom in goes on to twice the fit, or 400% where that is more. The view glides there over `duration-base` with `ease-standard`; under reduced motion it jumps.
-- **The Tool pill stays** (ticket 1176; it stepped aside until then), so drawing goes on while expanded. It moves to the free edge: the left for a Frame the screen's height binds, the bottom for one its width binds, and back to its own edge with Back to the Canvas (ToolPill card). The Selection bar and the Mirror bar show as ever (ContextBar card).
+- **The Tool pill stays** (ticket 1176; it stepped aside until then), so drawing goes on while expanded. It keeps its edge, with four places round the Frame (ticket 1259, As built at the end; ToolPill card). The Selection bar and the Mirror bar show as ever (ContextBar card).
 - **The sheet slims to what it holds**, at scale 1 at every zoom (never the 1 to 1.5 of Zoom forms below), so a closer zoom gives the room to the beads and not to the paper:
   - **Top:** the band's row `--margin-expanded-inset` (6px; `--margin-expanded-inset-compact`, 4px, under `bp-tablet`) in from the sheet's edge, the column numbers 3px under it, the Frame's line 3px under them.
   - **Sides:** a side that holds row numbers has them 3px off the line and is as wide as the widest of them and the inset; a side without numbers is the inset alone.
@@ -179,7 +179,7 @@ Escape or a press outside closes it; focus goes back to ···. The band's ··�
 - **Keyboard:** one Tab stop with roving focus, as the bar had; Enter and Shift+Enter keep their meaning.
 - **The Homepage too:** the Welcome cuff and What's inside's demo Frame drop their Progress bar and show this strip on their sheet, the app's own (Homepage card; built by 1223).
 
-## Calmer sheet (approved 2026-11-27, ticket 1255; built by 1256, 1257, 1258 and 1260, with 1259 not yet in the app)
+## Calmer sheet (approved 2026-11-27, ticket 1255; built by 1256 to 1260)
 
 Same controls and the same icons, laid out calmer. Where it differs from the sections above (the top band, the Row progress strip, the title block and the zoom forms they describe), this section and its As built notes below win once built. Owner's rules: size in beads and cm stand one after another; editable fields show they are editable (a soft `surface` chip with a 12px `pencil`), read-only facts are plain `muted` text; the current done and focused row marks stay as they are.
 
@@ -330,8 +330,18 @@ The Calmer sheet's expanded view (point 3), but for the Tool pill's four places 
 - **Right rail:** "Frame tools", then each tool as a panel row with its words: Mirror (accent while on, "Mirror off"), Rotate Frame, Edit Frame (`ink` while on; off with its reason once a row is done), Export, Margin color, a rule, Remove Frame. **Export** unfolds indented rows: PNG, PDF, File, the PDF's file name (mono, `muted`, read only: it is renamed in the Export panel), Name on exports (unfolds the maker's chip) and Export settings (unfolds in place to Export quality and the chart switches; the same kept fold as the panel's). **Margin color** unfolds its two swatch rows and the Name and size switch. Neither is a popover.
 - **Rows:** the fit is the whole Frame where that draws a bead 28px or larger (26px in a drawing area up to 1500px); else that pitch, never more than the shorter way holds, the rows running on along the longer. It starts at the first row, or with the current pass in the middle once a row is done, and a later fit looks where the maker had scrolled. The numbers across the rows stay at the window's edge on the paper, over the beads that pass under them.
 - **Moves:** a drag, wheel, trackpad scroll or two-finger pan along the longer way scrolls the rows, stopping at the first and last, and stays expanded. A move that goes more than 24px across them (any move, where the whole Frame is in view), a twist or Rotate canvas goes back, as before. Zooming is unchanged.
-- **Tool pill:** it docks round the rows' window, on the edge "The Tool pill stays" gives; the Selection and Mirror bars are placed in the window too.
+- **Tool pill:** it docks round the rows' window (As built, ticket 1259); the Selection and Mirror bars are placed in the window too.
 - **Row progress:** the strip as on the sheet, alone, across the bottom, with its settings button.
 - **Keyboard:** each row, chip and switch is a Tab stop in the order left rail, right rail, Row progress; the focus goes with Expand the Frame to Back to the Canvas and back.
 - **Left out:** no one has checked it by hand on a real iPad. The save ring, while shown, stands over the right rail's top, which leaves it room.
 
+
+## As built (ticket 1259)
+
+The Tool pill's four places round the expanded Frame (Calmer sheet 3). It replaces 1176's move to the "free edge".
+
+- **Edge:** the pill keeps the Canvas's edge on expand. The four places are the Canvas's own drop zones (ToolPill card), round the rows' window, shown while the pill is dragged or its grip hovered; they lie over the Frame where it fills the window.
+- **Room:** only the pill's side gives room, `--pill-room`, as bare paper between that side and the rows' window; the rows, their numbers and the bars stay off it. The other three sides are the Frame's. A drop on another place fits again while the view follows the fit.
+- **Beside the Frame:** a pill on the left or right, and that side's place, stand beside a narrow Frame and its numbers. Top and bottom are the window's own ends, so the bottom pill stands between the Frame and Row progress, over a wide Frame's band layout too.
+- **No bead under the paper:** a press, a hover or a stroke on the rails, the pill's room or the paper under the numbers held at the window's edge reaches no bead hidden there.
+- **Left out:** no one has checked it by hand on a real iPad.

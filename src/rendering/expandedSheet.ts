@@ -2,12 +2,13 @@ import type { Insets } from '../domain/toolPill'
 import type { Size } from './cellSize'
 import { MARGIN_PX } from './marginSizes'
 
-/** What the expanded Frame lies in (MarginSheet card, Calmer sheet 3; tickets 1194, 1260), in screen px: what the
- * rails and Row progress take from each side of the drawing area, how thick the numbers stand on the left and top as
- * seen (0 where none) and their size. `compact` is under bp-tablet. */
+/** What the expanded Frame lies in (Calmer sheet 3; tickets 1194, 1259, 1260), screen px: the sides the rails, Row
+ * progress and the Tool pill's place take (`chrome`), the same without that place (`round`), the numbers' thickness on
+ * the left and top as seen (0 where none) and their size. `compact` is under bp-tablet. */
 export interface ExpandedContent {
   compact: boolean
   chrome: Insets
+  round: Insets
   numbers: { left: number; top: number }
   fontPx: number
 }

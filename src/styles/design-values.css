@@ -292,6 +292,7 @@
   --pill-fade: 1.5rem; /* ToolPill card: the fade on the end where the pill's scrolling tools are cut on a phone, 24px (ticket 0837). */
   --pill-tile-outline: 1.5px; /* ToolPill card (ticket 0926): the inset `ink` outline round a pressed tile; 2px in high contrast. */
   --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink); /* ToolPill card (ticket 0926): that outline, drawn inside the tile's edge. */
+  --pill-room: calc(var(--pill-thickness) + 2px + 2 * var(--pill-gap)); /* ToolPill card (ticket 1259): what the pill takes from a side of an expanded Frame, its line and the gap on both its sides. */
   --pill-tile-focus-offset: 1px; /* ToolPill card (ticket 0926): a pressed tile's focus ring, just outside its outline. */
   --key-notch-ring: 0 0 0 var(--space-2) var(--elevated); /* ToolPill card (ticket 1093): the ring of the pill's fill round a tile's hotkey digit; with its 10px box, a notch 14px across. */
   --key-notch-layer: 1; /* ToolPill card (ticket 1093): the notch lies above its tile's focus ring, which stops short of the digit too. */

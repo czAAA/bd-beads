@@ -2,7 +2,7 @@ import { computed, ref, watch, type Ref } from 'vue'
 import type { FrameId } from '../../domain/grid'
 import { firstFrameId, frameById } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
-import { NO_INSETS, type Insets } from '../../domain/toolPill'
+import { NO_INSETS, sameInsets, type Insets } from '../../domain/toolPill'
 import type { Size } from '../../rendering/cellSize'
 import { expandedSides, type ExpandedContent } from '../../rendering/expandedSheet'
 import { expandedNumberPx, frameOutsetPx } from '../../rendering/rulerScale'
@@ -29,8 +29,9 @@ export function useFrameExpand(deps: FrameExpandDeps) {
   /** The Frame expanded, with the Project it is in (ticket 1220): another Project open is not, and the Frames beside it
    * stay as they were. */
   const expandedFor = ref<{ project: string; frame: FrameId }>()
-  /** What the rails and Row progress take from the drawing area's sides, as they last measured themselves. */
-  const chrome = ref<Insets>(NO_INSETS)
+  /** What the rails and Row progress take from the drawing area's sides, with the Tool pill's place (`chrome`) and
+   * without it (`round`), as they last measured themselves. */
+  const taken = ref({ chrome: NO_INSETS, round: NO_INSETS })
   /** The bead pitch on screen of the last expanded fit, in px: the numbers' size follows it and stays while zooming
    * (ticket 1194). */
   const fitPitch = ref(0)
@@ -52,11 +53,11 @@ export function useFrameExpand(deps: FrameExpandDeps) {
 
   /** What the expanded Frame lies in with its numbers at a size. */
   function contentAt(project: Project, fontPx: number): ExpandedContent {
-    return { compact: deps.compact.value, chrome: chrome.value, fontPx, numbers: frameNumberBands(project, fontPx, expandedFrame.value ?? firstFrameId(project)) }
+    return { compact: deps.compact.value, ...taken.value, fontPx, numbers: frameNumberBands(project, fontPx, expandedFrame.value ?? firstFrameId(project)) }
   }
 
   /** The room taken from each side of the drawing area, past the Frame's beads, at a zoom and the bead pitch it makes:
-   * the rails, Row progress and the numbers, what a fit leaves clear. */
+   * the rails, Row progress, the Tool pill's place and the numbers, what a fit leaves clear. */
   function room(zoom: number, pitch: number): Insets {
     const { chrome, ...content } = contentAt(deps.currentProject()!, expandedNumberPx(pitch))
     const sides = expandedSides(content)
@@ -91,9 +92,9 @@ export function useFrameExpand(deps: FrameExpandDeps) {
   }
 
   /** The rails measured themselves: a fit that follows them fits the room they leave. */
-  function measured(next: Insets): void {
-    const now = chrome.value
-    if (now.top !== next.top || now.right !== next.right || now.bottom !== next.bottom || now.left !== next.left) chrome.value = next
+  function measured(chrome: Insets, round: Insets): void {
+    const now = taken.value
+    if (!sameInsets(now.chrome, chrome) || !sameInsets(now.round, round)) taken.value = { chrome, round }
   }
 
   const roomKey = () => (expanded.value ? JSON.stringify(content.value) : '')

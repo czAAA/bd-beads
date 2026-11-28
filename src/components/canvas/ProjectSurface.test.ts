@@ -1574,11 +1574,45 @@ describe('ProjectSurface', () => {
 
       it('takes no press on the expanded Frame\'s paper, which hides the Canvas round it (tickets 1194, 1260)', async () => {
         const project = framed()
-        const expanded = { compact: false, chrome: { top: 0, right: 0, bottom: 0, left: 0 }, numbers: { left: 0, top: 0 }, fontPx: 11 }
+        const none = { top: 0, right: 0, bottom: 0, left: 0 }
+        const expanded = { compact: false, chrome: none, round: none, numbers: { left: 0, top: 0 }, fontPx: 11 }
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can(), expanded })
         // Row 2, column 2 is well outside the 4-position margin round the Frame at rows and columns 10 to 13.
         await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
         expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+      })
+
+      it.each([
+        ['on the rails and the Tool pill\'s place', { top: 0, right: 0, bottom: 0, left: 900 }],
+        ['under Row progress and the rails round the rows', { top: 700, right: 0, bottom: 0, left: 0 }],
+      ])('reaches no bead hidden %s, with any tool (ticket 1259)', async (_where, chrome) => {
+        const project = framed()
+        const expanded = { compact: false, chrome, round: chrome, numbers: { left: 0, top: 0 }, fontPx: 11 }
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ nearestOnPress: true }), expanded })
+        const surface = wrapper.find('[data-testid="project-surface"]')
+        // A bead of the Frame, which the paper lies over.
+        await surface.trigger('pointerdown', { ...centreOf(project, 11, 11), button: 0, buttons: 1 })
+        await surface.trigger('pointermove', { ...centreOf(project, 12, 12), buttons: 1 })
+        expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+        expect(wrapper.emitted('cell-hover')).toBeUndefined()
+      })
+
+      it('reaches no bead under the paper of the numbers held at the window\'s top, by a press or a stroke run into it (ticket 1259)', async () => {
+        const project = framed()
+        // The window starts just over the first row's middle, so the column numbers are held there, over that row.
+        const chrome = { top: centreOf(project, 10, 11).clientY - 5, right: 0, bottom: 0, left: 0 }
+        const expanded = { compact: false, chrome, round: chrome, numbers: { left: 0, top: 0 }, fontPx: 11 }
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can(), expanded })
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        await surface.trigger('pointerdown', { ...centreOf(project, 10, 11), button: 0, buttons: 1 })
+        expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+
+        await surface.trigger('pointerdown', { ...centreOf(project, 13, 11), button: 0, buttons: 1 })
+        await surface.trigger('pointermove', { ...centreOf(project, 10, 11), buttons: 1 })
+        const crossed = (wrapper.emitted('cells-primary-move') ?? []).flatMap(([cells]) => cells as GridPosition[])
+        expect(crossed.length).toBeGreaterThan(0)
+        expect(crossed.map(({ row }) => row)).not.toContain(0)
       })
 
       it('keeps its own cursor for Erase, which still works there', async () => {

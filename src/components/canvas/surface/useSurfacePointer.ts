@@ -134,6 +134,9 @@ export interface SurfacePointerDeps {
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
   refuse: () => void
+  /** Whether a point of the surface on screen lies under the expanded sheet (ticket 1259): its rails, the Tool pill's
+   * place or the paper under its held numbers. No bead there is hovered or pressed. */
+  underSheet: (point: { x: number; y: number }) => boolean
 }
 
 /** How long after the last wheel event a wheel or trackpad scroll or zoom counts as over, so the bar comes back
@@ -167,7 +170,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, tableView, frameViewOf, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size, surface, tableView, frameViewOf, marksShown, refuse: refusePress, underSheet }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -360,7 +363,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
   })
 
   function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPosition | undefined {
-    if (!rootEl.value) {
+    if (!rootEl.value || underSheet(pointOnScreen(event))) {
       return undefined
     }
     const point = pointInDrawing(event)
@@ -519,9 +522,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     return press === 'waits' || timesHoldFor(event, press)
   }
 
+  /** The bead a pointer is over, none under the expanded sheet's paper. */
+  function beadUnderPointer(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPosition | undefined {
+    return underSheet(pointOnScreen(event)) ? undefined : surface.value.pointToHit(pointInDrawing(event))
+  }
+
   /** Asks for the Radial toolbox at a point on screen, on the bead position under it whatever the tool. */
   function openToolbox(at: { x: number; y: number }): void {
-    const hit = surface.value.pointToHit(pointInDrawing({ clientX: at.x, clientY: at.y }))
+    const hit = beadUnderPointer({ clientX: at.x, clientY: at.y })
     const [row, column, layer] = hit ? cellArguments(hit) : []
     emit('open-toolbox', { x: at.x, y: at.y }, ...(row === undefined || column === undefined ? [] : [{ row, column, ...(layer ? { layer } : {}) }]))
   }
@@ -895,6 +903,12 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
       return
     }
 
+    // A press on the expanded sheet's paper reaches no bead under it, the nearest one neither (ticket 1259).
+    if (underSheet(pointOnScreen(event))) {
+      lastBead = undefined
+      return
+    }
+
     // A ruler number is display-only (ticket 447): the press goes to the active tool at that spot.
     const bead = beadUnder(event)
     overBead.value = bead !== undefined
@@ -1059,7 +1073,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, pickChipEl, size,
     const steps = Math.max(1, Math.ceil(Math.hypot(to.x - x, to.y - y) / STROKE_SAMPLE_PX))
     const crossed: GridPosition[] = []
     for (let step = 1; step <= steps; step++) {
-      const bead = surface.value.pointToHit({ x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps })
+      const sample = { x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps }
+      // The expanded sheet is level, so a point of its drawing is the same point on screen.
+      const bead = underSheet(sample) ? undefined : surface.value.pointToHit(sample)
       if (!bead || isSameBead(bead, stroke.last)) continue
       const first = stroke.last === undefined
       stroke.last = bead

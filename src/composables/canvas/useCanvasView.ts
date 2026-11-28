@@ -270,17 +270,14 @@ export function useCanvasView(
     return viewport.value.width > 0 && viewport.value.height > 0
   }
 
-  /** The expanded Frame, its footprint on the Canvas and the room round its beads at a zoom, the Tool pill's too. */
+  /** The expanded Frame, its footprint on the Canvas and the room round its beads at a zoom: the Tool pill's place is
+   * the sheet's to count (ticket 1259), so what the pill covers on the Canvas is not. */
   function expandedAt(project: Project, sheetRoom: (zoom: number, pitch: number) => Insets) {
     const frame = options.expandedFrame?.() ?? firstFrameId(project)
     const footprint = coversOf(project).find((cover) => cover.ref === frame)?.frame
     if (!footprint) return undefined
-    const pill = options.covered?.() ?? NO_INSETS
     const full = pitchAtFull(surfaceOf(project, scroll.value, viewport.value, zoom.value, frame), frame)
-    const room = (at: number): Insets => {
-      const sheet = sheetRoom(at, full * at)
-      return { top: sheet.top + pill.top, right: sheet.right + pill.right, bottom: sheet.bottom + pill.bottom, left: sheet.left + pill.left }
-    }
+    const room = (at: number): Insets => sheetRoom(at, full * at)
     return { frame, footprint, full, room }
   }
 

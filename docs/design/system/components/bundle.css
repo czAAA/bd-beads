@@ -226,6 +226,7 @@
   --hold-duration: 450ms; /* RadialToolbox card: how long a hold on the Canvas is before the ring opens (a control's Tooltip has its own long-press, 500ms). */
   --hold-quiet: 300ms; /* RadialToolbox card: how long a hold on the Canvas shows nothing, past the bead a Pencil paints at contact. */
   --radial-out: 150ms; /* RadialToolbox card: the ring fades out, on --ease-in; --duration-fast under reduced motion. */
+  --pill-room: calc(var(--pill-thickness) + 2px + 2 * var(--pill-gap)); /* ToolPill card (ticket 1259): what the pill takes from a side of an expanded Frame, its line and the gap on both its sides. */
   --pill-tile-focus-offset: 1px;
   --key-notch-ring: 0 0 0 var(--space-2) var(--elevated); /* ToolPill card: the ring of the pill's fill round a tile's hotkey digit; with its 10px box, a notch 14px across. */
   --key-notch-layer: 1; /* ToolPill card: the notch lies above its tile's focus ring. */
