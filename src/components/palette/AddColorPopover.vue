@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { useColorNudge } from '../../composables/tools/usePalette'
 import { useBesidePlacement } from '../../composables/ui/useBesidePlacement'
@@ -37,6 +37,13 @@ const { nudge, clear } = useColorNudge()
 const rootEl = ref<HTMLElement>()
 const tab = ref<'bead' | 'custom'>('bead')
 const tabsId = useId()
+const customPanel = ref<InstanceType<typeof CustomColorPanel>>()
+/** Opening the Custom color tab puts the keyboard on its wheel. */
+watch(tab, async (now) => {
+  if (now !== 'custom') return
+  await nextTick()
+  customPanel.value?.focus()
+})
 
 /** Starts on the Palette's own Bead, each time it opens; its codes are fetched as the Bead changes. */
 beadColors?.resetChooser?.()
@@ -83,13 +90,13 @@ useOverlayLayer({
     </div>
     <AppNote v-if="nudgeText" role="status" data-testid="add-color-nudge">{{ nudgeText }}</AppNote>
     <div class="add-color__panels">
-      <!-- Under the Custom color tab it is only unseen: it holds the popover's height, so the tabs stay where pressed. -->
-      <div v-if="chooser" class="add-color__panel" :class="{ 'add-color__panel--unseen': tab !== 'bead' }" :inert="tab !== 'bead'" data-testid="add-color-panel-bead">
+      <!-- The tab not shown is only unseen: both hold the popover's height, so the tabs stay where pressed. -->
+      <div v-if="chooser" class="add-color__panel" :class="{ 'add-color__panel--unseen': tab !== 'bead' }" :inert="tab !== 'bead' || undefined" data-testid="add-color-panel-bead">
         <BeadSection :bead="chooserBead" :candidates="offeredBeads()" @pick="beadColors?.chooseBead?.($event)" />
         <BeadColorList :key="chooserBead?.id" :colors="chooser" />
       </div>
-      <div v-if="tab === 'custom'" class="add-color__panel add-color__panel--custom">
-        <CustomColorPanel addable inline @add="emit('add-custom', $event)" />
+      <div class="add-color__panel add-color__panel--custom" :class="{ 'add-color__panel--unseen': tab !== 'custom' }" :inert="tab !== 'custom' || undefined" data-testid="add-color-panel-custom">
+        <CustomColorPanel ref="customPanel" addable inline @add="emit('add-custom', $event)" />
         <BasicColors @add="emit('add-custom', $event)" />
       </div>
     </div>

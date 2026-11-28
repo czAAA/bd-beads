@@ -103,7 +103,8 @@ useOverlayLayer({
   // The Custom button toggles the picker itself (a press on it while open takes the color, like leaving it).
   isOpener: (target) => target.closest('[data-testid="custom-color-button"]') !== null,
 })
-defineExpose({ take })
+const focus = () => wheelEl.value?.focus()
+defineExpose({ take, focus })
 
 /** A drag begun on the wheel or slider keeps tracking outside it (pointer capture) and ends on release. */
 function dragOn(el: () => HTMLElement | undefined, apply: (event: PointerEvent, rect: DOMRect) => void) {
@@ -192,9 +193,11 @@ const wheelValue = computed(() =>
   fillBlanks(t.value.palette.wheelValue, { hue: Math.round(hsv.value.h), saturation: Math.round(hsv.value.s * 100) }),
 )
 
+/** An inline picker's host says when it is shown, so it takes no focus by itself. */
 onMounted(async () => {
+  if (props.inline) return
   await nextTick()
-  wheelEl.value?.focus()
+  focus()
 })
 </script>
 

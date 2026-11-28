@@ -5,9 +5,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { BUILT_IN_COLORS } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
-import { markOn } from '../ui/swatchMark'
 
 // The twelve basic colors under the Custom color picker (PaletteSwatches card): one by one, or all at once. A press does
 // what the picker's + does; one the Palette holds wears a check, and the press takes it as the paint color.
@@ -25,7 +23,7 @@ const colors = computed(() =>
     const name = t.value.colorNames[id] ?? hex
     const held = !!palette.value.byHex(hex)
     const words = t.value.palette.beadColors
-    return { hex, name, held, label: fillBlanks(held ? words.heldLabel : words.add, { name }), mark: markOn(hex) }
+    return { hex, name, held, label: fillBlanks(held ? words.heldLabel : words.add, { name }) }
   }),
 )
 const allHeld = computed(() => colors.value.every((color) => color.held))
@@ -40,9 +38,7 @@ const allHeld = computed(() => colors.value.every((color) => color.held))
       </AppButton>
     </div>
     <div class="basic-colors__grid">
-      <AppSwatch v-for="color in colors" :key="color.hex" :color="color.hex" :label="color.label" :tooltip-name="color.name" data-testid="basic-color" @select="emit('add', color.hex)">
-        <AppIcon v-if="color.held" :class="`basic-colors__held--${color.mark}`" name="check" :size="14" data-testid="basic-color-held" />
-      </AppSwatch>
+      <AppSwatch v-for="color in colors" :key="color.hex" role="action" :color="color.hex" :label="color.label" :tooltip-name="color.name" :held="color.held" data-testid="basic-color" @select="emit('add', color.hex)" />
     </div>
   </div>
 </template>
@@ -71,13 +67,5 @@ const allHeld = computed(() => colors.value.every((color) => color.held))
   display: grid;
   grid-template-columns: repeat(6, var(--field-height));
   gap: var(--space-6);
-}
-
-.basic-colors__held--dark {
-  color: var(--swatch-mark-dark);
-}
-
-.basic-colors__held--light {
-  color: var(--swatch-mark-light);
 }
 </style>

@@ -238,12 +238,14 @@ describe('ColorPopover, Add another color (ticket 1226)', () => {
     await host.wrapper.get('[data-testid="add-color-tabs"] [data-value="custom"]').trigger('click')
   }
 
-  it('keeps the Bead colors tab in place under the Custom color tab, so the popover stays as tall', async () => {
+  it('keeps the tab not shown in place and inert, the Custom color tab taking the focus on its wheel', async () => {
     const host = withCatalog()
     await openCustom(host)
     const bead = host.wrapper.get('[data-testid="add-color-panel-bead"]')
     expect(bead.attributes('inert')).toBeDefined()
     expect(bead.find('[data-testid="bead-colors"]').exists()).toBe(true)
+    expect(host.wrapper.get('[data-testid="add-color-panel-custom"]').attributes('inert')).toBeUndefined()
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('custom-color-wheel')
     host.wrapper.unmount()
   })
 
@@ -253,7 +255,7 @@ describe('ColorPopover, Add another color (ticket 1226)', () => {
     const swatches = host.wrapper.findAll('[data-testid="basic-color"]')
     expect(swatches).toHaveLength(12)
     // The twelve of this Palette are held already; the check says so.
-    expect(swatches[0]!.find('[data-testid="basic-color-held"]').exists()).toBe(true)
+    expect(swatches[0]!.find('[data-testid="swatch-held"]').exists()).toBe(true)
     expect(swatches[0]!.attributes('aria-label')).toBe(fillBlanks(en.palette.beadColors.heldLabel, { name: en.colorNames.black! }))
     await swatches[0]!.trigger('click')
     expect(host.wrapper.findComponent(ColorPopover).emitted('select-custom-color')).toEqual([[BUILT_IN_COLORS[0]!.hex]])

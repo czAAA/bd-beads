@@ -7,7 +7,7 @@ import { createProject } from './createProject'
 import { DEFAULT_COLOR_FILES } from './defaultColors'
 import { canvasTheme } from '../rendering/canvasBackgrounds'
 import type { ResolvedTheme } from '../theme/theme'
-import { BUILT_IN_COLORS, CUSTOM_COLORS, addUsedColor, brandColors, codesOfColors, familyOf, defaultPalette, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, paletteColors, readStoredPalette, removeColor, moveSection, catalogName, removeSection, restoreColor, startColorId, storedPalette, PALETTE_SHORTCUTS } from './palette'
+import { BUILT_IN_COLORS, CUSTOM_COLORS, addUsedColor, addUsedColors, brandColors, codesOfColors, familyOf, defaultPalette, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, paletteColors, readStoredPalette, removeColor, moveSection, catalogName, removeSection, restoreColor, startColorId, storedPalette, PALETTE_SHORTCUTS } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -365,5 +365,12 @@ describe('the first color on a new Project\'s Background (ticket 0838)', () => {
 
   it('has no color for an empty Palette', () => {
     expect(startColorId(createPalette([]), '#202020')).toBeUndefined()
+  })
+})
+
+describe('addUsedColors', () => {
+  it('adds each color the Palette lacks once, leaving the held ones where they are', () => {
+    const ids = addUsedColors([addedColorId('#111111')], ['#222222', '#111111', '#222222'])
+    expect(ids).toEqual([addedColorId('#111111'), addedColorId('#222222')])
   })
 })
