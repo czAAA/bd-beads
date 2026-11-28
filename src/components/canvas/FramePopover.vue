@@ -7,7 +7,7 @@ import FramePopoverBead from './FramePopoverBead.vue'
 import FramePopoverNames from './FramePopoverNames.vue'
 import FramePopoverProgress from './FramePopoverProgress.vue'
 import FrameSizeSection from './FrameSizeSection.vue'
-import { frameEstimate } from './frameEstimate'
+import { frameEstimate, frameSizeWords } from './frameEstimate'
 import type { FrameToolItem } from './framePopoverTools'
 import { controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -71,11 +71,8 @@ const meta = computed(() => {
 const beadsProject = computed(() => soloFrame(props.project, props.frame))
 /** The Size row's summary: the size as seen, or a Custom frame's own, then the Estimated size. */
 const sizeSummary = computed(() => {
-  const frame = held.value
-  if (!frame) return undefined
-  const first = settingValuesOf(frame)[0]
-  const { columns, rows } = seenSize(frame)
-  const size = first ? plural(locale.value, first.value, t.value.frame.sizeSettings[first.name].summary) : `${columns} × ${rows}`
+  if (!held.value) return undefined
+  const size = frameSizeWords(t.value, locale.value, props.project, props.frame)
   return [size, frameEstimate(t.value, locale.value, props.project, props.frame)].filter(Boolean).join(' · ')
 })
 

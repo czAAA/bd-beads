@@ -35,7 +35,8 @@ const props = withDefaults(
   { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, expanded: undefined, disabled: false, name: undefined, disabledBody: undefined, body: undefined, href: undefined, external: false, stays: false, secondary: false },
 )
 const emit = defineEmits<{ select: [] }>()
-const context = inject(PANEL_CONTEXT)
+// None outside a panel, as in the expanded sheet's rails (ticket 1260): nothing to close.
+const context = inject(PANEL_CONTEXT, undefined)
 /** A fold row (ticket 1058): `expanded` given, true or false. */
 const folds = computed(() => props.expanded !== undefined)
 /** The design system draws one chevron-left: › (a subpanel, a folded row) is it turned, an unfolded row's is down. */

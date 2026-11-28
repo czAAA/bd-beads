@@ -210,28 +210,28 @@ async function landsOn(page: Page, area: Box, inset: number): Promise<string[]> 
 }
 
 // The Tool pill and its color popover float over the drawing, the margin sheet included (StackingOrder card): the
-// sheet's title block, wider at its scale (ticket 0698), used to be drawn over them and take none of their presses.
+// sheet's foot, wider at its scale (ticket 0698), used to be drawn over them and take none of their presses.
 test('the Tool pill and its color popover are drawn over the margin sheet, whose other controls still take a press', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 30, rows: 20 })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-  // Fit keeps the sheet clear of the pill (ticket 0850): the Canvas is moved down by hand until its title block lies under it.
+  // Fit keeps the sheet clear of the pill (ticket 0850): the Canvas is moved down by hand until its foot lies under it.
   const surface = await box(page, 'project-surface')
   await page.mouse.move(surface.x + surface.width / 2, surface.y + surface.height / 2)
   await page.mouse.wheel(0, -90)
   await settle(page)
   await openColorPopover(page)
 
-  const title = await box(page, 'margin-title-block')
+  const foot = await box(page, 'margin-foot')
   const pill = await box(page, 'tool-pill')
   const popover = await box(page, 'color-popover')
-  expect(overlaps(title, pill) && overlaps(title, popover), 'the title block lies under the pill and the popover').toBe(true)
+  expect(overlaps(foot, pill) && overlaps(foot, popover), 'the foot lies under the pill and the popover').toBe(true)
 
   for (const [owner, area, inset] of [['tool-pill-layer', pill, pill.height / 2], ['color-popover', popover, 16]] as const) {
     for (const hit of new Set(await landsOn(page, area, inset))) expect(await inside(page, owner, hit), `a press there lands on ${hit}`).toBe(true)
   }
-  // Row done, at the end of Row progress's strip under the title block (ticket 1176), stands clear of the pill: it takes
+  // Row done, at the end of Row progress in the foot (ticket 1176), stands clear of the pill: it takes
   // its press.
   const done = await box(page, 'margin-progress-next')
   expect(overlaps(done, pill) || overlaps(done, popover)).toBe(false)
@@ -310,7 +310,7 @@ test('the wheel over the margin sheet\'s legend zooms and moves the Table, as ov
   await setZoom(page, 100)
   const read = async () => ({ zoom: Number(await surface.getAttribute('data-zoom')), x: await surface.getAttribute('data-scroll-x'), y: await surface.getAttribute('data-scroll-y') })
 
-  const legend = await box(page, 'margin-title')
+  const legend = await box(page, 'margin-legend')
   await page.mouse.move(legend.x + legend.width / 2, legend.y + legend.height / 2)
   const before = await read()
   await page.keyboard.down('Control')

@@ -4,11 +4,9 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { beadChoices, beadLabel } from '../../domain/beads'
 import type { FrameId } from '../../domain/grid'
 import { beadOfLayer } from '../../domain/layerRecord'
-import { frameWeave } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
-import { rowProgressStarted } from '../../domain/rowProgress'
-import { describeWeave, TECHNIQUES, weaveSettings, type Technique } from '../../domain/weave'
-import { weaveSettingWords } from '../../i18n/settingWords'
+import { TECHNIQUES, type Technique } from '../../domain/weave'
+import { useFrameSettings } from '../../composables/canvas/useFrameSettings'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSection from '../project/BeadSection.vue'
@@ -33,19 +31,9 @@ const { t } = useI18n()
 const labelId = useId()
 const bead = computed(() => beadOfLayer(props.project, props.frame).bead)
 const choices = computed(() => (bead.value ? beadChoices(bead.value) : undefined))
-const weave = computed(() => frameWeave(props.project, props.frame))
+const { weave, locked, settings } = useFrameSettings(() => props.project, () => props.frame)
 const technique = computed(() => weave.value.technique)
 const summary = computed(() => [bead.value && beadLabel(bead.value), techniqueName(t.value, technique.value)].filter(Boolean).join(' · '))
-const locked = computed(() => rowProgressStarted(props.project, props.frame))
-const settings = computed(() => {
-  const values = weaveSettings(weave.value)
-  return describeWeave(weave.value).settings.map((setting) => ({
-    setting,
-    value: values[setting.id]!,
-    disabledBody: locked.value ? weaveSettingWords(t.value, setting).locked : undefined,
-  }))
-})
-
 const listEl = ref<HTMLElement>()
 const roving = useRovingFocus(listEl, { selector: '[role="radio"]', axis: () => 'vertical' })
 function choose(next: Technique): void {

@@ -22,9 +22,9 @@ const props = defineProps<{
   disabledBody?: string
   /** What the setting does, in the button's Tooltip (Tools position). */
   body?: string
-  /** The button is this icon alone, named by `label` in its Tooltip (the margin title block's Technique pencil, ticket
-   * 0657); the value is shown beside it by the host. */
-  iconOnly?: IconName
+  /** The margin sheet's chip (tickets 0657, 1258): the value on the button before this icon, the button named by
+   * `label` and the value. */
+  chipIcon?: IconName
   /** The list sits in the app shell, not beside its button: inside the margin sheet's scale, Safari keeps a top-layer
    * list where it first showed (the top-left corner). */
   inShell?: boolean
@@ -52,7 +52,7 @@ const chosen = computed(() => props.options.find((option) => option.value === va
 const tooltip = computed(() => {
   if (props.disabled && props.disabledBody) return { name: props.label, disabled: true as const, disabledBody: props.disabledBody, announce: false }
   if (props.body) return { name: props.label, body: props.body, announce: false }
-  return props.iconOnly || props.toolbar ? { name: props.label, announce: false } : undefined
+  return props.chipIcon || props.toolbar ? { name: props.label, announce: false } : undefined
 })
 /** The button's text: a code or word shown for the value; the name always says label and value. */
 const shown = computed(() => chosen.value?.shortLabel ?? chosen.value?.label ?? '')
@@ -60,7 +60,7 @@ const shown = computed(() => chosen.value?.shortLabel ?? chosen.value?.label ?? 
  * hold it, so the name holds the button's visible text (ticket 0856): "Language: EN, English". */
 const buttonName = computed(() => {
   const value = chosen.value?.label ?? ''
-  return props.iconOnly || value.includes(shown.value) ? `${props.label}: ${value}` : `${props.label}: ${shown.value}, ${value}`
+  return props.chipIcon || value.includes(shown.value) ? `${props.label}: ${value}` : `${props.label}: ${shown.value}, ${value}`
 })
 
 function items(): HTMLElement[] {
@@ -165,7 +165,7 @@ function onListKeydown(event: KeyboardEvent) {
       <button
         ref="buttonEl"
         class="ui-control panel-picker__button"
-        :class="{ 'panel-picker__button--open': open, 'panel-picker__button--icon': iconOnly }"
+        :class="{ 'panel-picker__button--open': open, 'margin-chip': chipIcon }"
         type="button"
         aria-haspopup="menu"
         :aria-expanded="open"
@@ -175,7 +175,10 @@ function onListKeydown(event: KeyboardEvent) {
         @click="onButtonClick"
         @keydown="onButtonKeydown"
       >
-        <AppIcon v-if="iconOnly" :name="iconOnly" :size="12" />
+        <template v-if="chipIcon">
+          <span class="margin-chip__text" :lang="chosen?.lang">{{ shown }}</span>
+          <AppIcon :name="chipIcon" :size="12" />
+        </template>
         <template v-else>
           <AppIcon v-if="toolbar && icon" class="panel-picker__lead" :name="icon" :size="18" />
           <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
@@ -250,6 +253,15 @@ function onListKeydown(event: KeyboardEvent) {
   width: 100%;
 }
 
+/* The margin sheet's chip is as wide as its words (ticket 1258). */
+.panel-picker--bare:has(.margin-chip) {
+  flex: none;
+}
+
+.panel-picker--bare .panel-picker__button.margin-chip {
+  width: max-content;
+}
+
 .panel-picker__value {
   min-width: 0;
   overflow: hidden;
@@ -311,27 +323,6 @@ function onListKeydown(event: KeyboardEvent) {
   .panel-picker--toolbar .panel-picker__button {
     height: var(--touch-target);
   }
-}
-
-/* The title block's pencil (ticket 0657): an 18px plain button holding a 12px icon (MarginSheet card), centred in its
- * row like the other pencils, not sat on the wrap's text baseline (ticket 0698). */
-.panel-picker__wrap:has(> .panel-picker__button--icon) {
-  display: flex;
-  align-items: center;
-}
-
-.panel-picker__button--icon {
-  justify-content: center;
-  width: var(--margin-pencil);
-  height: var(--margin-pencil);
-  padding: 0;
-  color: var(--body);
-  background: none;
-  border-color: transparent;
-}
-
-.panel-picker__button--icon:hover {
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
 .panel-picker__button:focus-visible {

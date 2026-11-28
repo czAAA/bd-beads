@@ -1,16 +1,21 @@
 import { computed, onBeforeUnmount, ref, type Ref } from 'vue'
 import { ownPoint } from '../ui/cssZoom'
 import { DRAG_SLOP_PX } from '../../domain/dragSlop'
-import { nearestPillEdge, type PillPosition } from '../../domain/toolPill'
+import { nearestPillEdge, type PillPosition, type PillRect } from '../../domain/toolPill'
 
 /** Dragging the Tool pill to another edge (ticket 439, ADR 0046): after 8px the pill lifts and follows the pointer, snaps
- * to the nearest edge of `layer` (the drawing area) on release, and the click ending the drag is swallowed. A finger or
- * pen drags it by `grip` only, so a swipe on the tools scrolls them (ticket 0837); a mouse drags it from anywhere. */
+ * on release to the nearest edge of `layer` (the drawing area) or of the box `area` draws it in to, and the click ending
+ * the drag is swallowed. A finger or pen drags it by `grip` only (ticket 0837); a mouse drags it from anywhere. */
 export function useToolPillDrag(
   pill: Ref<HTMLElement | undefined>,
   layer: Ref<HTMLElement | undefined>,
   grip: Ref<HTMLElement | undefined>,
-  deps: { onStart: () => void; onDrop: (position: PillPosition) => void },
+  deps: {
+    onStart: () => void
+    onDrop: (position: PillPosition) => void
+    /** The box the drop zones stand round, on screen, where it is not the layer's whole box. */
+    area?: (layer: DOMRect) => PillRect
+  },
 ) {
   const dragging = ref(false)
   /** The edge the pill snaps to if it is let go now. */
@@ -58,7 +63,7 @@ export function useToolPillDrag(
     // In the layer's own px, should CSS zoom draw it larger (ticket 1071).
     const at = ownPoint(layer.value, { clientX: event.clientX - pressed.grabX, clientY: event.clientY - pressed.grabY })
     corner.value = { left: at.x, top: at.y }
-    nearest.value = nearestPillEdge({ x: event.clientX, y: event.clientY }, area)
+    nearest.value = nearestPillEdge({ x: event.clientX, y: event.clientY }, deps.area?.(area) ?? area)
   }
 
   function onPointerEnd(event: PointerEvent) {

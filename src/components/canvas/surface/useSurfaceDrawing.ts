@@ -10,7 +10,7 @@ import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, SETTLE_MS, GESTURE_BEAD_LIMIT, type View } from '../../../rendering/gestureView'
 import { draftPixelRatio, drawsDraft } from '../../../rendering/draftRenderer'
-import { canvasBoxOnSurface, canvasRowsOnSurface, renderProject, type RenderInput, type SlimSheet } from '../../../rendering/projectRenderer'
+import { canvasBoxOnSurface, canvasRowsOnSurface, renderProject, type RenderInput, type ExpandedPaper } from '../../../rendering/projectRenderer'
 import type { DrawnReference } from '../../../rendering/referenceImage'
 import type { Space } from '../../../rendering/space'
 import type { Region, Scroll, SurfaceView } from '../../../rendering/surfaceView'
@@ -107,8 +107,8 @@ export interface LaidFrame {
   /** The view its own drawing lays it out in, and its rulers there: what its overlay draws by. */
   surface: SurfaceView
   rulers: RulerLayout
-  /** The slim sheet it is drawn with while it is the expanded Frame (ticket 1169). */
-  slim?: SlimSheet
+  /** The paper it is drawn on while it is the expanded Frame (tickets 1169, 1260). */
+  paper?: ExpandedPaper
   /** Its sheet's box in the Canvas's grid px: what hides the Canvas beads under it (ticket 1239). */
   covered: Region
 }
@@ -182,7 +182,7 @@ function sameOthers(before: readonly LaidFrame[], after: readonly LaidFrame[]): 
     before.length === after.length &&
     before.every((was, at) => {
       const now = after[at]!
-      return was.ref === now.ref && was.marks === now.marks && was.theme === now.theme && sameFields(was.scroll, now.scroll) && sameFields(was.size, now.size) && sameFields(was.covered, now.covered) && JSON.stringify(was.slim ?? null) === JSON.stringify(now.slim ?? null) && sameDrawing(was.project, now.project)
+      return was.ref === now.ref && was.marks === now.marks && was.theme === now.theme && sameFields(was.scroll, now.scroll) && sameFields(was.size, now.size) && sameFields(was.covered, now.covered) && JSON.stringify(was.paper ?? null) === JSON.stringify(now.paper ?? null) && sameDrawing(was.project, now.project)
     })
   )
 }
@@ -257,7 +257,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       const placement = placementOf(drawing.pixelRatio!, own, box)
       // A rectangle of the surface, in the Frame's own device px: every layer shares the Table turn, so the placement is a shift.
       const within = part === 'all' ? undefined : { ...part, x: part.x - placement.e, y: part.y - placement.f }
-      const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, slimSheet: frame.slim, layer: frame.ref, alone: true, rows: undefined, columns: undefined, covered: undefined, within }
+      const laid = { ...drawing, project: frame.project, space: spaceOf(frame.project, true, frame.ref), region, frameTheme: frame.theme, rowMarks: frame.marks, letters: shownLetters(frame.project, frame.ref), canvasLetters: undefined, expandedPaper: frame.paper, layer: frame.ref, alone: true, rows: undefined, columns: undefined, covered: undefined, within }
       drawPlaced(context, placement, () => renderProject(context, laid))
     }
   }

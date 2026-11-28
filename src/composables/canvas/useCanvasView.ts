@@ -1,7 +1,8 @@
 import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect } from '../../domain/canvas'
 import { clampZoom, MAX_ZOOM, MIN_ZOOM, stepZoom, type FrameId, type FrameRef, type GridPosition, type Rotation } from '../../domain/grid'
-import { frameIdOf, framesOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
+import { frameById, frameIdOf, framesOf, layerOf, orientationOf, firstFrameId } from '../../domain/layerRecord'
+import { rowProgressStarted } from '../../domain/rowProgress'
 import { coversOf } from '../../domain/sheets'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
@@ -10,6 +11,8 @@ import type { KeptView } from '../../domain/keptView'
 import type { OpeningView } from '../../domain/openingAddress'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
+import { areaInside, carryAlong, expandedPitch, expandedZoom, lookAlong, runsOn, type ExpandedAxis } from '../../rendering/expandedSheet'
+import { currentPassRegion } from '../../rendering/passRegion'
 import { frameCentreIn, frameMiddleIn, frameRotation } from '../../rendering/framePin'
 import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
 import { easeStandard } from '../../rendering/rowMotion'
@@ -64,6 +67,8 @@ const PAN_LEAVES_EXPANDED_PX = 24
 const PINCH_ZOOMS_PAST = 0.1
 /** How far past the expanded fit a zoom in may go, as a share of it. */
 const EXPANDED_ZOOM_IN_SHARE = 2
+/** A gesture's drag or scroll across the rows is told apart from one along them over this long a pause (ticket 1260). */
+const MOVE_RESTS_MS = 300
 /** A button's zoom step beyond the usual ceiling, where `stepZoom` stops. */
 const BUTTON_ZOOM_STEP = 1.25
 
@@ -108,9 +113,9 @@ export interface CanvasViewOptions {
    * ticket 0879) or the one kept for a reload (ticket 1108). The first fit the view makes once measured takes it, if it
    * is that Project's. */
   opening?: { project: string; view: OpeningView | KeptView }
-  /** While the Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the room its slim sheet takes from
-   * each side of the drawing area, past the Frame's beads, at a zoom and the bead pitch it makes. A fit then fits the
-   * Frame's beads into the rest, clear of the Tool pill too (ticket 1176). */
+  /** While the Frame is expanded (MarginSheet card, Expand the Frame; tickets 1169, 1260): the room its rails, Row
+   * progress and numbers take from each side of the drawing area, past the Frame's beads, at a zoom and the bead pitch it
+   * makes. A fit then fits the Frame's rows into the rest, clear of the Tool pill too (ticket 1176). */
   expanded?: () => ((zoom: number, pitch: number) => Insets) | undefined
   /** The Frame that is expanded (ticket 1220): the one the expanded fit fits; the first when none is named. */
   expandedFrame?: () => FrameId | undefined
@@ -168,7 +173,14 @@ export function useCanvasView(
   /** The pinch under way as it found an expanded Frame: the zoom it began at and how far its fingers have carried the
    * view since, and whether it went back to the Canvas, the rest of it then panning and turning at the zoom it went
    * back to. */
-  let pinchOnExpanded: { from: number; travel: number; left: boolean } | undefined
+  let pinchOnExpanded: { from: number; cross: number; along: number; left: boolean } | undefined
+  /** The way the expanded Frame's rows run on past its room, which a move by hand scrolls along (ticket 1260): none
+   * while the whole Frame is in it. */
+  let rowsAxis: 'x' | 'y' | undefined
+  /** Where along that way the room's middle looks, 0 to 1 of the Frame, kept through a refit. */
+  let lookingAt: number | undefined
+  /** How far the drag or scroll under way has gone across the rows and along them, and when it last moved. */
+  let moving = { cross: 0, along: 0, at: Number.NEGATIVE_INFINITY }
 
   /** The Canvas's orientation as shown: the twist's while one runs, else the Project's. */
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
@@ -258,48 +270,84 @@ export function useCanvasView(
     return viewport.value.width > 0 && viewport.value.height > 0
   }
 
-  /** The expanded Frame's fit (ticket 1169): its beads as large as the room its sheet and the Tool pill leave allows,
-   * with no zoom limit (ticket 1194), centred there. Worked out until it settles, as the sheet's numbers grow with the
-   * bead and the Frame's line, which the sheet stands off, moves with the zoom. */
-  function expandedFit(project: Project, sheetRoom: (zoom: number, pitch: number) => Insets): ShownView | undefined {
+  /** The expanded Frame, its footprint on the Canvas and the room round its beads at a zoom: the Tool pill's place is
+   * the sheet's to count (ticket 1259), so what the pill covers on the Canvas is not. */
+  function expandedAt(project: Project, sheetRoom: (zoom: number, pitch: number) => Insets) {
     const frame = options.expandedFrame?.() ?? firstFrameId(project)
     const footprint = coversOf(project).find((cover) => cover.ref === frame)?.frame
     if (!footprint) return undefined
-    const pill = options.covered?.() ?? NO_INSETS
-    const room = (at: number, full: number): Insets => {
-      const sheet = sheetRoom(at, full * at)
-      return { top: sheet.top + pill.top, right: sheet.right + pill.right, bottom: sheet.bottom + pill.bottom, left: sheet.left + pill.left }
-    }
     const full = pitchAtFull(surfaceOf(project, scroll.value, viewport.value, zoom.value, frame), frame)
+    const room = (at: number): Insets => sheetRoom(at, full * at)
+    return { frame, footprint, full, room }
+  }
+
+  /** One axis of the expanded Frame on screen, in a view of it at a scroll and zoom. */
+  function axisOf(project: Project, footprint: Rect, insets: Insets, way: 'x' | 'y', at: Scroll, atZoom: number): ExpandedAxis {
+    const beads = surfaceOf(project, at, viewport.value, atZoom).beadBox(footprint, 'canvas')
+    return way === 'x'
+      ? { start: beads.x, length: beads.width, room: { start: insets.left, end: viewport.value.width - insets.right } }
+      : { start: beads.y, length: beads.height, room: { start: insets.top, end: viewport.value.height - insets.bottom } }
+  }
+
+  /** Where along the Frame the current pass lies, 0 to 1: the start before a row is done. */
+  function passAlong(project: Project, ref: FrameRef, footprint: Rect, way: 'x' | 'y', atZoom: number): number {
+    if (!frameById(project, ref) || !rowProgressStarted(project, ref)) return 0
+    const surface = surfaceOf(project, scroll.value, viewport.value, atZoom, ref)
+    const pass = currentPassRegion(project, surface, ref)
+    const beads = surface.beadBox(footprint, 'canvas')
+    if (!pass) return 0
+    return way === 'x' ? (pass.x + pass.width / 2 - beads.x) / beads.width : (pass.y + pass.height / 2 - beads.y) / beads.height
+  }
+
+  /** The expanded Frame's fit (tickets 1169, 1260): the whole Frame as large as the room allows, or, where that draws its
+   * beads smaller than they are woven by, at that pitch with its rows running on the longer way. Worked out until it
+   * settles, as the numbers grow with the bead and the Frame's line, which they stand off, moves with the zoom. */
+  function expandedFit(project: Project, sheetRoom: (zoom: number, pitch: number) => Insets): ShownView | undefined {
+    const expanded = expandedAt(project, sheetRoom)
+    if (!expanded) return undefined
+    const { frame, footprint, full, room } = expanded
+    /** The zoom each axis alone fits the Frame at, in the room a zoom leaves. */
+    const zooms = (insets: Insets) => {
+      const area = areaInside(viewport.value, insets)
+      const surface = (size: Size) => surfaceOf(project, scroll.value, size, zoom.value, frame).zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', Infinity)
+      return { across: surface({ width: area.width, height: Number.MAX_SAFE_INTEGER }), down: surface({ width: Number.MAX_SAFE_INTEGER, height: area.height }) }
+    }
+    const comfort = expandedPitch(viewport.value.width) / full
+    const wantedAt = (insets: Insets) => {
+      const wanted = expandedZoom({ ...zooms(insets), comfort })
+      return Number.isFinite(wanted) ? Math.max(MIN_ZOOM, Math.floor(wanted * 100) / 100) : 1
+    }
     let at = 1
     let before = at
-    let insets = room(at, full)
-    let area = viewport.value
+    let insets = room(at)
     for (let pass = 0; pass < EXPANDED_FIT_PASSES; pass += 1) {
-      area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
-      const surface = surfaceOf(project, scroll.value, area, zoom.value, frame)
       before = at
-      const wanted = surface.zoomToFit(footprint, { width: 0, height: 0 }, 'canvas', Infinity)
-      at = Number.isFinite(wanted) ? Math.max(MIN_ZOOM, wanted) : 1
+      at = wantedAt(insets)
       if (at === before) break
-      insets = room(at, full)
+      insets = room(at)
     }
     // A fit that keeps flipping between two sizes takes the smaller, which fits.
     if (at !== before) {
       at = Math.min(at, before)
-      insets = room(at, full)
-      area = { width: Math.max(1, viewport.value.width - insets.left - insets.right), height: Math.max(1, viewport.value.height - insets.top - insets.bottom) }
+      insets = room(at)
     }
     options.fitted?.(full * at)
     expandedFitZoom = at
-    const centred = surfaceOf(project, scroll.value, area, at).scrollToCentre(footprint, 'canvas')
-    return { zoom: at, scroll: { x: centred.x - insets.left, y: centred.y - insets.top } }
+    const centred = surfaceOf(project, scroll.value, areaInside(viewport.value, insets), at).scrollToCentre(footprint, 'canvas')
+    const to = { x: centred.x - insets.left, y: centred.y - insets.top }
+    rowsAxis = (['y', 'x'] as const).find((way) => runsOn(axisOf(project, footprint, insets, way, to, at)))
+    if (rowsAxis) {
+      lookingAt ??= passAlong(project, frame, footprint, rowsAxis, at)
+      to[rowsAxis] -= lookAlong(axisOf(project, footprint, insets, rowsAxis, to, at), lookingAt)
+    }
+    return { zoom: at, scroll: to }
   }
 
   /** Puts the view at the fit: the Frame's sheet or the drawing whole, or the origin in the middle for an empty canvas,
    * in the room the Tool pill leaves; the expanded Frame in its own room, gliding there when `glide` asks. */
-  function fit({ glide = false }: { glide?: boolean } = {}): void {
+  function fit({ glide = false, afresh = false }: { glide?: boolean; afresh?: boolean } = {}): void {
     stopGlide()
+    if (afresh) lookingAt = undefined
     const project = currentProject()
     if (!project) {
       return
@@ -368,10 +416,52 @@ export function useCanvasView(
   }
 
   /** Moves the canvas under the viewport by a distance on screen by hand (a drag, the Hand tool, a wheel): the content
-   * follows the pointer, so the scroll goes the other way. An expanded Frame goes back to the Canvas first. */
+   * follows the pointer, so the scroll goes the other way. An expanded Frame scrolls along its rows; any other move
+   * goes back to the Canvas first. */
   function panBy(dx: number, dy: number): void {
+    if (options.expanded?.() && rowsAxis) {
+      const now = performance.now()
+      if (now - moving.at > MOVE_RESTS_MS) moving = { cross: 0, along: 0, at: now }
+      moving.cross += Math.abs(rowsAxis === 'x' ? dy : dx)
+      moving.along += Math.abs(rowsAxis === 'x' ? dx : dy)
+      moving.at = now
+      if (!strays(moving)) return scrollRows(rowsAxis === 'x' ? dx : dy)
+      moving.at = Number.NEGATIVE_INFINITY
+    }
     leaveByHand()
     carryBy(dx, dy)
+  }
+
+  /** Whether a move on the expanded Frame has gone across its rows rather than along them. */
+  function strays({ cross, along }: { cross: number; along: number }): boolean {
+    return cross > PAN_LEAVES_EXPANDED_PX && cross > along
+  }
+
+  /** The expanded Frame's rows as they stand along the way they run on, none while the whole Frame is in view. */
+  function shownRows(): ExpandedAxis | undefined {
+    const project = currentProject()
+    const room = options.expanded?.()
+    const expanded = project && room && expandedAt(project, room)
+    if (!project || !expanded || !rowsAxis) return undefined
+    return axisOf(project, expanded.footprint, expanded.room(zoom.value), rowsAxis, scroll.value, zoom.value)
+  }
+
+  /** Carries the expanded Frame's rows by a distance on screen, no further than their ends, the Frame staying expanded
+   * and the view following its fit if it did; where they then are is kept for the next fit to look there again. */
+  function scrollRows(by: number): void {
+    // A glide under way lands first, so the rows are scrolled from where they are going.
+    const to = glidingView
+    if (to && rowsAxis) {
+      stopGlide()
+      zoom.value = to.zoom
+      scroll.value = to.scroll
+    }
+    const axis = shownRows()
+    if (!axis || !rowsAxis) return
+    const carried = carryAlong(axis, by)
+    if (carried === 0) return
+    scroll.value = { ...scroll.value, [rowsAxis]: scroll.value[rowsAxis] - carried }
+    lookingAt = ((axis.room.start + axis.room.end) / 2 - (axis.start + carried)) / axis.length
   }
 
   /** Moves the canvas as `panBy` does, the Frame staying expanded: the edge scroll a drag near the edge carries. */
@@ -540,8 +630,16 @@ export function useCanvasView(
 
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
-  function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
-    if (options.expanded?.()) leaveByFingers(toZoom, pan, turn !== undefined)
+  function pinchStep({ zoom: toZoom, pan: moved, turn, anchor }: PinchStep): void {
+    let pan = moved
+    // Fingers carrying an expanded Frame's rows carry them along alone, no further than their ends, until they zoom or
+    // stray; once they have carried them as far as a pan, their spread's jitter zooms nothing.
+    const rows = options.expanded?.() && leaveByFingers(toZoom, pan, turn !== undefined) ? rowsAxis : undefined
+    if (rows) {
+      const panning = (pinchOnExpanded?.along ?? 0) > PAN_LEAVES_EXPANDED_PX
+      if (panning || toZoom === undefined || limitZoom(toZoom) === zoom.value) return scrollRows(pan?.[rows] ?? 0)
+      pan = undefined
+    }
     stopGlide()
     let at = scroll.value
     const next = toZoom === undefined || pinchOnExpanded?.left ? zoom.value : limitZoom(toZoom)
@@ -566,18 +664,24 @@ export function useCanvasView(
     }
     scroll.value = at
     isAtFit.value = false
+    if (rows) scrollRows(moved?.[rows] ?? 0)
   }
 
-  /** A pinch step on the expanded Frame: a twist of the Table, or fingers that carry it farther than their spread zooms
-   * it, go back to the Canvas. */
-  function leaveByFingers(toZoom: number | undefined, pan: Scroll | undefined, twisted: boolean): void {
-    const pinch = (pinchOnExpanded ??= { from: zoom.value, travel: 0, left: false })
-    pinch.travel += pan ? Math.hypot(pan.x, pan.y) : 0
+  /** A pinch step on the expanded Frame: a twist of the Table, or fingers that carry it across its rows (any way, where
+   * the whole Frame is in view) farther than their spread zooms it, go back to the Canvas. Whether the step is one that
+   * scrolls the rows. */
+  function leaveByFingers(toZoom: number | undefined, pan: Scroll | undefined, twisted: boolean): boolean {
+    const pinch = (pinchOnExpanded ??= { from: zoom.value, cross: 0, along: 0, left: false })
+    if (rowsAxis) {
+      pinch.cross += pan ? Math.abs(pan[rowsAxis === 'x' ? 'y' : 'x']) : 0
+      pinch.along += pan ? Math.abs(pan[rowsAxis]) : 0
+    } else pinch.cross += pan ? Math.hypot(pan.x, pan.y) : 0
     const spread = toZoom === undefined ? 0 : Math.abs(toZoom / pinch.from - 1)
-    const pans = pinch.travel > PAN_LEAVES_EXPANDED_PX && spread < PINCH_ZOOMS_PAST
-    if (!twisted && !pans) return
+    const zooms = spread >= PINCH_ZOOMS_PAST
+    if (!twisted && (zooms || !strays(pinch))) return !zooms
     pinch.left = leaveByHand()
     pinching = false
+    return false
   }
 
   /** The fingers lifted (a point of the viewport): the twist comes to rest about them, easing onto a quarter turn

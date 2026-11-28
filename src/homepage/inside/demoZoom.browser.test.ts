@@ -82,7 +82,7 @@ describe("What's inside drawn larger by the Homepage's zoom (ticket 1071)", () =
       const pill = boxOf(root, 'tool-pill')
       expect(inside(sheet, area), 'the sheet whole in the drawing area').toBe(true)
       expect(sheet.bottom, 'the sheet above the Tool pill').toBeLessThanOrEqual(pill.top + 1)
-      expect(boxOf(root, 'margin-title').bottom, "the title block above the Tool pill").toBeLessThanOrEqual(pill.top + 1)
+      expect(boxOf(root, 'margin-foot').bottom, "the sheet's foot above the Tool pill").toBeLessThanOrEqual(pill.top + 1)
       expect(inside(boxOf(root, 'picture-bar'), boxOf(root, 'inside-editor')), 'the Reference image bar in the demo').toBe(true)
     }, 120000)
   }

@@ -385,7 +385,7 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="margin-progress-compact-position"] .row-progress__count-short').text()).toBe('2/2')
   })
 
-  it('expands the Frame from its first button, the surface slim, the Tool pill kept and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176)', async () => {
+  it('expands the Frame from its first button, into two rails, the Tool pill kept on its edge and the Row progress strip on the sheet, and Escape goes back, each announced (tickets 1169, 1176, 1259)', async () => {
     const wrapper = await mountOpen(sheetProject())
     const surface = () => wrapper.findComponent(ProjectSurface)
     await wrapper.get('[data-testid="margin-expand-frame"]').trigger('click')
@@ -393,13 +393,21 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Frame expanded')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="tool-pill-layer"]').attributes('inert')).toBeUndefined()
-    // The sheet measured itself, and the surface lays the slim sheet by what it told: no foot height in jsdom.
-    expect(surface().props('slim')).toMatchObject({ title: 0 })
+    const pill = () => wrapper.get('[data-testid="tool-pill"]').attributes('data-position')
+    expect(pill()).toBe('bottom')
+    // A move while expanded holds until Back to the Canvas, the device's own edge left as it was.
+    await wrapper.get('[data-testid="tool-pill-grip"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(pill()).toBe('right')
+    expect(wrapper.get('.margin-rails__area').classes()).toContain('margin-rails__area--right')
+    // The rails stand in the sheet's place, and the surface draws the paper under them.
+    expect(wrapper.find('[data-testid="margin-rails"]').exists()).toBe(true)
+    expect(surface().props('expanded')).toBeDefined()
     await key({ key: 'Escape' })
     expect(wrapper.get('[data-testid="announcer"]').text()).toBe('Back to the Canvas')
     expect(wrapper.get('[data-testid="margin-expand-frame"]').attributes('aria-label')).toBe('Expand the Frame')
     expect(wrapper.find('[data-testid="margin-progress-strip"]').exists()).toBe(true)
-    expect(surface().props('slim')).toBeUndefined()
+    expect(surface().props('expanded')).toBeUndefined()
+    expect(pill()).toBe('bottom')
   })
 
   it('opens the Export panel from the Frame tools menu where its sheet is too narrow for the Export button (ticket 1195)', async () => {
@@ -411,10 +419,9 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
   })
 
-  it('sets the Frame\'s Drop from its title block\'s stepper (ticket 0698)', async () => {
-    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
-    // Zoomed in twice, the sheet is full (from 100% since ticket 1213): its title block's one row holds the setting's
-    // pencil (ticket 1176).
+  it('sets the Frame\'s Drop from its chip\'s stepper in the sheet\'s band (tickets 0698, 1258)', async () => {
+    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 20, beads: {} } }))
+    // Zoomed in twice, the sheet is full (from 100% since ticket 1213) and wide enough for the name and its chips.
     for (const _ of [1, 2]) {
       await wrapper.get('[data-testid="zoom-in"]').trigger('click')
       await flushPromises()

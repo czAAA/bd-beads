@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { ownLength, ownPoint } from '../../composables/ui/cssZoom'
-import { useFittingForm } from '../../composables/canvas/useFittingForm'
+import { ownPoint } from '../../composables/ui/cssZoom'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { ExportOpener } from '../../composables/shell/openPanel'
@@ -9,39 +8,33 @@ import { overlapsSelectionHandles, type BarBox, type FrameAnchor } from '../../c
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { fillBlanks } from '../../domain/fillBlanks'
 import type { FrameEdge } from '../../domain/frame'
-import { frameAllows, type FrameSettings } from '../../domain/frameShape'
+import type { FrameSettings } from '../../domain/frameShape'
 import type { Background, Project } from '../../domain/project'
-import { columnsAsSeen, rowProgressPosition, type SeenWay } from '../../domain/rowProgress'
+import type { SeenWay } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
 import { MARGIN_PX } from '../../rendering/marginSizes'
-import { bandRowWidth, bandTools, BAND_ORDER, type BandFit, type BandRow, type BandToolId } from '../../rendering/marginBand'
+import { bandNameRoom, bandTools, type BandFit, type BandRow, type BandToolId } from '../../rendering/marginBand'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
-import EditableLine from '../project/EditableLine.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
 import MarginFrameTools from './MarginFrameTools.vue'
-import type { FrameToolItem } from './framePopoverTools'
+import { takeExpandFocus } from './expandFocus'
+import { useFrameTools } from './frameTools'
 import MarginMoveBar from './MarginMoveBar.vue'
-import MarginTitleBlock from './MarginTitleBlock.vue'
-import { frameNameLine } from './marginFrameName'
-import RowProgressControls from './RowProgressControls.vue'
-import { STRIP_FITS, STRIP_FIT_PROPS, stripWidth, type StripFit } from './rowProgressFit'
+import MarginFoot from './MarginFoot.vue'
+import MarginFrameIdentity from './MarginFrameIdentity.vue'
+import type { IdentityForm } from './marginForms'
 import type { RowPress } from '../../composables/project/useRowOps'
 import type { FrameId } from '../../domain/grid'
 import { frameById } from '../../domain/layerRecord'
 import { useRotateCopy } from '../../composables/ui/useRotateCopy'
 import { FRAME_TURN_MS } from '../../rendering/frameTurn'
-import type { SlimMeasures } from '../../composables/canvas/useFrameExpand'
-import { UNDER_TABLET_QUERY } from '../../rendering/rulerScale'
-import { slimInset } from '../../rendering/slimSheet'
 
-// The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 1170, 1176): the tools in its top band, the
-// title block at its bottom-left as seen with Row progress under it, over the sheet the canvas draws. The controls keep
+// The margin sheet's controls over the sheet the canvas draws (MarginSheet card, tickets 0657, 0658, 1170, 1258): who
+// the Frame is and its tools in the top band, what weaving reads and Row progress along the bottom. The controls keep
 // their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, the Move bar.
 const props = defineProps<{
   project: Project
@@ -63,9 +56,6 @@ const props = defineProps<{
   mirrorOnFrame?: boolean
   /** The canvas view is not yet set for its area (ticket 0991): the sheet's place is a stand-in until it is. */
   placing?: boolean
-  /** The Frame is expanded (MarginSheet card, Expand the Frame; ticket 1169): the sheet is slim, at scale 1, its forms
-   * going by width alone, with no Move bar. */
-  expanded?: boolean
   /** The Frame's settings popover is asked to open (ticket 1222): the Frame stays toast's Open Frame. */
   popoverAsked?: boolean
 }>()
@@ -90,7 +80,7 @@ const emit = defineEmits<{
   /** A setting of the Frame's Technique, by its id (ticket 0698). */
   'set-setting': [id: string, value: number]
   'save-maker-name': [name: string]
-  /** Replace Bead asked from the roomy title block's Change (ticket 1015): the Frame panel's own question. */
+  /** Replace Bead asked from the foot's Bead chip (ticket 1015): the shell's own question. */
   'replace-bead': [beadId: string]
   'set-letters': [on: boolean]
   /** The settings popover's size, its edge steppers and a Custom frame's own settings (ticket 1222). */
@@ -102,47 +92,39 @@ const emit = defineEmits<{
   /** The settings popover is gone, so what it held settles into one Undo step; or it opened as asked. */
   'settle-settings': []
   'popover-opened': []
-  /** Expand the Frame, or Back to the Canvas while expanded (ticket 1169). */
+  /** Expand the Frame (ticket 1169): the expanded sheet is `MarginRails`. */
   'toggle-expand': []
-  /** What the slim sheet's row and title block measure, while expanded: the canvas lays the sheet round them. */
-  slim: [measures: SlimMeasures]
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const own = computed(() => props.frame)
 const deps = computed(() => controlDeps({ activeProject: () => props.project, frame: () => own.value }))
-const actions = {
-  expand: controlAction('expand-frame'),
-  mirror: controlAction('mirror-frame'),
-  rotate: controlAction('rotate-frame'),
-  edit: controlAction('edit-frame'),
-  export: controlAction('strip-export'),
-  color: controlAction('margin-color'),
-  remove: controlAction('remove-frame'),
-  show: controlAction('show-title-block'),
-}
+const frameTools = useFrameTools(() => props.project, () => own.value, {
+  mirrorOn: () => !!props.mirrorOnFrame,
+  run: {
+    mirror: () => emit('mirror'),
+    rotate: () => rotateFromBand(),
+    edit: () => emit('toggle-edit'),
+    export: () => emit('export', 'margin-frame-tools'),
+    color: () => (colorOpen.value = true),
+    remove: () => emit('remove'),
+  },
+})
+const toolIds = frameTools.ids
+/** The ··· popover is always there and holds every tool, the band's own among them as second triggers (ticket 1220,
+ * MarginSheet card: the Frame popover). */
+const menuItems = frameTools.items
+const actions = { expand: controlAction('expand-frame'), ...frameTools.actions }
 
 const frame = computed(() => frameById(props.project, own.value))
-const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
-/** The name the tab reads and is named by, or "Name this Frame". */
-const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
-const rotatable = computed(() => frameAllows(props.project, 'rotate', own.value))
-/** Edit Frame, on a turned Frame too (ticket 1016), so no tool shifts as it turns. A Frame with a row done holds still,
- * its Edit Frame kept in place, disabled, saying why (ticket 0975). */
-const editable = computed(() => frameAllows(props.project, 'resize', own.value))
 
 const canvas = useCanvasBackground(() => props.project)
 /** A finger: its 44px hit areas stand the band's tools further apart (ticket 0976). */
 const touch = useMediaQuery('(pointer: coarse)')
-/** Under bp-tablet the expanded sheet's insets are smaller (MarginSheet card, Expand the Frame). */
-const narrowScreen = useMediaQuery(UNDER_TABLET_QUERY)
-/** Expand the Frame's name and Tooltip: Back to the Canvas while expanded, its icon turned in. */
-const expandName = computed(() => (props.expanded ? t.value.frame.backToCanvas : undefined))
-const expandIcon = computed(() => (props.expanded ? 'collapse-frame' : 'expand-frame'))
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
 const fold = useTitleBlockFold()
 /** Unseen until the canvas view is set and two frames after (ticket 0991): the sheet would show at the view's stand-in
- * first, and the band's row and the title block then measure themselves and step down to the forms that fit, which can
+ * first, and the band's chips and the foot then measure themselves and step down to the forms that fit, which can
  * take a frame, so the sheet is first seen where it stays, in the forms it keeps. */
 const arriving = ref(true)
 watch(
@@ -165,15 +147,13 @@ const sheetStyle = computed(() => {
 /** The sheet's form by its band's height (MarginSheet card, Zoom forms): what the canvas draws it in too, at its least
  * scale (1, or the Homepage demo's; ticket 0851). */
 const least = computed(() => canvas.projectTheme.value.margin.leastScale)
-const form = computed<MarginForm>(() => (props.expanded ? 'full' : marginForm(props.anchor.band, least.value)))
-/** What the band's row and the title block are drawn at (ticket 0698): laid out in the drafting sheet's px and scaled
- * with the beads, so the fitting below measures in those px too. Expanded, 1 at every zoom (ticket 1169). */
-const scale = computed(() => (props.expanded ? 1 : marginScale(props.anchor.band, least.value)))
-/** The expanded sheet's inset: its row and title block in from its edge. */
-const expandedInset = computed(() => slimInset(narrowScreen.value))
+const form = computed<MarginForm>(() => marginForm(props.anchor.band, least.value))
+/** What the band's row and the foot are drawn at (ticket 0698): laid out in the drafting sheet's px and scaled
+ * with the beads, so the fitting below measures in those px too. */
+const scale = computed(() => marginScale(props.anchor.band, least.value))
 
-// The band's row and the title block step down a form where the sheet is too narrow for them; the row's tools then leave
-// it for the Frame tools menu as the width runs out (ticket 1195).
+// The band's row steps down a form where the sheet is too narrow for it; its tools then leave it for the Frame tools
+// menu as the width runs out (ticket 1195).
 type RowForm = BandRow
 const ROW_FITS: Record<MarginForm, readonly RowForm[]> = {
   full: ['full', 'compact', 'folded'],
@@ -181,36 +161,13 @@ const ROW_FITS: Record<MarginForm, readonly RowForm[]> = {
   folded: ['folded'],
   bare: [],
 }
-/** Expanded, the row is never bare (ticket 1169): the sheet widens to the folded row with the menu button alone instead. */
-const EXPANDED_ROW_FITS: readonly RowForm[] = ['full', 'compact', 'folded']
-// The legend is the first the title block gives up: `brief` is the compact row without it (ticket 0698). On Row
-// progress's strip (ticket 1176) the full form's block is one row, `line`: the name, the Technique and its settings with
-// their pencils, the size, the legend and Letters; the two-row and roomy blocks need the room the strip takes.
-type TitleForm = 'full' | 'line' | 'compact' | 'brief' | 'key' | 'tab'
-const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['line', 'brief', 'tab'], compact: ['compact', 'brief', 'tab'], folded: ['tab'], bare: [] }
-/** Expanded (ticket 1169): the two-row block, the one row with its pencils, the compact row, then the name with the
- * legend and Letters, then the tab; never roomy. */
-const EXPANDED_TITLE_FORMS: readonly TitleForm[] = ['full', 'line', 'compact', 'key', 'tab']
-/** Whether the band on screen reaches `designPx` of the drafting sheet at its least scale. */
-const bandReaches = (designPx: number) => props.anchor.band >= designPx * (least.value ?? MARGIN_PX.scale.min)
-/** Whether the compact row's two-line legend stands clear of the Frame's line (ticket 1213): under it, `brief`. */
-const legendFits = computed(() => bandReaches(MARGIN_PX.band.legend))
-const titleForms = computed<readonly TitleForm[]>(() => {
-  if (props.expanded) return EXPANDED_TITLE_FORMS
-  const forms = TITLE_FORMS[form.value]
-  return form.value === 'compact' && !legendFits.value ? forms.filter((shown) => shown !== 'compact') : forms
-})
 
-// Row progress under the title block (ticket 1176): the strip across the sheet in every form (ticket 1223), which first
-// shortens its counter, then gives up its track, then Back a row's words, Row done staying to the last. Where the title
-// block shares its line (compact under 76px, folded) the strip takes what the title block's tab leaves.
-/** Under the title block, or beside it on one line. */
-const stacked = computed(
-  () => !!props.expanded || form.value === 'full' || (form.value === 'compact' && bandReaches(MARGIN_PX.band.stacked)),
+/** Whether the foot's two rows fit the band, the facts over Row progress (tickets 1197, 1258). */
+const stacks = computed(
+  () => form.value === 'full' || (form.value === 'compact' && props.anchor.band >= MARGIN_PX.band.stacked * (least.value ?? MARGIN_PX.scale.min)),
 )
 /** The places of the sheet's form, in screen px at its scale. */
 const place = computed(() => {
-  if (props.expanded) return { top: expandedInset.value, side: expandedInset.value, border: expandedInset.value }
   const { top, side, border } = form.value === 'full' ? MARGIN_PX.place.full : MARGIN_PX.place.compact
   return { top: top * scale.value, side: side * scale.value, border: border * scale.value }
 })
@@ -221,91 +178,19 @@ const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab * scale.value
 /** A part drawn at the scale from its `origin` corner. */
 const scaledFrom = (origin: string) => ({ transform: `scale(${scale.value})`, transformOrigin: origin })
 
-/** The foot's inset from the sheet's left side, inside the border or, folded, as the row is. */
-const footSide = computed(() => (form.value === 'folded' ? MARGIN_PX.place.compact.side * scale.value : place.value.border))
-/** The foot's room on screen, the sheet's width inside its border; in drafting px, what the title block and Row
- * progress fit into. */
-const footRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * footSide.value))
+/** The foot's inset from the sheet's bottom-left corner: along its left side and its bottom edge, clear of the inner
+ * border; folded, one line in the middle of the room between the bottom edge and the Frame's line. */
+const footInset = computed(() => {
+  const { side, bottom } = MARGIN_PX.foot[form.value === 'full' ? 'full' : 'compact']
+  return { side: side * scale.value, edge: form.value === 'folded' ? middle(roomBelow.value) : bottom * scale.value }
+})
+/** The foot's room on screen, the sheet's width inside its inset; in drafting px, what the facts and Row progress fit
+ * into. */
+const footRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * footInset.value.side))
 const footRoomAt1 = computed(() => footRoom.value / scale.value)
 
-const footEl = ref<HTMLElement>()
-const footSize = useElementSize(footEl)
-const progressEl = ref<HTMLElement>()
-const progressSize = useElementSize(progressEl)
-/** The name tab's width with its whole name, once it has shown: on one line Row progress leaves it that. */
-const tabWidth = ref(0)
-/** Whether the title block is shown in some form: Name and size on the margin is on (MarginSheet card). */
-const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
-/** The least form's width as last laid out, for the expanded sheet to be no narrower. */
-const leastStripWidth = ref(0)
-/** The compact and folded sheets' strip has round buttons (ticket 1256), by pointer. */
-const compactStrip = computed(() => (props.expanded || form.value === 'full' ? undefined : touch.value ? 'touch' : 'mouse'))
-/** What the strip reads: Row done or Column done, the counter, the language (ticket 0851). */
-const stripLabels = computed(() => {
-  const { current, total } = rowProgressPosition(props.project, own.value)
-  return JSON.stringify([locale.value, columnsAsSeen(props.project, own.value), current, total, touch.value, !!props.expanded, compactStrip.value])
-})
-// A width learnt for other words is forgotten, as the fitting's are.
-watch(stripLabels, () => (leastStripWidth.value = 0))
-const progressFitting = useFittingForm({
-  forms: () => (frame.value && form.value !== 'bare' ? STRIP_FITS : []),
-  // The strip has the sheet's whole width; on one line it leaves the title block its tab, the name uncut.
-  room: () => (stacked.value ? footRoomAt1.value : footRoomAt1.value - MARGIN_PX.gap - (titleOn.value ? tabWidth.value : 0)),
-  measure: () => {
-    const width = stripWidth(progressEl.value?.firstElementChild as HTMLElement | null | undefined, scale.value)
-    if (width > 0 && progressFit.value === STRIP_FITS.at(-1)) leastStripWidth.value = width
-    return width
-  },
-  observed: () => [progressEl.value?.firstElementChild],
-  labels: () => stripLabels.value,
-})
-/** The strip's form: the least of them where none fits (expanded, the sheet widens to it). */
-const progressFit = computed<StripFit>(() => progressFitting.value ?? STRIP_FITS.at(-1)!)
-/** Where not even the least form fits the sheet, and bare, the strip is not drawn, so Row done never stands outside the
- * margin (ticket 1245). Expanded it stays: the sheet widens to it. */
-const progressForm = computed(() => (frame.value && (props.expanded || progressFitting.value) ? progressFit.value : undefined))
-const fitProps = computed(() => STRIP_FIT_PROPS[progressFit.value])
-
-const titleEl = ref<HTMLElement>()
-const titleBlock = ref<InstanceType<typeof MarginTitleBlock>>()
-
-/** The title block's room: the foot's, less Row progress beside it on one line. */
-const titleRoom = computed(() => {
-  if (stacked.value || !progressForm.value) return footRoomAt1.value
-  return footRoomAt1.value - ownLength(progressEl.value, progressSize.width.value) - MARGIN_PX.gap
-})
-const title = useFittingForm({
-  forms: () => (titleOn.value ? (fold.folded.value ? titleForms.value.filter((shown) => shown === 'tab') : titleForms.value) : []),
-  room: () => titleRoom.value,
-  // The block by its least width: the Bead's label in the legend gives way before it steps down (ticket 1213).
-  measure: () => titleBlock.value?.leastWidth() || ownLength(titleEl.value, titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
-  observed: () => [titleEl.value?.firstElementChild],
-  // Its words: a shorter name, maker or language brings back the block it stepped down from (ticket 0851).
-  labels: () => {
-    const { name, technique, techniqueSettings, columns, rows } = frame.value ?? {}
-    return JSON.stringify([locale.value, name, props.project.makerName, technique, techniqueSettings, columns, rows])
-  },
-})
-// The tab's width with its name whole, as laid out (not scaled): its own, less what the name shows, plus all the name.
-watch(
-  () => [title.value, tabName.value, progressSize.width.value, footRoomAt1.value],
-  () => {
-    const tab = titleEl.value?.firstElementChild as HTMLElement | null | undefined
-    const name = tab?.querySelector<HTMLElement>('.margin-sheet__tab-name')
-    if (title.value !== 'tab' || !tab || !name) return
-    const whole = tab.offsetWidth - name.clientWidth + name.scrollWidth
-    if (whole > 0) tabWidth.value = whole
-  },
-  { flush: 'post' },
-)
-/** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
-const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
-/** The foot's inset from the sheet's bottom-left corner, along its left side and its bottom edge: the inner border's,
- * or folded, the line's in the middle of the room between the bottom edge and the Frame's line. */
-const footInset = computed(() => ({
-  side: footSide.value,
-  edge: form.value === 'folded' && !props.expanded ? middle(roomBelow.value) : place.value.border,
-}))
+const foot = ref<InstanceType<typeof MarginFoot>>()
+const footSize = useElementSize(computed(() => foot.value?.$el as HTMLElement | undefined))
 // Always the bottom-left as seen, whatever the Canvas or the Frame is turned (ticket 1170): it never shares the top
 // band with the row.
 const footStyle = computed(() => ({
@@ -319,28 +204,42 @@ const footStyle = computed(() => ({
 const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side))
 const bandLeft = computed(() => place.value.side)
 
-/** The Frame's tools now, and which stand on the band and which are under the Frame tools button (ticket 1195). */
-const offered = computed<Record<BandToolId, boolean>>(() => ({ mirror: rotatable.value, rotate: rotatable.value, edit: editable.value, export: true, color: true, remove: true }))
-const toolIds = computed(() => BAND_ORDER.filter((id) => offered.value[id]))
+// Which of the Frame's tools stand on the band and which are under the Frame tools button (ticket 1195).
+/** Whether the band holds the Frame's name: Name and size on the margin is on (MarginSheet card). */
+const titleOn = computed(() => canvas.margin.titleBlock.value && !!frame.value)
 const bandFit = computed<BandFit | undefined>(() =>
-  bandTools({ tools: toolIds.value, rows: props.expanded ? EXPANDED_ROW_FITS : ROW_FITS[form.value], room: bandRoom.value / scale.value, touch: touch.value, expanded: !!props.expanded }),
+  bandTools({
+    tools: toolIds.value,
+    rows: ROW_FITS[form.value],
+    room: bandRoom.value / scale.value,
+    touch: touch.value,
+    name: titleOn.value,
+    unfold: fold.folded.value,
+  }),
 )
-/** Expanded, where no row fits, the folded one with every tool under the menu button: the sheet then widens to it (ticket 1169). */
-const narrowest = computed<BandFit>(() => ({ row: 'folded', onBand: [], overflow: toolIds.value }))
-const shownFit = computed(() => bandFit.value ?? (props.expanded ? narrowest.value : undefined))
 /** The row shown, if any. */
-const row = computed(() => shownFit.value?.row)
-const onBand = (id: BandToolId) => !!shownFit.value?.onBand.includes(id)
+const row = computed(() => bandFit.value?.row)
+const onBand = (id: BandToolId) => !!bandFit.value?.onBand.includes(id)
 /** The divider before Remove Frame, with a mouse and another tool before it (as `bandRowWidth` counts it). */
-const dividerShown = computed(() => !touch.value && (shownFit.value?.onBand.length ?? 0) > 1)
-const rowTop = computed(() => (form.value === 'folded' && !props.expanded ? middle(roomAbove.value) : place.value.top))
+const dividerShown = computed(() => !touch.value && (bandFit.value?.onBand.length ?? 0) > 1)
+const rowTop = computed(() => (form.value === 'folded' ? middle(roomAbove.value) : place.value.top))
 /** The row's height in drafting px; on screen, times the scale. */
 const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
 const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${bandLeft.value}px`, width: `${bandRoom.value / scale.value}px`, height: `${rowHeight.value}px`, ...scaledFrom('0 0') }))
+
+// Who the Frame is, after Expand (ticket 1258): all of it in the full and expanded rows, the name alone compact and
+// folded; folded by hand, the name with the chevron that unfolds, where there is room to.
+const identityForms = computed<readonly IdentityForm[]>(() => {
+  if (!bandFit.value?.named) return []
+  if (form.value === 'folded') return ['alone']
+  if (fold.folded.value) return ['name', 'alone']
+  return form.value === 'full' ? ['all', 'noMaker', 'noSettings', 'name', 'alone'] : ['alone']
+})
+const identityRoom = computed(() => (bandFit.value ? bandNameRoom(bandFit.value, bandRoom.value / scale.value, touch.value) : 0))
 const small = computed(() => row.value !== 'full')
 const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
 
-// The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498).
+// The band's row and the foot on the canvas box, for what they give way to: a Selection's handles (ticket 498).
 // The Tool pill needs no such rule: it is drawn over the sheet, so it takes its own presses.
 const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
@@ -358,7 +257,7 @@ const bandYields = computed(() => yields(bandBox.value))
 // Bare, the Move bar stands alone over the middle of the Frame's top edge, above its line, so it takes no press meant
 // for the beads (ticket 0682); so it does where the sheet is too narrow for even the narrowest row, so the Frame can
 // always be moved (ticket 0851).
-const handleShown = computed(() => !props.expanded && (form.value === 'bare' || !row.value))
+const handleShown = computed(() => form.value === 'bare' || !row.value)
 const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2, top: props.anchor.box.top - props.anchor.sheet.top }))
 const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
 /** The Move bar and the Frame tools button beside it (ticket 1164), each 24 high, as one box that gives way. */
@@ -368,19 +267,6 @@ const handleYields = computed(() => {
   return yields({ left: sheet.left + handleAt.value.left - MARGIN_PX.moveWidth / 2, top: sheet.top + handleAt.value.top - MARGIN_PX.tab, width: handleWidth, height: MARGIN_PX.tab })
 })
 const footYields = computed(() => footSize.width.value > 0 && yields(footBox.value))
-
-/** The folded row's width with the menu button alone: the expanded sheet is never narrower than it (ticket 1169), nor
- * than Row progress's least strip (ticket 1245). */
-const narrowestRow = computed(() => bandRowWidth('folded', [], true, touch.value, true))
-// What the slim sheet holds, told to the canvas, which lays it round them.
-watch(
-  () => (props.expanded ? { row: rowHeight.value, title: footSize.height.value, rowWidth: Math.max(narrowestRow.value, leastStripWidth.value) } : undefined),
-  (measures) => measures && emit('slim', measures),
-  { immediate: true, deep: true },
-)
-
-/** Row progress is one Tab stop, ←/→ along its controls, as in the Progress bar (ADR 0075). */
-const roving = useRovingFocus(progressEl, { axis: () => 'horizontal', managesTabIndex: true })
 
 /** Whether the Move bar is being dragged: it turns accent until the canvas press ends. */
 const dragging = ref(false)
@@ -399,7 +285,7 @@ function onMovePress(event: PointerEvent): void {
 const toolsEl = ref<HTMLElement>()
 /** The Frame tools button beside the lone Move bar (ticket 1164). */
 const handleToolsEl = ref<HTMLElement>()
-/** The tools are one Tab stop too, ←/→ along them (ticket 0857), so the title block's name is the next stop. */
+/** The tools are one Tab stop too, ←/→ along them (ticket 0857). */
 const toolsRoving = useRovingFocus(toolsEl, { selector: '.margin-sheet__tool', axis: () => 'horizontal', managesTabIndex: true })
 const colorOpen = ref(false)
 const colorButton = computed(() =>
@@ -411,6 +297,14 @@ const colorHangsFrom = computed(() => (!row.value ? 'handle' : onBand('color') ?
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
 const sheetEl = ref<HTMLElement>()
+// Back from the expanded rails, the focus returns to Expand the Frame once the sheet is shown (ticket 1260).
+watch(
+  [arriving, sheetEl],
+  ([hidden, sheet]) => {
+    if (!hidden && sheet && takeExpandFocus(own.value) && document.activeElement === document.body) sheet.querySelector<HTMLElement>('[data-testid$="expand-frame"]')?.focus({ preventScroll: true })
+  },
+  { flush: 'post' },
+)
 
 /** The Rotate Frame copy that waits where it was pressed (ticket 1016, MarginSheet card). */
 const rotateCopy = useRotateCopy({ handOverMs: FRAME_TURN_MS })
@@ -452,20 +346,6 @@ watch(frame, (now) => now || rotateCopy.drop())
 /** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
 const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
 
-/** Every Frame tool as a menu item: the bare Frame tools button's menu holds them all, the band's only those it has no
- * room for (MarginSheet card, Zoom forms); Mirror the whole Frame first, checked while on, shown as Rotate Frame is. */
-const toolItems = computed<Record<BandToolId, FrameToolItem>>(() => ({
-  mirror: { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
-  rotate: { id: 'rotate', action: actions.rotate, run: rotateFromBand },
-  edit: { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
-  export: { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
-  color: { id: 'color', action: actions.color, run: () => (colorOpen.value = true) },
-  remove: { id: 'remove', action: actions.remove, run: () => emit('remove') },
-}))
-const allItems = computed(() => toolIds.value.map((id) => toolItems.value[id]))
-/** The ··· popover is always there and holds every tool, the band's own among them as second triggers (ticket 1220, MarginSheet
- * card: the Frame popover). */
-const menuItems = allItems
 /** Where the popover is held through a turn: a Frame tools button drawn anew (the band's to the bare one) reopens there. */
 const popoverHeld = ref<Record<string, string>>()
 const popoverBindings = computed(() => ({ project: props.project, asked: props.popoverAsked, held: popoverHeld.value, rowHighlight: props.rowHighlight, rowPress: props.rowPress }))
@@ -477,7 +357,7 @@ const popoverHandlers = {
   settle: () => emit('settle-settings'),
   opened: () => emit('popover-opened'),
   held: (place: Record<string, string> | undefined) => (popoverHeld.value = place),
-  // The popover's fields and Row progress are second triggers of the title block's and the strip's (ticket 1257).
+  // The popover's fields and Row progress are second triggers of the sheet's chips and strip (ticket 1257).
   rename: (name: string) => emit('rename', name),
   'save-maker-name': (name: string) => emit('save-maker-name', name),
   'set-technique': (technique: Technique) => emit('set-technique', technique),
@@ -493,7 +373,7 @@ const popoverHandlers = {
   <div
     ref="sheetEl"
     class="margin-sheet"
-    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--arriving': arriving, 'margin-sheet--expanded': expanded }]"
+    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--arriving': arriving }]"
     :style="sheetStyle"
     :data-frame="own"
     data-testid="margin-sheet"
@@ -510,17 +390,24 @@ const popoverHandlers = {
       <IconButton
         variant="plain"
         class="margin-sheet__expand"
-        :icon="expandIcon"
         :icon-size="iconSize"
         :action="actions.expand"
-        :label="expandName"
         data-testid="margin-expand-frame"
         @click="emit('toggle-expand')"
       />
+      <MarginFrameIdentity
+        v-if="identityForms.length"
+        :project="project"
+        :frame="own"
+        :forms="identityForms"
+        :room="identityRoom"
+        @rename="emit('rename', $event)"
+        @set-technique="emit('set-technique', $event)"
+        @set-setting="(id, value) => emit('set-setting', id, value)"
+        @save-maker-name="emit('save-maker-name', $event)"
+      />
       </div>
-      <!-- Expanded, the view follows the Frame: no Move bar, and no Tab stop for it (ticket 1169). -->
-      <span v-if="expanded" aria-hidden="true" />
-      <MarginMoveBar v-else :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
+      <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
       <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin" @pointerdown.capture="rotateCopy.notePress" @keydown.capture="rotateCopy.forgetPress">
         <IconButton
           v-if="onBand('mirror')"
@@ -589,84 +476,34 @@ const popoverHandlers = {
       @keydown.capture="rotateCopy.forgetPress"
     >
       <span class="margin-sheet__handle-expand">
-        <IconButton variant="plain" :icon="expandIcon" :icon-size="MARGIN_PX.icon.compact" :action="actions.expand" :label="expandName" data-testid="margin-handle-expand-frame" @click="emit('toggle-expand')" />
+        <IconButton variant="plain" :icon-size="MARGIN_PX.icon.compact" :action="actions.expand" data-testid="margin-handle-expand-frame" @click="emit('toggle-expand')" />
       </span>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools v-bind="popoverBindings" :items="allItems" :deps="deps" :frame="own" v-on="popoverHandlers" /></span>
+      <span ref="handleToolsEl" class="margin-sheet__handle-tools"><MarginFrameTools v-bind="popoverBindings" :items="menuItems" :deps="deps" :frame="own" v-on="popoverHandlers" /></span>
     </div>
 
-    <!-- The foot (ticket 1176): the title block in the bottom-left corner, Row progress under it across the sheet, or
-         where the sheet holds one line, at its end. -->
-    <div
-      v-if="title || progressForm"
-      ref="footEl"
-      class="margin-sheet__foot"
-      :class="[stacked ? 'margin-sheet__foot--stacked' : 'margin-sheet__foot--line', { 'margin-sheet__foot--touch': touch, 'margin-sheet__yielding': footYields }]"
+    <!-- The foot (tickets 1176, 1258): what weaving reads and Row progress, in the bottom-left corner. -->
+    <MarginFoot
+      v-if="form !== 'bare'"
+      ref="foot"
+      :class="{ 'margin-sheet__yielding': footYields }"
       :style="footStyle"
       data-testid="margin-foot"
-    >
-      <div v-if="title" ref="titleEl" class="margin-sheet__title" :data-form="title" data-testid="margin-title">
-        <MarginTitleBlock
-          v-if="title !== 'tab'"
-          ref="titleBlock"
-          :project="project"
-          :frame="own"
-          :form="title"
-          @rename="emit('rename', $event)"
-          @set-technique="emit('set-technique', $event)"
-          @set-setting="(id, value) => emit('set-setting', id, value)"
-          @save-maker-name="emit('save-maker-name', $event)"
-          @replace-bead="emit('replace-bead', $event)"
-          @set-letters="emit('set-letters', $event)"
-          @fold="fold.fold()"
-        />
-        <!-- Folded, the title block is its name on a tab; where the sheet has room, the tab unfolds it. Unnamed, the tab
-             invites a name: "Name this Frame" opens the name field and its chevron unfolds (ticket 0803). -->
-        <span v-else-if="!frame?.name" class="margin-sheet__tab margin-sheet__tab--unnamed" data-testid="margin-title-tab">
-          <EditableLine v-bind="nameLine" invite-only class="margin-sheet__tab-name" @save="emit('rename', $event)" />
-          <IconButton
-            v-if="unfoldable"
-            variant="plain"
-            icon="chevron-up"
-            :icon-size="12"
-            :action="actions.show"
-            :label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
-            data-testid="margin-title-unfold"
-            @click="fold.unfold()"
-          />
-        </span>
-        <AppButton
-          v-else-if="unfoldable"
-          variant="text"
-          class="margin-sheet__tab"
-          :action="actions.show"
-          :aria-label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
-          trailing-icon="chevron-up"
-          data-testid="margin-title-tab"
-          @click="fold.unfold()"
-        >
-          <span class="margin-sheet__tab-name">{{ tabName }}</span>
-        </AppButton>
-        <span v-else class="margin-sheet__tab" data-testid="margin-title-tab">
-          <span class="margin-sheet__tab-name">{{ tabName }}</span>
-        </span>
-      </div>
-      <div v-if="progressForm" ref="progressEl" class="margin-sheet__progress" :data-form="progressFit" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
-        <RowProgressControls
-          :project="project"
-          :frame="own"
-          :row-highlight="rowHighlight"
-          :row-press="rowPress"
-          v-bind="fitProps"
-          :compact="compactStrip"
-          testid="margin-progress"
-          @move-row="emit('move-row', $event)"
-          @reset-progress="emit('reset-progress')"
-          @set-row-direction="emit('set-row-direction', $event)"
-          @toggle-row-highlight="emit('toggle-row-highlight')"
-        />
-      </div>
-    </div>
+      :project="project"
+      :frame="own"
+      :row-highlight="rowHighlight"
+      :row-press="rowPress"
+      :room="footRoomAt1"
+      :scale="scale"
+      :sheet-form="form"
+      :stacks="stacks"
+      @move-row="emit('move-row', $event)"
+      @reset-progress="emit('reset-progress')"
+      @set-row-direction="emit('set-row-direction', $event)"
+      @toggle-row-highlight="emit('toggle-row-highlight')"
+      @replace-bead="emit('replace-bead', $event)"
+      @set-letters="emit('set-letters', $event)"
+    />
 
     <!-- Rotate Frame's copy, lifted off the paper where it was pressed (ticket 1016): no Tab stop and hidden from a
          screen reader, so Rotate Frame is there once; the band's own button is the keyboard's. -->
@@ -724,13 +561,10 @@ const popoverHandlers = {
 .margin-sheet__band {
   position: absolute;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* The tools are never squeezed; the name and its chips give way. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
   align-items: center;
   gap: var(--space-4);
-}
-
-.margin-sheet--expanded .margin-sheet__band {
-  grid-template-columns: auto 1fr auto;
 }
 
 .margin-sheet__band > *,
@@ -750,6 +584,21 @@ const popoverHandlers = {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A finger: Expand's 44px hit area stands clear of the name's chip. */
+.margin-sheet__band--touch .margin-sheet__start {
+  gap: var(--space-12);
+}
+
+.margin-sheet__band--touch :deep(.margin-identity__fold) {
+  margin-inline-start: var(--space-8);
+}
+
+.margin-sheet__start > :deep(.icon-btn-wrap) {
+  flex: none;
 }
 
 /* Expand the Frame (ticket 1169): the band's first item, a tool's size and look, a divider after it. */
@@ -813,17 +662,6 @@ const popoverHandlers = {
 .margin-sheet__band--touch:not(.margin-sheet__band--full) .margin-sheet__tools {
   gap: calc(var(--touch-target) - var(--margin-tool-compact));
   padding-inline-start: calc((var(--touch-target) - var(--margin-tool-compact)) / 2);
-}
-
-/* So do the full strip's buttons: 44px hit areas that never overlap, two icons side by side standing twice as far apart.
- * The compact strip's areas are as wide as drawn (ticket 1256). */
-.margin-sheet__foot--touch :deep(.row-progress:not(.row-progress--compact) > :is(.app-button-wrap, .icon-btn-wrap) + *),
-.margin-sheet__foot--touch :deep(.row-progress:not(.row-progress--compact) > * + :is(.app-button-wrap, .icon-btn-wrap)) {
-  margin-inline-start: calc((var(--touch-target) - var(--margin-done-compact)) / 2 - var(--space-4));
-}
-
-.margin-sheet__foot--touch :deep(.row-progress:not(.row-progress--compact) > .icon-btn-wrap + .icon-btn-wrap) {
-  margin-inline-start: calc(var(--touch-target) - var(--margin-tool-compact) - var(--space-4));
 }
 
 /* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
@@ -944,96 +782,8 @@ const popoverHandlers = {
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
-/* The foot (ticket 1176), anchored to the inner border's bottom-left corner as seen; folded, one line in the middle of
- * the band. Stacked, the title block stands on the strip, which runs the sheet's width inside its border; on one line,
- * Row progress stands at the line's end. */
+/* The foot (ticket 1176), anchored to the inner border's bottom-left corner as seen; MarginFoot lays it out. */
 .margin-sheet__foot {
   position: absolute;
-  display: flex;
-  box-sizing: border-box;
-}
-
-.margin-sheet__foot--stacked {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.margin-sheet__foot--line {
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.margin-sheet__title {
-  display: flex;
-  justify-content: flex-start;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.margin-sheet__progress {
-  display: flex;
-  min-width: 0;
-}
-
-/* On one line Row progress keeps its width and the title block gives way, its name ending in an ellipsis. */
-.margin-sheet__foot--line .margin-sheet__progress {
-  flex: none;
-  margin-inline-start: auto;
-}
-
-/* The strip: one band of the title block's paper across the sheet, its rules the block's, its bottom corners rounded
- * with the inner border; the title block above stands on it, sharing its top rule. */
-.margin-sheet__foot--stacked .margin-sheet__progress {
-  align-self: stretch;
-}
-
-.margin-sheet__foot--stacked .margin-sheet__title + .margin-sheet__progress {
-  margin-top: -1px;
-}
-
-.margin-sheet__foot--stacked .margin-sheet__title :deep(.margin-title) {
-  border-radius: 0;
-}
-
-.margin-sheet__foot--stacked :deep(.row-progress) {
-  border-radius: 0 0 var(--margin-border-radius) var(--margin-border-radius);
-}
-
-/* The name tab: 24px, `margin-title` fill, the name (Inter 600 11) and `chevron-up` when it unfolds the block. */
-.margin-sheet__tab,
-.margin-sheet__title :deep(.margin-sheet__tab) {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-6);
-  max-width: 100%;
-  height: var(--margin-tab);
-  padding: 0 var(--space-6) 0 var(--space-10);
-  box-sizing: border-box;
-  color: var(--ink);
-  font: var(--margin-tab-name);
-  background: var(--margin-title);
-  border: 1px solid var(--margin-line);
-  border-radius: var(--radius-sm);
-}
-
-/* Only the tab that unfolds as a whole fills on hover; the span forms are not pressed (ticket 0803). */
-.margin-sheet__title :deep(button.margin-sheet__tab:hover) {
-  background: color-mix(in srgb, var(--ink) 10%, var(--margin-title));
-}
-
-/* Unnamed, the tab holds "Name this Frame" and, where it unfolds, an 18px chevron button (ticket 0803). */
-.margin-sheet__tab--unnamed :deep(.icon-btn) {
-  width: var(--margin-pencil);
-  height: var(--margin-pencil);
-  color: var(--body);
-  border-radius: var(--radius-sm);
-}
-
-.margin-sheet__tab-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>

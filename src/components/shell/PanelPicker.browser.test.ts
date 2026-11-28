@@ -6,17 +6,17 @@ import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import NewProjectForm from '../project/NewProjectForm.vue'
 
 // A picker's list opens against its button, also the first time (ticket 0681): a list laid out in its row for a moment
-// pushed the button aside (the margin title block, then anchored at the sheet's bottom-right corner, moved its pencil left) and
+// pushed the button aside (the margin sheet's title block, then at its bottom-right corner, moved its pencil left) and
 // the list was left where the button had been.
 
 /** The Menu card's gap between a button and its list. */
 const GAP = 4
 
-// The margin pencil is pushed only by the longest Technique names; a New Project row is pushed in any language. The
-// sheet at 125%, where the pencil stands far enough from the screen's left edge for its list to end at the button's right
+// The margin chip is pushed only by the longest Technique names; a New Project row is pushed in any language. The
+// sheet at 125%, where the chip stands far enough from the screen's left edge for its list to end at the button's right
 // (at 100% the list opens from its left instead, ticket 1213).
 const CASES: [name: string, host: Component, picker: string, locale: FitLocale][] = [
-  ['the margin Technique pencil', marginSheetHost(1.25), 'margin-technique-picker', 'longest'],
+  ['the margin Technique chip', marginSheetHost(1.25), 'margin-technique-picker', 'longest'],
   ['New Project Technique', NewProjectForm, 'new-project-technique', 'en'],
 ]
 

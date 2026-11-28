@@ -3,6 +3,8 @@ import { computed, nextTick, ref, useId } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
+import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import FieldCounter from '../ui/form/FieldCounter.vue'
 import TextField from '../ui/form/TextField.vue'
@@ -31,12 +33,12 @@ const props = defineProps<{
   normalize: (raw: string) => string
   /** The smaller line (the maker's name). */
   small?: boolean
-  /** A cell of the margin's title block (ticket 0657): no label, the value or the empty text always with its pencil,
-   * and the field floated over the sheet, since the cell is one row of text. */
+  /** A chip on the margin sheet (tickets 0657, 1258): no label, the value or the empty text on a button with its pencil,
+   * and the field floated over the sheet, since the chip is one row of text. */
   bare?: boolean
-  /** Bare and with no pencil: only the empty text starts the edit, a value reads as text (the margin's compact row and
-   * its folded tab, where there is no room for pencils, ticket 0803). */
-  inviteOnly?: boolean
+  /** A chip's words round its value, as "by" round the maker's name. */
+  prefix?: string
+  suffix?: string
   /** A file's name (ticket 1096, the Export panel's "Saves as" line): the label `meta-small`, the value in DM Mono `ink`,
    * broken anywhere so a long name wraps inside the panel. */
   fileName?: boolean
@@ -125,10 +127,28 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: di
   <div ref="rootEl" class="editable-line" :class="{ 'editable-line--small': small, 'editable-line--bare': bare, 'editable-line--file': fileName }" :data-testid="`${testid}-row`">
     <span v-if="!bare" class="editable-line__label">{{ label }}</span>
     <div v-if="!editing" class="editable-line__body">
-      <template v-if="value || bare">
-        <span v-if="value" class="editable-line__value" data-user-text :data-testid="testid">{{ value }}</span>
-        <button v-else class="ui-control editable-line__invite" type="button" :data-testid="testid" @click="start">{{ emptyText }}</button>
-        <IconButton v-if="!inviteOnly" variant="plain" icon="pencil" :icon-size="bare ? 12 : undefined" :label="editLabel" :tooltip="{ body: editTooltip }" :data-testid="`${testid}-edit`" @click="start" />
+      <!-- The whole chip is the button, so what can be edited is plain to see (ticket 1258). -->
+      <AppButton
+        v-if="bare"
+        variant="text"
+        class="margin-chip"
+        :label="editLabel"
+        :tooltip="{ body: editTooltip ?? '' }"
+        :aria-label="value ? `${editLabel}: ${value}` : undefined"
+        :data-testid="`${testid}-edit`"
+        @click="start"
+      >
+        <span v-if="value" class="editable-line__words">
+          <span v-if="prefix">{{ prefix }}</span>
+          <span class="margin-chip__text" data-user-text :data-testid="testid">{{ value }}</span>
+          <span v-if="suffix">{{ suffix }}</span>
+        </span>
+        <span v-else class="margin-chip__text margin-chip__empty" :data-testid="testid">{{ emptyText }}</span>
+        <AppIcon name="pencil" :size="12" />
+      </AppButton>
+      <template v-else-if="value">
+        <span class="editable-line__value" data-user-text :data-testid="testid">{{ value }}</span>
+        <IconButton variant="plain" icon="pencil" :label="editLabel" :tooltip="{ body: editTooltip }" :data-testid="`${testid}-edit`" @click="start" />
       </template>
       <button v-else class="ui-control editable-line__empty" type="button" :data-testid="`${testid}-add`" @click="start">
         {{ emptyText }}
@@ -251,32 +271,6 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: di
   min-width: 0;
 }
 
-/* Bare, the empty text invites a value: pressing it starts the edit, as the pencil does (ticket 0803). */
-.editable-line__invite {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0;
-  font: inherit;
-  color: var(--muted);
-  text-align: start;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  background: none;
-  border: 0;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.editable-line__invite:hover {
-  color: var(--ink);
-}
-
-.editable-line__invite:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
 /* A file's name (ticket 1096): it wraps anywhere instead of being cut. */
 .editable-line--file .editable-line__label {
   font: var(--type-meta-small);
@@ -290,20 +284,26 @@ useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: di
   overflow-wrap: anywhere;
 }
 
-/* The title block's cell (ticket 0657): one line, the pencil 18px; the field floats over the sheet above the cell, on
- * the panel's own surface. */
+/* The margin sheet's chip (ticket 0657): one line; the field floats over the sheet above it, on the panel's own
+ * surface. */
 .editable-line--bare {
   position: relative;
-  gap: var(--space-4);
   min-height: 0;
 }
 
-.editable-line--bare .editable-line__value {
-  font: inherit;
-  color: inherit;
+.editable-line--bare .editable-line__body,
+.editable-line--bare :deep(.app-button-wrap) {
+  min-width: 0;
+  max-width: 100%;
 }
 
-.editable-line--bare :deep(.icon-btn),
+/* The value with the words round it, a word's space apart. */
+.editable-line__words {
+  display: flex;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
 .editable-line__form--bare :deep(.icon-btn) {
   width: var(--margin-pencil);
   height: var(--margin-pencil);

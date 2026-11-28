@@ -11,6 +11,7 @@ import ConvertImageWizard from '../import/ConvertImageWizard.vue'
 import HoldHairline from '../tools/HoldHairline.vue'
 import RadialToolbox from '../tools/RadialToolbox.vue'
 import ToolPill from '../tools/ToolPill.vue'
+import MarginRails from './MarginRails.vue'
 import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
@@ -33,7 +34,8 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { expandedPillPosition, litPillTool, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { litPillTool, type Insets, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { expandedSides } from '../../rendering/expandedSheet'
 import { useShellScope } from '../../composables/ui/shellScope'
 import { selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
@@ -208,9 +210,12 @@ const {
   surfaceProbe,
   onToolPillPlaced,
   frameExpanded,
-  slimContent,
+  expandedContent,
   onToggleFrameExpand,
-  onSlimMeasured,
+  onExpandedMeasured,
+  exporting,
+  onExportPng,
+  onExportPdf,
   radialToolbox,
   onDropPress,
 } = useCanvasContext()
@@ -390,6 +395,20 @@ const frameAnchor = ref<FrameAnchor>()
 const frameAnchors = ref<Readonly<Record<string, FrameAnchor>>>({})
 /** The Frames' anchors in the Project's order, each with a sheet of its own (ticket 1220). */
 const sheetAnchors = computed(() => (activeProject.value ? Object.fromEntries(framesOf(activeProject.value).flatMap((frame) => (frameAnchors.value[frame.id] ? [[frame.id, frameAnchors.value[frame.id]]] : []))) : {}) as Record<FrameId, FrameAnchor>)
+/** The sheets drawn: every Frame's, or the expanded one's alone, its rails covering the rest (ticket 1260). */
+const shownSheets = computed(() => {
+  const id = expandedFrame.value
+  const anchor = id && sheetAnchors.value[id]
+  return id && anchor ? ({ [id]: anchor } as Record<FrameId, FrameAnchor>) : sheetAnchors.value
+})
+/** Where the bars over the drawing are placed: the whole drawing area, or, the Frame expanded, the window its rows are
+ * seen in between the rails and over Row progress (ticket 1260). */
+function inRows<A extends { box: { left: number; top: number }; viewport: { width: number; height: number } }>(anchor: A | undefined): A | undefined {
+  const chrome = expandedContent.value?.chrome
+  if (!anchor || !chrome) return anchor
+  const { width, height } = anchor.viewport
+  return { ...anchor, box: { ...anchor.box, left: anchor.box.left - chrome.left, top: anchor.box.top - chrome.top }, viewport: { width: width - chrome.left - chrome.right, height: height - chrome.top - chrome.bottom } }
+}
 /** Where the unframed Schemas are on the canvas box: their tags follow them (tickets 0721, 0733). */
 const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
@@ -417,27 +436,49 @@ useDrawingScrollGuard(drawingEl)
 /** A move of the pill while the Frame is expanded: kept until Back to the Canvas, the device's edge left as it is. */
 const expandedPillMove = ref<PillPosition>()
 watch(frameExpanded, (expanded) => expanded || (expandedPillMove.value = undefined))
-/** Where the pill stands: its own edge, or while the Frame is expanded the edge that leaves the Frame the most room
- * (ticket 1176), by the sheet's shape against the drawing area's. */
+/** Where the pill stands: its own edge, which it keeps when the Frame is expanded (ticket 1259), until moved there. */
 const shownPillPosition = computed<PillPosition>({
-  get: () => {
-    const sheet = frameAnchor.value?.sheet
-    if (!frameExpanded.value || !sheet) return toolPillPosition.value
-    const area = { width: drawingSize.width.value, height: drawingSize.height.value }
-    return expandedPillMove.value ?? expandedPillPosition(toolPillPosition.value, sheet, area)
-  },
+  get: () => expandedPillMove.value ?? toolPillPosition.value,
   set: (position) => {
     if (frameExpanded.value) expandedPillMove.value = position
     else toolPillPosition.value = position
   },
 })
-/** The Tool pill where it now stands: the Selection bar keeps clear of it, and a Fit too (ticket 0850), in the drawing
- * area as it is now. */
+const insetStyle = (sides: Insets | undefined) => (sides ? { top: `${sides.top}px`, right: `${sides.right}px`, bottom: `${sides.bottom}px`, left: `${sides.left}px` } : undefined)
+/** The expanded rows' window, which the bars are placed in: inside the rails, over Row progress and clear of the Tool
+ * pill's place (tickets 1259, 1260). */
+const rowsInsetStyle = computed(() => insetStyle(expandedContent.value?.chrome))
+/** The box the pill docks round while expanded: the rows' window and its own place in it. */
+const pillInsetStyle = computed(() => insetStyle(expandedContent.value?.round))
+/** How far in from that box's left and right the expanded Frame and its numbers begin: a pill on a side stands beside
+ * a narrow Frame, not out at the rails (ticket 1259). */
+const pillFlank = computed(() => {
+  const content = expandedContent.value
+  const box = frameAnchor.value?.box
+  if (!content || !box) return undefined
+  const { left, right } = expandedSides(content)
+  const end = drawingSize.width.value - content.round.right
+  return { left: Math.max(0, box.left - left - content.round.left), right: Math.max(0, end - (box.left + box.width + right)) }
+})
+/** The pill as it last measured itself, in the box it docks round. */
+const pillPlaced = ref<PillRect>()
+/** The Tool pill where it now stands: the Selection bar keeps clear of it, and so does a Fit on the Canvas (ticket
+ * 0850); an expanded Frame's sheet keeps its place for it itself. */
 function onPillRect(rect: PillRect | undefined) {
-  pillRect.value = rect
+  pillPlaced.value = rect
+  const round = expandedContent.value?.round
+  pillRect.value = rect && round ? { ...rect, left: rect.left + round.left, top: rect.top + round.top } : rect
   const el = drawingEl.value
-  if (el) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, shownPillPosition.value)
+  if (el && !round) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, shownPillPosition.value)
 }
+/** The Tool pill as the bars keep clear of it, in their box's px. */
+const barObstacle = computed(() => {
+  const rect = pillRect.value
+  const chrome = expandedContent.value?.chrome
+  return rect && chrome ? { ...rect, left: rect.left - chrome.left, top: rect.top - chrome.top } : rect
+})
+// The rails measure themselves after the pill does: its place is counted again in them.
+watch(pillInsetStyle, () => onPillRect(pillPlaced.value), { flush: 'post' })
 const selectionLayerStyle = computed(() => {
   const el = drawingEl.value
   if (!el) return undefined
@@ -570,7 +611,7 @@ const drawingStyle = computed(() => {
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"
                 :reference="pictureBar.previewProject.value ? undefined : referenceImage.drawn.value"
-                :slim="slimContent"
+                :expanded="expandedContent"
                 @surface-view="surfaceView = $event"
                 @cell-primary-down="onCellPrimaryDown"
                 @cell-primary-move="onCellPrimaryMove"
@@ -692,7 +733,7 @@ const drawingStyle = computed(() => {
             <!-- The unframed Schemas' names on tags (tickets 0721, 0733, SchemaTag card): over the beads, one Tab stop after
               the canvas, under the Tool pill and the Selection bar. -->
             <SchemaTags
-              v-if="activeProject && schemaAnchors?.schemas.length"
+              v-if="activeProject && !frameExpanded && schemaAnchors?.schemas.length"
               :project="activeProject"
               :anchors="schemaAnchors"
               @rename="onRenameSchema"
@@ -724,6 +765,8 @@ const drawingStyle = computed(() => {
             @pick-recent="pickRecent"
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
+            :style="pillInsetStyle"
+            :flank="pillFlank"
             @rect="onPillRect"
           />
           <!-- The Radial toolbox (ticket 1064) sits in the app shell as the pill's popovers do (StackingOrder card):
@@ -786,6 +829,8 @@ const drawingStyle = computed(() => {
           tools ride in it after the bar: the order of ADR 0075 has no place for them.
         -->
         <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer" data-zooms-table @wheel="onTableWheel">
+          <!-- The bars' box: the drawing area's, or, the Frame expanded, the window its rows are seen in (ticket 1260). -->
+          <div class="app-shell__bars" :style="rowsInsetStyle">
           <!--
             The Selection bar (tickets 168, 415, 0808, 0812; ContextBar card): above a rectangle Selection's Area sheet, its
             move grip handing a press on to the canvas; above a Piece's shape it floats too, clamped inside the canvas box while
@@ -795,7 +840,7 @@ const drawingStyle = computed(() => {
           <ContextBar
             :selection-summary="selectionSummary"
             :selection="selection"
-            :anchor="selectionAnchor"
+            :anchor="inRows(selectionAnchor)"
             :gesturing="surfacePressing"
             :size-only="!mirrorAdjusting"
             :paste-armed="pasteProjectionActive"
@@ -805,7 +850,7 @@ const drawingStyle = computed(() => {
             :can-name-piece="canNamePiece"
             :has-paint-color="hasPaintColor()"
             :select-active="activeTool === 'select'"
-            :obstacle="pillRect"
+            :obstacle="barObstacle"
             @copy="onCopy"
             @cut="onCut"
             @paste="onPasteMode"
@@ -831,21 +876,24 @@ const drawingStyle = computed(() => {
             :paste-armed="pasteProjectionActive"
             :project="activeProject"
             :can-remove-line="false"
-            :obstacle="pillRect"
+            :obstacle="barObstacle"
             :mirror="mirrorBar"
-            :mirror-anchor="mirrorAnchor"
+            :mirror-anchor="inRows(mirrorAnchor)"
             :mirror-size-only="mirrorAdjusting"
             @update:mirror="onMirrorChange"
             @close-mirror="onCloseMirror"
             @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
             @move-key="onAreaKey"
           />
+          </div>
 
           <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Expand the Frame, the Move bar and the
             tools in its top band, the title block in its bottom-left corner as seen with Row progress under it (ticket
             1176), following the Frame. -->
-          <MarginSheet
-            v-for="(anchor, id) in sheetAnchors"
+          <!-- Expanded, that Frame's sheet is the rails round its rows (ticket 1260), over every other Frame. -->
+          <component
+            :is="expandedFrame === id ? MarginRails : MarginSheet"
+            v-for="(anchor, id) in shownSheets"
             :key="id"
             :project="activeProject"
             :frame="id"
@@ -858,7 +906,9 @@ const drawingStyle = computed(() => {
             :selection="selectionAnchor?.box"
             :mirror-on-frame="mirrorOnFrame(id)"
             :placing="!viewPlaced"
-            :expanded="expandedFrame === id"
+            :exporting="expandedFrame === id ? exporting : undefined"
+            :under-ring="expandedFrame === id ? ringShown : undefined"
+            :pill-edge="expandedFrame === id ? shownPillPosition : undefined"
             :popover-asked="framePopoverAsked === id"
             @step="(edge, step) => onStepFrameEdge(edge, step, id)"
             @resize="(columns, rows) => onResizeFrame(columns, rows, id)"
@@ -867,7 +917,10 @@ const drawingStyle = computed(() => {
             @settle-settings="onSettleFrameSettings"
             @popover-opened="onFramePopoverOpened"
             @toggle-expand="onToggleFrameExpand(id)"
-            @slim="onSlimMeasured"
+            @measured="onExpandedMeasured"
+            @export-png="onExportPng"
+            @export-pdf="onExportPdf"
+            @save-project-file="onSaveProjectFile"
             @mirror="onMirrorWholeFrame(id)"
             @rotate="onRotateFrame(id)"
             @toggle-edit="onEditFrame(id)"
@@ -881,7 +934,7 @@ const drawingStyle = computed(() => {
             @toggle-row-highlight="toggleRowHighlight"
             @rename="onRenameFrame($event, id)"
             @set-technique="onSetFrameTechnique($event, id)"
-            @set-setting="(setting, value) => onSetFrameSetting(setting, value, id)"
+            @set-setting="(setting: string, value: number) => onSetFrameSetting(setting, value, id)"
             @save-maker-name="onSaveMakerName"
             @replace-bead="onRequestFrameBead($event, id)"
             @set-letters="onSetLetters($event, id)"
@@ -994,8 +1047,14 @@ const drawingStyle = computed(() => {
 }
 
 /* The bars take the pointer; ContextBar has two roots (the bar and Rotate's copy), so its bar is reached by `:deep`. */
-.app-shell__selection-layer > :deep(.context-bar) {
+.app-shell__bars > :deep(.context-bar) {
   pointer-events: auto;
+}
+
+/* Laid over the layer, or inset to the expanded rows' window; it takes no press of its own. */
+.app-shell__bars {
+  position: absolute;
+  inset: 0;
 }
 
 /** Space+drag panning (ticket 95): grab cursor while Space is held, grabbing once the drag starts (BeadHover card);

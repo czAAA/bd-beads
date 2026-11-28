@@ -51,15 +51,6 @@ export function isVerticalPill(position: PillPosition): boolean {
   return position === 'left' || position === 'right'
 }
 
-/** Where the pill stands while the Frame is expanded (ticket 1176): a Frame its area's height binds (taller for it, as
- * seen) puts the pill on a side, one the width binds on the bottom, so the Frame gets the room. An edge of the pill's
- * own that already frees what binds is kept: its left or right, its top or bottom. */
-export function expandedPillPosition(own: PillPosition, frame: { width: number; height: number }, area: { width: number; height: number }): PillPosition {
-  const heightBound = frame.width * area.height < frame.height * area.width
-  if (heightBound) return isVerticalPill(own) ? own : 'left'
-  return isVerticalPill(own) ? 'bottom' : own
-}
-
 /** Recent colours kept on the device. */
 export const RECENT_COLORS_KEPT = 8
 /** Recents the pill shows beside the chosen colour. */
@@ -96,6 +87,11 @@ export interface Insets {
 
 /** Nothing over any edge. */
 export const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 }
+
+/** Whether two take the same from every edge. */
+export function sameInsets(a: Insets, b: Insets): boolean {
+  return a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left
+}
 
 /** The room the pill takes from the edge it docks to (ticket 0850): from that edge to the pill's far side, nothing from
  * the other three. What a Fit leaves clear, so no part of the Frame's sheet lies under the pill. */

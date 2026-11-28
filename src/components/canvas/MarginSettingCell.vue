@@ -7,21 +7,20 @@ import type { SettingSpec } from '../../domain/settingSpec'
 import { weaveSettingWords } from '../../i18n/settingWords'
 import { useI18n } from '../../i18n/useI18n'
 import SettingStepper from '../project/SettingStepper.vue'
-import IconButton from '../ui/IconButton.vue'
+import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import { settingTestid } from '../project/settingTestid'
 import { useShellScope } from '../../composables/ui/shellScope'
 
 /** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
 const teleportTo = useShellScope().teleportTo
 
-// One Technique setting in the margin's title block (ticket 0698), drawn from its description like the panels' steppers,
-// never named per Technique: its value in short ("2-drop") and a pencil that opens the panels' stepper in a popover,
-// in the top layer so the sheet's scale never shrinks it. Each step applies at once; Escape or a press outside closes it.
+// One Technique setting on the margin sheet (ticket 0698), drawn from its description like the panels' steppers, never
+// named per Technique: a chip of its value in short ("2-drop") that opens the panels' stepper in a popover, in the top
+// layer so the sheet's scale never shrinks it. Each step applies at once; Escape or a press outside closes it.
 const props = defineProps<{
   setting: SettingSpec
   value: number
-  /** Whether the full form edits it: compact, it is read only. */
-  editable: boolean
   /** Its reason while a pass is done and the setting is locked. */
   disabledBody?: string
 }>()
@@ -30,6 +29,7 @@ const emit = defineEmits<{ set: [value: number] }>()
 const { t } = useI18n()
 const words = computed(() => weaveSettingWords(t.value, props.setting))
 const testid = computed(() => settingTestid('margin', props.setting))
+const short = computed(() => fillBlanks(words.value.short, { count: props.value }))
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()
@@ -61,22 +61,22 @@ useOverlayLayer({
 
 <template>
   <span ref="rootEl" class="margin-setting" :data-testid="testid">
-    <span class="margin-setting__value" :data-testid="`${testid}-short`">{{ fillBlanks(words.short, { count: value }) }}</span>
-    <IconButton
-      v-if="editable"
-      variant="plain"
-      icon="pencil"
-      :icon-size="12"
+    <AppButton
+      variant="text"
+      class="margin-chip"
       :label="fillBlanks(t.frame.margin.changeSetting, { setting: words.label })"
-      :tooltip="{ body: words.body }"
+      :aria-label="`${fillBlanks(t.frame.margin.changeSetting, { setting: words.label })}: ${short}`"
+      :tooltip="{ body: words.body ?? '' }"
       :disabled="disabledBody !== undefined"
       :disabled-body="disabledBody"
-      :selected="open"
+      :expanded="open"
       aria-haspopup="dialog"
-      :aria-expanded="open"
       :data-testid="`${testid}-edit`"
       @click="open ? close() : show()"
-    />
+    >
+      <span :data-testid="`${testid}-short`">{{ short }}</span>
+      <AppIcon name="pencil" :size="12" />
+    </AppButton>
     <!-- In the app shell: inside the sheet's scale, Safari keeps a top-layer popup where it first showed. -->
     <Teleport v-if="open" :to="teleportTo">
       <div ref="popupEl" class="margin-setting__popover anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="words.label" :data-testid="`${testid}-popover`">
@@ -89,15 +89,6 @@ useOverlayLayer({
 <style scoped>
 .margin-setting {
   display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-/* The pencil as the name's and the maker's: 18px, `body`, a 12px icon (MarginSheet card). */
-.margin-setting :deep(.icon-btn) {
-  width: var(--margin-pencil);
-  height: var(--margin-pencil);
-  color: var(--body);
 }
 
 /* The shared popover look, as Margin color's: 12px padding, the overlay fill and line, elevation 3. */

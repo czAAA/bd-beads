@@ -228,7 +228,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, expandedFrame, slimContent, toggleFrameExpand, collapseFrame, onSlimMeasured } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, carryBy, scrollBy, centreOn, bringIntoView, visibleCentre, keptView, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, turnCanvas, pinchStep, endTwist, onToolPillPlaced, frameExpanded, expandedFrame, expandedContent, toggleFrameExpand, collapseFrame, onExpandedMeasured } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistTable(turned),
@@ -1386,6 +1386,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSetFrameSetting: (id: string, value: number, frame: FrameId) => frameFlow.setWeaveSetting(frame, id, value),
       onRequestFrameBead: (beadId: string, frame: FrameId) => replaceBead.onRequestReplaceBead(frame, beadId),
       onSaveMakerName: exportFlow.onSaveMakerName,
+      /** The expanded Frame's export rows (ticket 1260): the Export panel's own actions, on that Frame. */
+      exporting: exportFlow.exporting,
+      onExportPng: exportFlow.onExportPng,
+      onExportPdf: exportFlow.onExportPdf,
       // The Frame panel's and the title block's switch is the Frame's own (ticket 1092).
       onSetLetters: (on: boolean, frame: FrameId) => exportFlow.onSetLetters(on, frame),
       exportOpener: overlays.exportOpener,
@@ -1400,9 +1404,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** Where the Tool pill stands over the drawing area: a Fit leaves its room clear (ticket 0850). */
       onToolPillPlaced,
       frameExpanded,
-      slimContent,
+      expandedContent,
       onToggleFrameExpand,
-      onSlimMeasured,
+      onExpandedMeasured,
     },
     /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
      * Frame panel. Each control only asks; the flows do the work. */
