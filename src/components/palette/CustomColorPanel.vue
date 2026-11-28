@@ -363,6 +363,8 @@ onMounted(async () => {
   margin-top: 0;
 }
 
+/* Centered, the slider and the row have no width of their own: the wheel's (the slider showed as its thumb alone). */
+.custom-color-panel--inline .custom-color-panel__slider,
 .custom-color-panel--inline .custom-color-panel__row {
   width: min(100%, var(--color-wheel-size));
 }

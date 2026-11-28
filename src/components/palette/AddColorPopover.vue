@@ -12,12 +12,13 @@ import BeadSection from '../project/BeadSection.vue'
 import AppNote from '../ui/AppNote.vue'
 import IconButton from '../ui/IconButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import BasicColors from './BasicColors.vue'
 import BeadColorList from './BeadColorList.vue'
 import CustomColorPanel from './CustomColorPanel.vue'
 
 // Add another color (ticket 1226; PaletteSwatches card, option B "Beside the Palette"): a popover to the left of the Palette's
 // own, so each color added is seen landing in its section. Bead colors: the Bead chooser (Brand, Type, Size) over that
-// Bead's codes; Custom color: the wheel. It stays open for the next color. Escape or Close shuts it alone.
+// Bead's codes; Custom color: the wheel and the basic colors. It stays open for the next color. Escape or Close shuts it alone.
 const props = defineProps<{
   /** The Palette popover it opens beside. */
   anchor: Element | null
@@ -81,11 +82,17 @@ useOverlayLayer({
       <IconButton v-if="!stacked" class="add-color__close" variant="plain" icon="close" :label="t.toolPill.close" :icon-size="16" tooltip data-testid="add-color-close" @click="emit('close')" />
     </div>
     <AppNote v-if="nudgeText" role="status" data-testid="add-color-nudge">{{ nudgeText }}</AppNote>
-    <template v-if="tab === 'bead' && chooser">
-      <BeadSection :bead="chooserBead" :candidates="offeredBeads()" @pick="beadColors?.chooseBead?.($event)" />
-      <BeadColorList :key="chooserBead?.id" :colors="chooser" />
-    </template>
-    <CustomColorPanel v-else-if="tab === 'custom'" addable inline @add="emit('add-custom', $event)" />
+    <div class="add-color__panels">
+      <!-- Under the Custom color tab it is only unseen: it holds the popover's height, so the tabs stay where pressed. -->
+      <div v-if="chooser" class="add-color__panel" :class="{ 'add-color__panel--unseen': tab !== 'bead' }" :inert="tab !== 'bead'" data-testid="add-color-panel-bead">
+        <BeadSection :bead="chooserBead" :candidates="offeredBeads()" @pick="beadColors?.chooseBead?.($event)" />
+        <BeadColorList :key="chooserBead?.id" :colors="chooser" />
+      </div>
+      <div v-if="tab === 'custom'" class="add-color__panel add-color__panel--custom">
+        <CustomColorPanel addable inline @add="emit('add-custom', $event)" />
+        <BasicColors @add="emit('add-custom', $event)" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -123,6 +130,36 @@ useOverlayLayer({
 
 .add-color__close {
   flex: none;
+}
+
+/* Both tabs share one cell, so it is as tall as the taller. */
+.add-color__panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.add-color__panel {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.add-color__panel--unseen {
+  visibility: hidden;
+}
+
+.add-color__panel--custom {
+  align-items: center;
+}
+
+.add-color__panel--custom > :deep(.custom-color-panel) {
+  align-self: stretch;
+}
+
+/* Stacked, it grows down from under its button, so no height is held. */
+.add-color--stacked .add-color__panel--unseen {
+  display: none;
 }
 
 /* Where there is no room beside the Palette, it opens under the Add another color button as part of the Palette popover. */

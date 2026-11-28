@@ -36,6 +36,8 @@ export const colors: ColorsTranslations = {
     addAnotherColor: 'Dodaj kolejny kolor',
     addTabBead: 'Kolory koralików',
     addTabCustom: 'Własny kolor',
+    basicColors: 'Kolory podstawowe',
+    addAllColors: 'Dodaj wszystkie',
     codeInCatalog: '{section}, kod {code}',
     nudgeCoded: 'Ten kolor już jest: {section}, kod {code}, więc dodano go o odcień inaczej.',
     nudgeCustom: 'Ten kolor już jest we własnych kolorach, więc dodano go o odcień inaczej.',

@@ -18,8 +18,7 @@ export interface PaletteColor {
 }
 
 /** The twelve built-in colors a Palette starts from when its Bead's brand has no set of its own (see CONTEXT.md's
- * Palette entry, ticket 227, ADR 0002).
- * @internal Tests and the visual check's fixtures paint with the built-in colors. */
+ * Palette entry, ticket 227, ADR 0002). The Custom color tab offers them as the basic colors, whatever the Bead. */
 export const BUILT_IN_COLORS: readonly PaletteColor[] = [
   { id: 'black', hex: '#1a1a1a' },
   { id: 'white', hex: '#ffffff' },
@@ -310,6 +309,12 @@ export function addUsedColor(ids: PaletteIds, hex: string, codes: PaletteCodes =
   const colorId = addedColorId(swatchHex)
   const joined = code ? { [swatchHex]: code } : {}
   return { ids: paletteColors([...colors.map((color) => color.id), colorId], { ...codes, ...joined }).map((color) => color.id), outcome: 'added', colorId, codes: joined, ...(nudgedFrom ? { nudgedFrom } : {}) }
+}
+
+/** Plain colors added at once (the basic colors' Add all): each joins as `addUsedColor` has it, one the Palette holds
+ * staying as it is. */
+export function addUsedColors(ids: PaletteIds, hexes: readonly string[], codes: PaletteCodes = {}): PaletteIds {
+  return hexes.reduce((held, hex) => addUsedColor(held, hex, codes).ids, ids)
 }
 
 /** A color taken out of the Palette (ticket 228), a default one too (ticket 1226): the ids without it, and the slot it

@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { addUsedColor, createPalette, defaultPaletteIds, moveSection as moveSectionOf, moveSlot, projectPalette, removeColor, removeSection as removeSectionOf, restoreColor, CUSTOM_COLORS, type AddUsedColorOutcome, type Palette, type PaletteCode, type PaletteCodes, type PaletteIds } from '../../domain/palette'
+import { addUsedColor, addUsedColors, createPalette, defaultPaletteIds, moveSection as moveSectionOf, moveSlot, projectPalette, removeColor, removeSection as removeSectionOf, restoreColor, CUSTOM_COLORS, type AddUsedColorOutcome, type Palette, type PaletteCode, type PaletteCodes, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette, setSwatchLetter, withLettersBack } from '../../domain/paletteEdits'
 import { withLetter, type SwatchLetters } from '../../domain/swatchLetters'
 import { beadsInColors, withBeadsBackIn, withoutBeadsIn } from '../../domain/colorBeads'
@@ -59,6 +59,15 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     nudge.value = nudgedFrom ? { section: nudgedFrom.catalog ?? CUSTOM_COLORS, ...(nudgedFrom.code ? { code: nudgedFrom.code } : {}) } : undefined
     if (outcome === 'added') setPalette(ids, codes)
     return { outcome, colorId }
+  }
+
+  /** Several plain colors join the Palette in one Edit (the basic colors' Add all); the paint color stays. */
+  function addAll(hexes: readonly string[]) {
+    const project = currentProject()
+    if (!project) return
+    nudge.value = undefined
+    const ids = addUsedColors(project.palette, hexes, project.paletteCodes)
+    if (ids.length > project.palette.length) setPalette(ids)
   }
 
   /** A swatch is taken out of the Palette (ticket 228), a default one too (ticket 1226), with every bead painted in it
@@ -123,7 +132,7 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     return changed.swapped
   }
 
-  return { palette, addUsed, nudge, clearNudge: () => (nudge.value = undefined), removeAdded, removeSection, paintedBeads, moveColor, moveSection, setLetter }
+  return { palette, addUsed, addAll, nudge, clearNudge: () => (nudge.value = undefined), removeAdded, removeSection, paintedBeads, moveColor, moveSection, setLetter }
 }
 
 /** The swatch an added color clashed with (ticket 1226): the section it is in, and its code when it has one. */
@@ -207,6 +216,18 @@ export function provideColorNudge(nudge: Readonly<Ref<ColorClash | undefined>>, 
 /** Absent (mounted alone) means no note is told. */
 export function useColorNudge() {
   return inject(nudgeKey, () => ({ nudge: ref<ColorClash>(), clear: () => {} }), true)
+}
+
+const addAllKey: InjectionKey<(hexes: readonly string[]) => void> = Symbol('addAllColors')
+
+/** The app shell hands out how several colors join the Palette at once, for the basic colors' Add all. */
+export function provideAddAllColors(addAll: (hexes: readonly string[]) => void) {
+  provide(addAllKey, addAll)
+}
+
+/** Absent (mounted alone) means no Add all is offered. */
+export function useAddAllColors(): ((hexes: readonly string[]) => void) | undefined {
+  return inject(addAllKey, undefined)
 }
 
 const moveKey: InjectionKey<(from: number, to: number) => void> = Symbol('moveColor')
